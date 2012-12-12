@@ -36,31 +36,13 @@ struct lock_debug_info {
 
     template <typename Ostream>
     friend Ostream& operator<<(Ostream& os, lock_debug_info const& self) {
-        os << make_bounded_output_sequence(self.file);
-
-        os << self.call_stack.size() << ':';
-        CallStack::const_iterator it(self.call_stack.begin()),
-                                  last(self.call_stack.end());
-        for (; it != last; ++it)
-            os << make_bounded_output_sequence(*it);
-
-        os << self.line;
+        os << make_bounded_output_sequence(self.file) << self.line;
         return os;
     }
 
     template <typename Istream>
     friend Istream& operator>>(Istream& is, lock_debug_info& self) {
-        is >> make_bounded_input_sequence(self.file);
-
-        CallStack::size_type size;
-        char colon;
-        is >> size >> colon;
-        while (size--) {
-            std::string s;
-            is >> make_bounded_input_sequence(s);
-            self.call_stack.push_back(s);
-        }
-        is >> self.line;
+        is >> make_bounded_input_sequence(self.file) >> self.line;
         return is;
     }
 };

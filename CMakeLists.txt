@@ -5,11 +5,6 @@ project(d2)
 add_definitions(-Wall -Wextra -pedantic -std=c++98)
 include_directories(include)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    add_definitions(-stdlib=libc++)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-endif()
-
 # Add my local boost 1.53
 set(BOOST_ROOT ext/boost)
 set(Boost_NO_SYSTEM_PATHS TRUE)
