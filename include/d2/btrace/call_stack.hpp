@@ -114,9 +114,13 @@ public:
     typedef typename call_stack::iterator iterator;
     typedef typename call_stack::const_iterator const_iterator;
 
-    inline call_stack() : n_(0) {
+    call_stack() : n_(0) {
         void** it = detail::copy_frame_pointers(N, &frames_[0]);
         n_ = std::distance(boost::begin(frames_), it);
+    }
+
+    typename call_stack::size_type size() const {
+        return n_;
     }
 
 private:
@@ -151,21 +155,26 @@ struct dynamic_call_stack : detail::call_stack_base<
                     "the backtrace buffer of a call_stack may not be empty");
     }
 
+    dynamic_call_stack::size_type size() const {
+        return frames_.size();
+    }
+
 private:
     friend class detail::basic_container_core_access;
-    iterator iterator_begin() {
+
+    inline iterator iterator_begin() {
         return iterator(0, boost::begin(frames_));
     }
 
-    const_iterator const_iterator_begin() const {
+    inline const_iterator const_iterator_begin() const {
         return const_iterator(0, boost::begin(frames_));
     }
 
-    iterator iterator_end() {
+    inline iterator iterator_end() {
         return iterator(frames_.size(), boost::end(frames_));
     }
 
-    const_iterator const_iterator_end() const {
+    inline const_iterator const_iterator_end() const {
         return const_iterator(frames_.size(), boost::end(frames_));
     }
 
