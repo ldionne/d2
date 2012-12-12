@@ -34,7 +34,7 @@ public:
     }
 
     template <typename Ostream>
-    void operator()(Ostream& os, VertexDescriptor) const {
+    void operator()(Ostream&, VertexDescriptor) const {
 
     }
 };
