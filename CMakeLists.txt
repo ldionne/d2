@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+enable_testing()
 
 project(d2)
 add_definitions(-Wall -Wextra -pedantic -std=c++98)
