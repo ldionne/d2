@@ -5,7 +5,7 @@
 #ifndef D2_EVENTS_HPP
 #define D2_EVENTS_HPP
 
-#include <d2/detail/support.hpp>
+#include <d2/detail/lock_debug_info.hpp>
 #include <d2/types.hpp>
 
 #include <boost/assert.hpp>

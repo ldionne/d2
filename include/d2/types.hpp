@@ -5,7 +5,7 @@
 #ifndef D2_TYPES_HPP
 #define D2_TYPES_HPP
 
-#include <d2/detail/support.hpp>
+#include <d2/detail/lock_debug_info.hpp>
 
 #include <boost/concept_check.hpp>
 #include <boost/functional/hash.hpp>
@@ -17,7 +17,9 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/operators.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_same.hpp>
+#include <boost/type_traits/is_unsigned.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <cstddef>

@@ -2,7 +2,7 @@
  * This file implements the event logging.
  */
 
-#include <d2/detail/support.hpp>
+#include <d2/detail/basic_mutex.hpp>
 #include <d2/events.hpp>
 
 #include <boost/assert.hpp>
