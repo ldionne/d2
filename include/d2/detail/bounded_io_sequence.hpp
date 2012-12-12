@@ -181,6 +181,36 @@ make_bounded_io_sequence(Container& c) {
     return bounded_io_sequence<typename Container::iterator>(c);
 }
 
+
+template <typename T>
+class bounded_for_io {
+    T value_;
+
+public:
+    bounded_for_io() { }
+
+    // This is implicit because it is only a thin wrapper around T.
+    bounded_for_io(T const& t) : value_(t) { }
+
+    operator T const&() const {
+        return value_;
+    }
+
+    operator T&() {
+        return value_;
+    }
+
+    template <typename Ostream>
+    friend Ostream& operator<<(Ostream& os, bounded_for_io const& self) {
+        return os << make_bounded_output_sequence(self.value_);
+    }
+
+    template <typename Istream>
+    friend Istream& operator>>(Istream& is, bounded_for_io& self) {
+        return is >> make_bounded_input_sequence(self.value_);
+    }
+};
+
 } // end namespace detail
 } // end namespace d2
 

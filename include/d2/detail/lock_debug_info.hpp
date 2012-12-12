@@ -19,45 +19,10 @@
 namespace d2 {
 namespace detail {
 
-template <typename T>
-struct with_implicit_constructor : T {
-    template <typename U>
-    with_implicit_constructor(U const& u) : T(u) { }
-};
-
-template <typename T>
-class bounded {
-    T value_;
-
-public:
-    bounded() { }
-
-    // This is implicit because it is only a thin wrapper around T.
-    bounded(T const& t) : value_(t) { }
-
-    operator T const&() const {
-        return value_;
-    }
-
-    operator T&() {
-        return value_;
-    }
-
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, bounded const& self) {
-        return os << make_bounded_output_sequence(self.value_);
-    }
-
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, bounded& self) {
-        return is >> make_bounded_input_sequence(self.value_);
-    }
-};
-
 struct lock_debug_info {
     std::string file;
     int line;
-    typedef std::vector<bounded<std::string> > CallStack;
+    typedef std::vector<std::string> CallStack;
 
     CallStack call_stack;
 
@@ -71,17 +36,31 @@ struct lock_debug_info {
 
     template <typename Ostream>
     friend Ostream& operator<<(Ostream& os, lock_debug_info const& self) {
-        os << make_bounded_output_sequence(self.file)
-           << make_bounded_output_sequence(self.call_stack)
-           << self.line;
+        os << make_bounded_output_sequence(self.file);
+
+        os << self.call_stack.size() << ':';
+        CallStack::const_iterator it(self.call_stack.begin()),
+                                  last(self.call_stack.end());
+        for (; it != last; ++it)
+            os << make_bounded_output_sequence(*it);
+
+        os << self.line;
         return os;
     }
 
     template <typename Istream>
     friend Istream& operator>>(Istream& is, lock_debug_info& self) {
-        is >> make_bounded_input_sequence(self.file)
-           >> make_bounded_input_sequence(self.call_stack)
-           >> self.line;
+        is >> make_bounded_input_sequence(self.file);
+
+        CallStack::size_type size;
+        char colon;
+        is >> size >> colon;
+        while (size--) {
+            std::string s;
+            is >> make_bounded_input_sequence(s);
+            self.call_stack.push_back(s);
+        }
+        is >> self.line;
         return is;
     }
 };
