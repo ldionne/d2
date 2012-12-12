@@ -1,0 +1,3 @@
+[submodule "ext/boost"]
+	path = ext/boost
+	url = git://github.com/ryppl/boost-svn.git
