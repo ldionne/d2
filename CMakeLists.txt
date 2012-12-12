@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(d2)
 add_definitions(-Wall -Wextra -pedantic -std=c++98)
-include_directories(${d2_SOURCE_DIR}/include)
+include_directories(include)
 
 # Add my local boost 1.53
 set(BOOST_ROOT /Users/louisdionne/Documents/Ordi/boost_deadlocks)
@@ -13,3 +13,4 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 add_subdirectory(src)
 add_subdirectory(test)
+add_subdirectory(utilities)
