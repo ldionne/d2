@@ -11,11 +11,26 @@
 #include <pthread.h>
 #endif
 
+#include <d2/btrace/call_stack.hpp>
+#include <d2/detail/bounded_io_sequence.hpp>
+
+#include <algorithm>
+#include <boost/algorithm/cxx11/copy_n.hpp>
 #include <boost/assert.hpp>
+#include <boost/concept_check.hpp>
+#include <boost/iterator/iterator_traits.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/mpl/or.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/algorithm_ext/push_back.hpp>
 #include <boost/range/begin.hpp>
-#include <boost/type_traits/remove_reference.hpp>
-#include <cstddef> // for NULL
+#include <boost/range/end.hpp>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <cstddef>
+#include <iterator>
 #include <string>
+#include <vector>
 
 
 namespace d2 {
@@ -147,53 +162,34 @@ public:
     }
 };
 
-/**
- * Simple wrapper over a string that modifies its << and >> operators to
- * make sure the string is saved/loaded as-is.
- */
-template <typename String>
-struct delimited_type {
-    String s_;
-    explicit delimited_type(String s) : s_(s) { }
+struct lock_debug_info {
+    std::string file;
+    int line;
+    typedef std::vector<std::string> CallStack;
+    CallStack call_stack;
+
+    inline void init_call_stack(std::size_t max_frames = 100) {
+        using namespace boost;
+        btrace::dynamic_call_stack cs(max_frames);
+        call_stack.reserve(cs.size());
+        range::push_back(call_stack, cs | adaptors::transformed(
+                        lambda::bind(&btrace::stack_frame::str, lambda::_1)));
+    }
 
     template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, delimited_type self) {
-        os << self.s_.size() << ':' << self.s_;
+    friend Ostream& operator<<(Ostream& os, lock_debug_info const& self) {
+        os << make_bounded_output_sequence(self.file)
+           << make_bounded_output_sequence(self.file)
+           << self.line;
         return os;
     }
 
     template <typename Istream>
-    friend Istream& operator>>(Istream& is, delimited_type self) {
-        typename boost::remove_reference<String>::type::size_type size;
-        char colon;
-        is >> size >> colon;
-        self.s_.reserve(size);
-        while (size--)
-            self.s_.push_back(is.get());
-        return is;
-    }
-};
-
-inline delimited_type<std::string const&> delimited(std::string const& s){
-    return delimited_type<std::string const&>(s);
-}
-
-inline delimited_type<std::string&> delimited(std::string& s) {
-    return delimited_type<std::string&>(s);
-}
-
-struct lock_debug_info {
-    std::string file;
-    int line;
-
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, lock_debug_info const& self) {
-        return os << delimited(self.file) << self.line, os;
-    }
-
-    template <typename Istream>
     friend Istream& operator>>(Istream& is, lock_debug_info& self) {
-        return is >> delimited(self.file) >> self.line, is;
+        is >> make_bounded_input_sequence(self.file)
+           >> make_bounded_input_sequence(self.call_stack)
+           >> self.line;
+        return is;
     }
 };
 
