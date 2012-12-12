@@ -41,6 +41,7 @@ void notify_acquire(SyncObject const& s, Thread const& t,
     acquire_event e((sync_object(s)), thread(t));
     e.info.file = file;
     e.info.line = line;
+    e.info.init_call_stack();
     detail::push_event(e);
 }
 

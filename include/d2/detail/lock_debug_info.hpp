@@ -19,10 +19,46 @@
 namespace d2 {
 namespace detail {
 
+template <typename T>
+struct with_implicit_constructor : T {
+    template <typename U>
+    with_implicit_constructor(U const& u) : T(u) { }
+};
+
+template <typename T>
+class bounded {
+    T value_;
+
+public:
+    bounded() { }
+
+    // This is implicit because it is only a thin wrapper around T.
+    bounded(T const& t) : value_(t) { }
+
+    operator T const&() const {
+        return value_;
+    }
+
+    operator T&() {
+        return value_;
+    }
+
+    template <typename Ostream>
+    friend Ostream& operator<<(Ostream& os, bounded const& self) {
+        return os << make_bounded_output_sequence(self.value_);
+    }
+
+    template <typename Istream>
+    friend Istream& operator>>(Istream& is, bounded& self) {
+        return is >> make_bounded_input_sequence(self.value_);
+    }
+};
+
 struct lock_debug_info {
     std::string file;
     int line;
-    typedef std::vector<std::string> CallStack;
+    typedef std::vector<bounded<std::string> > CallStack;
+
     CallStack call_stack;
 
     inline void init_call_stack(std::size_t max_frames = 100) {
