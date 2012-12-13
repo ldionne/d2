@@ -5,7 +5,6 @@
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/events.hpp>
 
-#define BOOST_SPIRIT_DEBUG 0
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/assert.hpp>
 #include <boost/phoenix.hpp>
@@ -32,46 +31,39 @@ struct event_parser : qi::grammar<Iterator, event()> {
     event_parser() : event_parser::base_type(one_event) {
         using namespace qi;
 
-        typedef stream_parser<char, thread> ThreadParser;
-        typedef stream_parser<char, sync_object> SyncObjectParser;
-
         one_event %= skip(ascii::space)[acquire | release | start | join];
 
         acquire
-            =   (ThreadParser() >> lit("acquires") >> SyncObjectParser())
+            =   (parse_thread >> "acquires" >> parse_sync_object)
             [
                 _val = phx::construct<acquire_event>(_2, _1)
             ]
             ;
 
         release
-            =   (ThreadParser() >> lit("releases") >> SyncObjectParser())
+            =   (parse_thread >> "releases" >> parse_sync_object)
             [
                 _val = phx::construct<release_event>(_2, _1)
             ]
             ;
 
         start
-            =   (ThreadParser() >> lit("starts") >> ThreadParser())
+            =   (parse_thread >> "starts" >> parse_thread)
             [
                 _val = phx::construct<start_event>(_1, _2)
             ]
             ;
 
         join
-            =   (ThreadParser() >> lit("joins") >> ThreadParser())
+            =   (parse_thread >> "joins" >> parse_thread)
             [
                 _val = phx::construct<join_event>(_1, _2)
             ]
             ;
 
-#if BOOST_SPIRIT_DEBUG
-        BOOST_SPIRIT_DEBUG_NODE(one_event);
-        BOOST_SPIRIT_DEBUG_NODE(acquire);
-        BOOST_SPIRIT_DEBUG_NODE(release);
-        BOOST_SPIRIT_DEBUG_NODE(start);
-        BOOST_SPIRIT_DEBUG_NODE(join);
-#endif
+        parse_sync_object %= stream_parser<char, sync_object>();
+
+        parse_thread %= stream_parser<char, thread>();
     }
 
 private:
@@ -80,6 +72,8 @@ private:
     qi::rule<Iterator, release_event()> release;
     qi::rule<Iterator, start_event()> start;
     qi::rule<Iterator, join_event()> join;
+    qi::rule<Iterator, sync_object()> parse_sync_object;
+    qi::rule<Iterator, thread()> parse_thread;
 };
 
 
