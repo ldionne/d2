@@ -11,6 +11,7 @@ macro(d2_add_test name) # sources...
     add_executable(${name}_executable ${ARGN})
     target_link_libraries(${name}_executable d2 ${GTEST_BOTH_LIBRARIES})
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_executable)
+    set_tests_properties(${name} PROPERTIES TIMEOUT 3)
     add_dependencies(unit ${name}_executable)
 endmacro()
 

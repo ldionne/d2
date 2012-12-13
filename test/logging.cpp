@@ -28,6 +28,8 @@ TEST(logging, log_simple_event) {
     notify_release(l, t);
     disable_event_logging();
 
+    std::cout << "Logged event:\n" << repo.str();
+
     std::vector<event> actual(load_events(repo));
     release_event expected((sync_object(l)), thread(t));
     ASSERT_TRUE(expected == boost::get<release_event>(actual[0]));

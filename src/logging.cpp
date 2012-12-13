@@ -5,6 +5,7 @@
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/events.hpp>
 
+#define BOOST_SPIRIT_DEBUG 0
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/assert.hpp>
 #include <boost/phoenix.hpp>
@@ -64,6 +65,16 @@ struct event_parser : qi::grammar<Iterator, event()> {
         parse_thread = ulong_[_val = phx::construct<thread>(_1)];
 
         parse_sync_object = ulong_[_val = phx::construct<sync_object>(_1)];
+
+#if BOOST_SPIRIT_DEBUG
+        BOOST_SPIRIT_DEBUG_NODE(one_event);
+        BOOST_SPIRIT_DEBUG_NODE(acquire);
+        BOOST_SPIRIT_DEBUG_NODE(release);
+        BOOST_SPIRIT_DEBUG_NODE(start);
+        BOOST_SPIRIT_DEBUG_NODE(join);
+        BOOST_SPIRIT_DEBUG_NODE(parse_thread);
+        BOOST_SPIRIT_DEBUG_NODE(parse_sync_object);
+#endif
     }
 
 private:
@@ -120,6 +131,16 @@ struct event_generator : karma::grammar<Iterator, event()> {
         gen_thread = ulong_[call_unique_id()];
 
         gen_sync_object = ulong_[call_unique_id()];
+
+#if BOOST_SPIRIT_DEBUG
+        BOOST_SPIRIT_DEBUG_NODE(one_event);
+        BOOST_SPIRIT_DEBUG_NODE(acquire);
+        BOOST_SPIRIT_DEBUG_NODE(release);
+        BOOST_SPIRIT_DEBUG_NODE(start);
+        BOOST_SPIRIT_DEBUG_NODE(join);
+        BOOST_SPIRIT_DEBUG_NODE(gen_thread);
+        BOOST_SPIRIT_DEBUG_NODE(gen_sync_object);
+#endif
     }
 
 private:
@@ -151,10 +172,12 @@ extern void push_event_impl(event const& e) {
     if (is_enabled) {
         BOOST_ASSERT_MSG(event_sink != NULL,
                                     "logging events in an invalid NULL sink");
+
         bool success = karma::generate(
                         std::ostream_iterator<char>(*event_sink),
                         generate_event << '\n',
                         e);
+        (void)success;
 
         BOOST_ASSERT_MSG(success,
                     "unable to generate the event using the karma generator");
@@ -192,6 +215,7 @@ extern std::vector<event> load_events(std::istream& source) {
     bool success = qi::parse(boost::begin(input), boost::end(input),
                              parse_event % '\n',
                              events);
+    (void)success;
     BOOST_ASSERT_MSG(success, "unable to parse events using the qi grammar");
 
     return events;
