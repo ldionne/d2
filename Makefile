@@ -7,13 +7,13 @@
 ${VERBOSE}.SILENT:
 
 all:
-	make -C build $@
+	make -C build $@ $(args)
 
 %:
-	make -C build $@
+	make -C build $@ $(args)
 
 test:
-	make -C build $@
+	make -C build $@ $(args)
 
 gen-cmake:
 	rm -rf build
