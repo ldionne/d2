@@ -22,7 +22,7 @@ using boost::end;
 TEST(logging, log_simple_event) {
     std::stringstream repo;
 
-    unsigned short t = 0, l = 1;
+    unsigned short t = 888, l = 999;
     set_event_sink(&repo);
     enable_event_logging();
     notify_release(l, t);

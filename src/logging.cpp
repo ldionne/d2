@@ -94,10 +94,10 @@ struct event_generator : karma::grammar<Iterator, event()> {
     event_generator() : event_generator::base_type(one_event) {
         using namespace karma;
 
-        one_event = acquire | release | start | join;
+        one_event = (acquire | release | start | join);
 
         acquire
-            =   (gen_thread << lit(" acquires ") << gen_sync_object)
+            =   (stream << " acquires " << stream)
             [
                 _1 = &_val->*&acquire_event::thread,
                 _2 = &_val->*&acquire_event::lock
@@ -105,7 +105,7 @@ struct event_generator : karma::grammar<Iterator, event()> {
             ;
 
         release
-            =   (gen_thread << lit(" releases ") << gen_sync_object)
+            =   (stream << " releases " << stream)
             [
                 _1 = &_val->*&release_event::thread,
                 _2 = &_val->*&release_event::lock
@@ -113,7 +113,7 @@ struct event_generator : karma::grammar<Iterator, event()> {
             ;
 
         start
-            =   (gen_thread << lit(" starts ") << gen_thread)
+            =   (stream << " starts " << stream)
             [
                 _1 = &_val->*&start_event::parent,
                 _2 = &_val->*&start_event::child
@@ -121,44 +121,20 @@ struct event_generator : karma::grammar<Iterator, event()> {
             ;
 
         join
-            =   (gen_thread << lit(" joins ") << gen_thread)
+            =   (stream << " joins " << stream)
             [
                 _1 = &_val->*&join_event::parent,
                 _2 = &_val->*&join_event::child
             ]
             ;
-
-        gen_thread = ulong_[call_unique_id()];
-
-        gen_sync_object = ulong_[call_unique_id()];
-
-#if BOOST_SPIRIT_DEBUG
-        BOOST_SPIRIT_DEBUG_NODE(one_event);
-        BOOST_SPIRIT_DEBUG_NODE(acquire);
-        BOOST_SPIRIT_DEBUG_NODE(release);
-        BOOST_SPIRIT_DEBUG_NODE(start);
-        BOOST_SPIRIT_DEBUG_NODE(join);
-        BOOST_SPIRIT_DEBUG_NODE(gen_thread);
-        BOOST_SPIRIT_DEBUG_NODE(gen_sync_object);
-#endif
     }
 
 private:
-    struct call_unique_id {
-        template <typename T>
-        std::size_t operator()(T const& t, karma::unused_type,
-                                           karma::unused_type) const {
-            return unique_id(t);
-        }
-    };
-
     karma::rule<Iterator, event()> one_event;
     karma::rule<Iterator, acquire_event()> acquire;
     karma::rule<Iterator, release_event()> release;
     karma::rule<Iterator, start_event()> start;
     karma::rule<Iterator, join_event()> join;
-    karma::rule<Iterator, thread()> gen_thread;
-    karma::rule<Iterator, sync_object()> gen_sync_object;
 };
 
 
@@ -175,7 +151,7 @@ extern void push_event_impl(event const& e) {
 
         bool success = karma::generate(
                         std::ostream_iterator<char>(*event_sink),
-                        generate_event << '\n',
+                        generate_event,
                         e);
         (void)success;
 
