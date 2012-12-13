@@ -10,10 +10,9 @@
 #include <d2/types.hpp>
 
 #include <boost/concept_check.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <iterator> // for std::istream_iterator
-#include <ostream>
+#include <iostream>
 #include <string>
+#include <vector>
 
 
 namespace d2 {
@@ -112,19 +111,11 @@ extern void disable_event_logging();
 extern void enable_event_logging();
 
 /**
- * Return a range of iterators lazily loading events from the specified
- * `source`. The source must have been created by the logging framework to
- * ensure it can be read correctly.
- * @note The iterators in the range are of an unspecified type. Apart from
- *       them modeling the InputIterator concept with a `value_type` of
- *       `event`, nothing is specified.
+ * Load and return the events contained in `source` as a vector of events. The
+ * source must have been created by the logging framework to ensure it can be
+ * read correctly.
  */
-template <typename Istream>
-boost::iterator_range<std::istream_iterator<event> >
-load_events(Istream& source) {
-    typedef std::istream_iterator<event> Iterator;
-    return boost::iterator_range<Iterator>(Iterator(source), Iterator());
-}
+extern std::vector<event> load_events(std::istream& source);
 
 } // end namespace d2
 

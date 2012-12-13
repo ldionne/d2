@@ -8,11 +8,13 @@
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/assert.hpp>
 #include <boost/phoenix.hpp>
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <cstddef>
+#include <iostream>
 #include <iterator>
-#include <ostream>
 #include <vector>
 
 
@@ -150,7 +152,9 @@ extern void push_event_impl(event const& e) {
         BOOST_ASSERT_MSG(event_sink != NULL,
                                     "logging events in an invalid NULL sink");
         bool success = karma::generate(
-            std::ostream_iterator<char>(*event_sink), generate_event, e);
+                        std::ostream_iterator<char>(*event_sink),
+                        generate_event << '\n',
+                        e);
 
         BOOST_ASSERT_MSG(success,
                     "unable to generate the event using the karma generator");
@@ -177,6 +181,20 @@ extern void enable_event_logging() {
     detail::sink_lock.lock();
     detail::is_enabled = true;
     detail::sink_lock.unlock();
+}
+
+extern std::vector<event> load_events(std::istream& source) {
+    detail::event_parser<std::string::const_iterator> parse_event;
+    std::string const input((std::istream_iterator<char>(source)),
+                             std::istream_iterator<char>());
+
+    std::vector<event> events;
+    bool success = qi::parse(boost::begin(input), boost::end(input),
+                             parse_event % '\n',
+                             events);
+    BOOST_ASSERT_MSG(success, "unable to parse events using the qi grammar");
+
+    return events;
 }
 
 } // end namespace d2

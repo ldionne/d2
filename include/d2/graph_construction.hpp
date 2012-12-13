@@ -20,7 +20,6 @@
 #include <boost/operators.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -258,9 +257,8 @@ void build_graphs(Iterator first, Iterator last,
     builder(first, last, lg, sg);
 }
 
-template <typename Iterator, typename LockGraph, typename SegmentationGraph>
-void build_graphs(boost::iterator_range<Iterator> range,
-                                    LockGraph& lg, SegmentationGraph& sg) {
+template <typename Range, typename LockGraph, typename SegmentationGraph>
+void build_graphs(Range const& range, LockGraph& lg, SegmentationGraph& sg) {
     build_graphs(boost::begin(range), boost::end(range), lg, sg);
 }
 
