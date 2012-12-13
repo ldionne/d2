@@ -13,6 +13,7 @@
 #include <boost/mpl/map.hpp>
 #include <boost/mpl/next_prior.hpp>
 #include <boost/mpl/pair.hpp>
+#include <boost/operators.hpp>
 #include <boost/variant.hpp>
 #include <ios>
 
@@ -23,7 +24,7 @@ namespace d2 {
  * Represents the acquisition of a resource guarded by a synchronization
  * object in a given thread.
  */
-struct acquire_event {
+struct acquire_event : boost::equality_comparable<acquire_event> {
     sync_object lock;
     class thread thread;
     detail::lock_debug_info info;
@@ -47,6 +48,14 @@ struct acquire_event {
     }
 
     /**
+     * Return whether two `acquire_event`s represent the same synchronization
+     * object acquired by the same thread.
+     */
+    friend bool operator==(acquire_event const& a, acquire_event const& b) {
+        return a.lock == b.lock && a.thread == b.thread;
+    }
+
+    /**
      * Load an `acquire_event` from an input stream.
      */
     template <typename Istream>
@@ -61,7 +70,7 @@ struct acquire_event {
  * Represents the release of a resource guarded by a synchronization
  * object in a given thread.
  */
-struct release_event {
+struct release_event : boost::equality_comparable<release_event> {
     sync_object lock;
     class thread thread;
 
@@ -84,6 +93,14 @@ struct release_event {
     }
 
     /**
+     * Return whether two `release_event`s represent the same synchronization
+     * object released by the same thread.
+     */
+    friend bool operator==(release_event const& a, release_event const& b) {
+        return a.lock == b.lock && a.thread == b.thread;
+    }
+
+    /**
      * Load a `release_event` from an input stream.
      */
     template <typename Istream>
@@ -97,7 +114,7 @@ struct release_event {
 /**
  * Represents the start of a child thread from a parent thread.
  */
-struct start_event {
+struct start_event : boost::equality_comparable<start_event> {
     thread parent;
     thread child;
 
@@ -110,6 +127,14 @@ struct start_event {
     inline start_event(thread const& p, thread const& c)
         : parent(p), child(c)
     { }
+
+    /**
+     * Return whether two `start_event`s represent the same parent thread
+     * starting the same child thread.
+     */
+    friend bool operator==(start_event const& a, start_event const& b) {
+        return a.parent == b.parent && a.child == b.child;
+    }
 
     /**
      * Save a `start_event` to an output stream.
@@ -146,6 +171,14 @@ struct join_event {
     inline join_event(thread const& p, thread const& c)
         : parent(p), child(c)
     { }
+
+    /**
+     * Return whether two `join_event`s represent the same parent thread
+     * joining the same child thread.
+     */
+    friend bool operator==(join_event const& a, join_event const& b) {
+        return a.parent == b.parent && a.child == b.child;
+    }
 
     /**
      * Save a `join_event` to an output stream.
