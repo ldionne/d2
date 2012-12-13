@@ -33,10 +33,8 @@ extern void push_event_impl(event const& e) {
 
         bool success = boost::spirit::karma::generate(
                         std::ostream_iterator<char>(*event_sink),
-                        generate_event,
+                        generate_event << '\n',
                         e);
-        // until we fix the generate_event << '\n' problem
-        *event_sink << '\n';
         (void)success;
 
         BOOST_ASSERT_MSG(success,
