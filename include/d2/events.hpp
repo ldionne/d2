@@ -8,14 +8,8 @@
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/types.hpp>
 
-#include <boost/assert.hpp>
-#include <boost/mpl/char.hpp>
-#include <boost/mpl/map.hpp>
-#include <boost/mpl/next_prior.hpp>
-#include <boost/mpl/pair.hpp>
 #include <boost/operators.hpp>
 #include <boost/variant.hpp>
-#include <ios>
 
 
 namespace d2 {
@@ -40,29 +34,11 @@ struct acquire_event : boost::equality_comparable<acquire_event> {
     { }
 
     /**
-     * Save an `acquire_event` to an output stream.
-     */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, acquire_event const& e) {
-        return os << e.lock << ' ' << e.thread << ' ' << e.info, os;
-    }
-
-    /**
      * Return whether two `acquire_event`s represent the same synchronization
      * object acquired by the same thread.
      */
     friend bool operator==(acquire_event const& a, acquire_event const& b) {
         return a.lock == b.lock && a.thread == b.thread;
-    }
-
-    /**
-     * Load an `acquire_event` from an input stream.
-     */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, acquire_event& e) {
-        BOOST_ASSERT_MSG(is.flags() & std::ios::skipws,
-   "the input stream must have the skipws flag set to load an acquire_event");
-        return is >> e.lock >> e.thread >> e.info, is;
     }
 };
 
@@ -85,29 +61,11 @@ struct release_event : boost::equality_comparable<release_event> {
     { }
 
     /**
-     * Save a `release_event` to an output stream.
-     */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, release_event const& e) {
-        return os << e.lock << ' ' << e.thread, os;
-    }
-
-    /**
      * Return whether two `release_event`s represent the same synchronization
      * object released by the same thread.
      */
     friend bool operator==(release_event const& a, release_event const& b) {
         return a.lock == b.lock && a.thread == b.thread;
-    }
-
-    /**
-     * Load a `release_event` from an input stream.
-     */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, release_event& e) {
-        BOOST_ASSERT_MSG(is.flags() & std::ios::skipws,
-    "the input stream must have the skipws flag set to load a release_event");
-        return is >> e.lock >> e.thread, is;
     }
 };
 
@@ -135,24 +93,6 @@ struct start_event : boost::equality_comparable<start_event> {
     friend bool operator==(start_event const& a, start_event const& b) {
         return a.parent == b.parent && a.child == b.child;
     }
-
-    /**
-     * Save a `start_event` to an output stream.
-     */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, start_event const& e) {
-        return os << e.parent << ' ' << e.child, os;
-    }
-
-    /**
-     * Load a `start_event` from an input stream.
-     */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, start_event& e) {
-        BOOST_ASSERT_MSG(is.flags() & std::ios::skipws,
-    "the input stream must have the skipws flag set to load a start_event");
-        return is >> e.parent >> e.child, is;
-    }
 };
 
 /**
@@ -178,24 +118,6 @@ struct join_event {
      */
     friend bool operator==(join_event const& a, join_event const& b) {
         return a.parent == b.parent && a.child == b.child;
-    }
-
-    /**
-     * Save a `join_event` to an output stream.
-     */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, join_event const& e) {
-        return os << e.parent << ' ' << e.child, os;
-    }
-
-    /**
-     * Load a `join_event` from an input stream.
-     */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, join_event& e) {
-        BOOST_ASSERT_MSG(is.flags() & std::ios::skipws,
-    "the input stream must have the skipws flag set to load a join_event");
-        return is >> e.parent >> e.child, is;
     }
 };
 

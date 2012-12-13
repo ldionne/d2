@@ -153,6 +153,8 @@ extern void push_event_impl(event const& e) {
                         std::ostream_iterator<char>(*event_sink),
                         generate_event,
                         e);
+        // until we fix the generate_event << '\n' problem
+        *event_sink << '\n';
         (void)success;
 
         BOOST_ASSERT_MSG(success,
@@ -188,11 +190,12 @@ extern std::vector<event> load_events(std::istream& source) {
                              std::istream_iterator<char>());
 
     std::vector<event> events;
-    bool success = qi::parse(boost::begin(input), boost::end(input),
-                             parse_event % '\n',
-                             events);
+    std::string::const_iterator first(boost::begin(input)),
+                                last(boost::end(input));
+    bool success = qi::parse(first, last, parse_event % '\n', events);
     (void)success;
-    BOOST_ASSERT_MSG(success, "unable to parse events using the qi grammar");
+    BOOST_ASSERT_MSG(success && first == last,
+                            "unable to parse events using the qi grammar");
 
     return events;
 }
