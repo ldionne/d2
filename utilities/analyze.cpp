@@ -18,6 +18,11 @@ template <typename Ostream>
 class print_cycle_type {
     Ostream& os_;
 
+    Ostream& format(d2::detail::lock_debug_info const& info) const {
+        os_ << '"' << info.file << '"' << ':' << info.line;
+        return os_;
+    }
+
 public:
     explicit print_cycle_type(Ostream& os) : os_(os) { }
 
@@ -29,10 +34,12 @@ public:
 
         BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
             LockGraphEdge const& edge = graph[edge_desc];
-            os_ << edge.l1_info.file << ':' << edge.l1_info.line << '\n'
-                << edge.l2_info.file << ':' << edge.l2_info.line << '\n';
+            d2::sync_object const& l1 = graph[source(edge_desc, graph)];
+            d2::sync_object const& l2 = graph[target(edge_desc, graph)];
+
+            os_ << "Thread " << edge.t << " acquired lock " << l2 << " at "; format(edge.l2_info);
+            os_ << "\n\twhile holding lock " << l1 << " taken at "; format(edge.l1_info); os_ << '\n';
         }
-        os_ << '\n';
     }
 };
 
