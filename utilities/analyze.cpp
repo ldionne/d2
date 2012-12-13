@@ -3,6 +3,8 @@
 #include <d2/graph_construction.hpp>
 #include <d2/logging.hpp>
 
+#include <boost/foreach.hpp>
+#include <boost/graph/properties.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <cstdlib>
@@ -21,11 +23,14 @@ public:
 
     template <typename EdgePath, typename LockGraph>
     void operator()(EdgePath const& cycle, LockGraph const& graph) const {
-        for (auto edge: cycle) {
-            auto const& lock1 = graph[edge].l1_info;
-            auto const& lock2 = graph[edge].l2_info;
-            os_ << lock1.file << ':' << lock1.line << '\n'
-                << lock2.file << ':' << lock2.line << '\n';
+        typedef typename boost::graph_traits<LockGraph>::edge_descriptor
+                                                    LockGraphEdgeDescriptor;
+        typedef typename boost::edge_property<LockGraph>::type LockGraphEdge;
+
+        BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
+            LockGraphEdge const& edge = graph[edge_desc];
+            os_ << edge.l1_info.file << ':' << edge.l1_info.line << '\n'
+                << edge.l2_info.file << ':' << edge.l2_info.line << '\n';
         }
         os_ << '\n';
     }
