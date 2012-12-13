@@ -9,6 +9,7 @@
 #include <d2/detail/bounded_io_sequence.hpp>
 
 #include <boost/lambda/bind.hpp>
+#include <boost/operators.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
 #include <cstddef>
@@ -19,7 +20,7 @@
 namespace d2 {
 namespace detail {
 
-struct lock_debug_info {
+struct lock_debug_info : boost::equality_comparable<lock_debug_info> {
     std::string file;
     int line;
     typedef std::vector<std::string> CallStack;
@@ -44,6 +45,11 @@ struct lock_debug_info {
     friend Istream& operator>>(Istream& is, lock_debug_info& self) {
         is >> make_bounded_input_sequence(self.file) >> self.line;
         return is;
+    }
+
+    friend bool operator==(lock_debug_info const& a, lock_debug_info const&b){
+        return a.file == b.file && a.line == b.line &&
+               a.call_stack == b.call_stack;
     }
 };
 
