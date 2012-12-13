@@ -68,6 +68,7 @@ extern void enable_event_logging() {
 
 extern std::vector<event> load_events(std::istream& source) {
     detail::event_parser<std::string::const_iterator> parse_event;
+    source.unsetf(std::ios::skipws);
     std::string const input((std::istream_iterator<char>(source)),
                              std::istream_iterator<char>());
 
@@ -75,7 +76,7 @@ extern std::vector<event> load_events(std::istream& source) {
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
     bool success = boost::spirit::qi::parse(first, last,
-                                            parse_event % '\n', events);
+                                            *(parse_event >> '\n'), events);
     (void)success;
     BOOST_ASSERT_MSG(success && first == last,
                             "unable to parse events using the qi grammar");

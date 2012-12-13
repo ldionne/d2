@@ -23,33 +23,45 @@ struct event_parser : boost::spirit::qi::grammar<Iterator, event()> {
         using namespace boost::spirit::qi;
         namespace phx = boost::phoenix;
 
-        one_event %= skip(space)[acquire | release | start | join];
+        one_event %= acquire | release | start | join;
 
         acquire
-            =   (parse_thread >> "acquires" >> parse_sync_object)
+            =   skip(space)
             [
-                _val = phx::construct<acquire_event>(_2, _1)
+                (parse_thread >> "acquires" >> parse_sync_object)
+                [
+                    _val = phx::construct<acquire_event>(_2, _1)
+                ]
             ]
             ;
 
         release
-            =   (parse_thread >> "releases" >> parse_sync_object)
+            =   skip(space)
             [
-                _val = phx::construct<release_event>(_2, _1)
+                (parse_thread >> "releases" >> parse_sync_object)
+                [
+                    _val = phx::construct<release_event>(_2, _1)
+                ]
             ]
             ;
 
         start
-            =   (parse_thread >> "starts" >> parse_thread)
+            =   skip(space)
             [
-                _val = phx::construct<start_event>(_1, _2)
+                (parse_thread >> "starts" >> parse_thread)
+                [
+                    _val = phx::construct<start_event>(_1, _2)
+                ]
             ]
             ;
 
         join
-            =   (parse_thread >> "joins" >> parse_thread)
+            =   skip(space)
             [
-                _val = phx::construct<join_event>(_1, _2)
+                (parse_thread >> "joins" >> parse_thread)
+                [
+                    _val = phx::construct<join_event>(_1, _2)
+                ]
             ]
             ;
 
