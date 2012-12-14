@@ -7,14 +7,17 @@
 
 #include <d2/types.hpp>
 
+#include <boost/assert.hpp>
 #include <boost/concept_check.hpp>
 #include <boost/foreach.hpp>
+#include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
-#include <boost/graph/tiernan_all_cycles.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/unordered_map.hpp>
+#include <deque>
 #include <vector>
 
 
@@ -38,6 +41,72 @@ namespace graph {
 
 namespace d2 {
 namespace detail {
+
+/**
+ * Wrapper visitor for use within the `all_cycles_dumb` algorith. It allows
+ * the wrapped visitor to keep the same interface as for `tiernan_all_cycles`.
+ */
+template <typename Adapted, typename Graph>
+class all_cycles_dumb_wrapper : public boost::dfs_visitor<> {
+    Adapted visitor_;
+    typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
+    typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
+
+    typedef boost::unordered_map<Vertex, Edge> PredecessorMap;
+    PredecessorMap predecessors_;
+
+public:
+    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const& g)
+        : visitor_(v)
+    { }
+
+    void tree_edge(Edge e, Graph const& g) {
+        predecessors_[target(e, g)] =  e;
+    }
+
+    void back_edge(Edge e, Graph const& g) const {
+        // Using the predecessor map maintained by the
+        // edge_predecessor_recorder, we create a path of the form:
+        // (u, v) (v, w) (w, x) ...
+        // Representing the edges forming the cycle. We then call the adapted
+        // visitor with that path, which is much easier to manipulate.
+        BOOST_ASSERT_MSG(predecessors_.find(target(e,g))!=predecessors_.end(),
+            "the predecessor edge of the target of the current edge is not "
+            "defined, something's wrong");
+        BOOST_ASSERT_MSG(predecessors_.find(target(e, g))->second == e,
+            "the predecessor edge of the target of the current edge is not "
+            "the current edge, something's wrong");
+
+        std::deque<Edge> cycle;
+        cycle.push_front(e);
+        typedef typename PredecessorMap::const_iterator PredecessorIterator;
+        while (true) {
+            PredecessorIterator it = predecessors_.find(source(e, g));
+            if (it == predecessors_.end())
+                break;
+
+            cycle.push_front(e = it->second);
+        }
+
+        visitor_.cycle(cycle, g);
+    }
+};
+
+/**
+ * Incredibly bad algorithm to compute all the cycles in a graph. It starts
+ * a depth-first search at every vertex and calls the visitor when it finds
+ * a cycle.
+ */
+template <typename Graph, typename Visitor>
+void all_cycles_dumb(Graph const& g, Visitor const& vis) {
+    typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
+    typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
+
+    BOOST_FOREACH(Vertex u, vertices(g)) {
+        boost::depth_first_search(g, boost::root_vertex(u)
+                .visitor(all_cycles_dumb_wrapper<Visitor, Graph>(vis, g)));
+    }
+}
 
 /**
  * Return whether two unordered containers have a non-empty intersection.
@@ -74,24 +143,6 @@ class cycle_visitor {
     Function& f_;
 
     /**
-     * Transform a path of vertices [u, v, w] to a path of edges
-     * [(u, v), (v, w)].
-     * @todo Use an iterator computing the edges on the fly instead.
-     */
-    template <typename VertexPath>
-    static EdgePath to_edge_path(VertexPath const& p, LockGraph const& lg) {
-        typename VertexPath::const_iterator first(boost::begin(p)),
-                                            last(boost::end(p));
-        EdgePath edge_path;
-        if (first == last)
-            return edge_path;
-        for (LockGraphVertexDescriptor u = *first++; first != last;
-                                                                u = *first++)
-            edge_path.push_back(edge(u, *first, lg).first);
-        return edge_path;
-    }
-
-    /**
      * Return whether segment `u` happens before segment `v` according to
      * the segmentation graph.
      */
@@ -111,10 +162,8 @@ public:
      * the cycle respects certain conditions, i.e. if the cycle represents a
      * deadlock in the lock graph.
      */
-    template <typename VertexPath>
-    void cycle(VertexPath const& vertex_path, LockGraph const& graph) const {
-        EdgePath edge_path = to_edge_path(vertex_path, graph);
-
+    template <typename EdgePath>
+    void cycle(EdgePath const& edge_path, LockGraph const& graph) const {
         // For any given pair of edges (e1, e2)
         EdgeLabelMap labels = get(boost::edge_bundle, graph);
         BOOST_FOREACH(LockGraphEdgeDescriptor e1, edge_path) {
@@ -151,9 +200,8 @@ template <typename LockGraph, typename SegmentationGraph, typename Function>
 void analyze(LockGraph const& lg, SegmentationGraph const& sg, Function f) {
     BOOST_CONCEPT_ASSERT((LockGraphConcept<LockGraph>));
 
-    detail::cycle_visitor<LockGraph, SegmentationGraph, Function>
-                                                            visitor(sg, f);
-    boost::tiernan_all_cycles(lg, visitor);
+    detail::cycle_visitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
+    detail::all_cycles_dumb(lg, vis);
 }
 
 } // end namespace d2
