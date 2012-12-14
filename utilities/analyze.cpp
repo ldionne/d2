@@ -40,6 +40,7 @@ public:
             os_ << "Thread " << edge.t << " acquired lock " << l2 << " at "; format(edge.l2_info);
             os_ << "\n\twhile holding lock " << l1 << " taken at "; format(edge.l1_info); os_ << '\n';
         }
+        os_ << '\n';
     }
 };
 

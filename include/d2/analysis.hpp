@@ -42,6 +42,10 @@ namespace graph {
 namespace d2 {
 namespace detail {
 
+// Note: You can enable/disable this to debug the algorithm.
+#define D2_DEBUG_ALL_CYCLES_DUMB(statement) do { } while (false)
+// #define D2_DEBUG_ALL_CYCLES_DUMB(statement) do { statement; } while (false)
+
 /**
  * Wrapper visitor for use within the `all_cycles_dumb` algorith. It allows
  * the wrapped visitor to keep the same interface as for `tiernan_all_cycles`.
@@ -61,22 +65,25 @@ public:
     { }
 
     void tree_edge(Edge e, Graph const& g) {
+        D2_DEBUG_ALL_CYCLES_DUMB(std::cout <<
+            "tree edge: " << e << '\n' <<
+            "set predecessor of " << target(e, g) << " to " << e << '\n');
         predecessors_[target(e, g)] =  e;
     }
 
     void back_edge(Edge e, Graph const& g) const {
+        D2_DEBUG_ALL_CYCLES_DUMB(std::cout <<
+            "back edge: " << e << '\n' <<
+            "making sure " << source(e, g) << " has a predecessor\n");
+        BOOST_ASSERT_MSG(predecessors_.find(source(e,g))!=predecessors_.end(),
+            "the predecessor edge of the source of the current edge is not "
+            "defined, something's wrong");
+
         // Using the predecessor map maintained by the
         // edge_predecessor_recorder, we create a path of the form:
         // (u, v) (v, w) (w, x) ...
         // Representing the edges forming the cycle. We then call the adapted
         // visitor with that path, which is much easier to manipulate.
-        BOOST_ASSERT_MSG(predecessors_.find(target(e,g))!=predecessors_.end(),
-            "the predecessor edge of the target of the current edge is not "
-            "defined, something's wrong");
-        BOOST_ASSERT_MSG(predecessors_.find(target(e, g))->second == e,
-            "the predecessor edge of the target of the current edge is not "
-            "the current edge, something's wrong");
-
         std::deque<Edge> cycle;
         cycle.push_front(e);
         typedef typename PredecessorMap::const_iterator PredecessorIterator;
