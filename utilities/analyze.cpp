@@ -7,7 +7,6 @@
 #include <boost/graph/properties.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -49,22 +48,21 @@ print_cycle_type<Ostream> print_cycle(Ostream& os) {
     return print_cycle_type<Ostream>(os);
 }
 
-inline void usage() {
-    std::cout << "Usage: prog input_file\n";
-}
-
 int main(int argc, char const *argv[]) {
-    if (argc < 2) return usage(), EXIT_FAILURE;
-    std::vector<std::string> args(argv, argv + argc);
-    std::string input_file(args[1]);
-    std::ifstream ifs(input_file.c_str());
-    if (!ifs) {
-        std::cout << "Unable to open input file \"" << input_file << "\"\n";
-        return EXIT_FAILURE;
+    std::ifstream ifs;
+    if (argc == 2) {
+        std::vector<std::string> args(argv, argv + argc);
+        std::string input_file(args[1]);
+        ifs.open(input_file.c_str());
+        if (!ifs) {
+            std::cout << "Unable to open input file \"" << input_file << "\"\n";
+            return EXIT_FAILURE;
+        }
     }
+    std::istream& is(argc == 2 ? ifs : std::cin);
 
     d2::segmentation_graph sg;
     d2::lock_graph lg;
-    d2::build_graphs(d2::load_events(ifs), lg, sg);
+    d2::build_graphs(d2::load_events(is), lg, sg);
     d2::analyze(lg, sg, print_cycle(std::cout));
 }
