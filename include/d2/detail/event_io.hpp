@@ -38,7 +38,7 @@ struct lock_debug_info_parser : qi::grammar<Iterator, lock_debug_info()> {
 
         line %= "[[" >> uint_ >> "]]";
 
-        call_stack %= "[[" >> (*~char_('\n') % '\n') >> "]]";
+        call_stack %= "[[" >> (*(~char_('\n') - "]]") % '\n') >> "]]";
     }
 
 private:

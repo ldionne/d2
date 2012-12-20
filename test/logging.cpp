@@ -20,7 +20,7 @@ using namespace boost::assign;
 using boost::begin;
 using boost::end;
 
-TEST(event_io, parse_lock_debug_info) {
+TEST(event_io, parse_lock_debug_info_without_call_stack) {
     lock_debug_info expected;
     expected.file = "/Foo/Bar/baz";
     expected.line = 20;
@@ -35,22 +35,7 @@ TEST(event_io, parse_lock_debug_info) {
     ASSERT_TRUE(expected == info);
 }
 
-TEST(event_io, parse_lock_debug_info_with_colon_in_filename) {
-    lock_debug_info expected;
-    expected.file = "C:/Foo/Bar/:12baz";
-    expected.line = 20;
-    std::string input = "[[C:/Foo/Bar/:12baz]][[20]]";
-    std::string::const_iterator first(begin(input)), last(end(input));
-    lock_debug_info_parser<std::string::const_iterator> parser;
-
-    lock_debug_info info;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
-    ASSERT_TRUE(first == last);
-
-    ASSERT_TRUE(expected == info);
-}
-
-TEST(event_io, generate_lock_debug_info) {
+TEST(event_io, generate_lock_debug_info_without_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
     lock_debug_info info;
@@ -64,18 +49,35 @@ TEST(event_io, generate_lock_debug_info) {
     ASSERT_EQ("[[/Foo/Bar/baz]][[20]]", result);
 }
 
-TEST(event_io, generate_lock_debug_info_with_colon_in_filename) {
+TEST(event_io, generate_lock_debug_info_with_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
     lock_debug_info info;
-    info.file = "C:/Foo/Bar/:12baz";
+    info.file = "/Foo/Bar/baz";
     info.line = 20;
+    info.call_stack += "frame1", "frame2";
 
     std::string result;
     Iterator out(result);
     lock_debug_info_generator<Iterator> generator;
     ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
-    ASSERT_EQ("[[C:/Foo/Bar/:12baz]][[20]]", result);
+    ASSERT_EQ("[[/Foo/Bar/baz]][[20]][[frame1\nframe2]]", result);
+}
+
+TEST(event_io, parse_lock_debug_info_with_call_stack) {
+    lock_debug_info expected;
+    expected.file = "/Foo/Bar/baz";
+    expected.line = 20;
+    expected.call_stack += "frame1", "frame2";
+    std::string input = "[[/Foo/Bar/baz]][[20]][[frame1\nframe2]]";
+    std::string::const_iterator first(begin(input)), last(end(input));
+    lock_debug_info_parser<std::string::const_iterator> parser;
+
+    lock_debug_info info;
+    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
+    ASSERT_TRUE(first == last);
+
+    ASSERT_TRUE(expected == info);
 }
 
 TEST(event_io, parse_acquire_event) {
