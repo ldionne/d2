@@ -20,6 +20,101 @@ using namespace boost::assign;
 using boost::begin;
 using boost::end;
 
+TEST(event_io, parse_lock_debug_info) {
+    lock_debug_info expected;
+    expected.file = "/Foo/Bar/baz";
+    expected.line = 20;
+    std::string input = "[[/Foo/Bar/baz]][[20]]";
+    std::string::const_iterator first(begin(input)), last(end(input));
+    lock_debug_info_parser<std::string::const_iterator> parser;
+
+    lock_debug_info info;
+    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
+    ASSERT_TRUE(first == last);
+
+    ASSERT_TRUE(expected == info);
+}
+
+TEST(event_io, parse_lock_debug_info_with_colon_in_filename) {
+    lock_debug_info expected;
+    expected.file = "C:/Foo/Bar/:12baz";
+    expected.line = 20;
+    std::string input = "[[C:/Foo/Bar/:12baz]][[20]]";
+    std::string::const_iterator first(begin(input)), last(end(input));
+    lock_debug_info_parser<std::string::const_iterator> parser;
+
+    lock_debug_info info;
+    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
+    ASSERT_TRUE(first == last);
+
+    ASSERT_TRUE(expected == info);
+}
+
+TEST(event_io, generate_lock_debug_info) {
+    typedef std::back_insert_iterator<std::string> Iterator;
+
+    lock_debug_info info;
+    info.file = "/Foo/Bar/baz";
+    info.line = 20;
+
+    std::string result;
+    Iterator out(result);
+    lock_debug_info_generator<Iterator> generator;
+    ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
+    ASSERT_EQ("[[/Foo/Bar/baz]][[20]]", result);
+}
+
+TEST(event_io, generate_lock_debug_info_with_colon_in_filename) {
+    typedef std::back_insert_iterator<std::string> Iterator;
+
+    lock_debug_info info;
+    info.file = "C:/Foo/Bar/:12baz";
+    info.line = 20;
+
+    std::string result;
+    Iterator out(result);
+    lock_debug_info_generator<Iterator> generator;
+    ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
+    ASSERT_EQ("[[C:/Foo/Bar/:12baz]][[20]]", result);
+}
+
+TEST(event_io, parse_acquire_event) {
+    std::string input = "123 acquires 456";
+    std::string::const_iterator first(begin(input)), last(end(input));
+    event_parser<std::string::const_iterator> parser;
+
+    event e;
+    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, e));
+    ASSERT_TRUE(first == last);
+
+    ASSERT_TRUE(
+        acquire_event(sync_object((unsigned)456), thread((unsigned)123)) ==
+        boost::get<acquire_event>(e));
+}
+
+TEST(event_io, parse_mixed_events) {
+    std::string input = "12 acquires 34\n"
+                        "12 releases 34\n"
+                        "56 starts 78\n"
+                        "56 joins 78";
+    std::string::const_iterator first(begin(input)), last(end(input));
+    event_parser<std::string::const_iterator> parser;
+
+    std::vector<event> events;
+    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser % '\n', events));
+    ASSERT_TRUE(first == last);
+
+    std::vector<event> expected;
+    expected +=
+        acquire_event(sync_object((unsigned)34), thread((unsigned)12)),
+        release_event(sync_object((unsigned)34), thread((unsigned)12)),
+        start_event(thread((unsigned)56), thread((unsigned)78)),
+        join_event(thread((unsigned)56), thread((unsigned)78))
+    ;
+
+    ASSERT_TRUE(expected == events);
+}
+
 TEST(logging, log_release_event) {
     std::stringstream repo;
 
@@ -62,99 +157,4 @@ TEST(logging, log_mixed_events) {
 
     std::vector<event> logged(load_events(repo));
     ASSERT_TRUE(events == logged);
-}
-
-TEST(event_io, parse_acquire_event) {
-    std::string input = "123 acquires 456";
-    std::string::const_iterator first(begin(input)), last(end(input));
-    event_parser<std::string::const_iterator> parser;
-
-    event e;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, e));
-    ASSERT_TRUE(first == last);
-
-    ASSERT_TRUE(
-        acquire_event(sync_object((unsigned)456), thread((unsigned)123)) ==
-        boost::get<acquire_event>(e));
-}
-
-TEST(event_io, parse_mixed_events) {
-    std::string input = "12 acquires 34 at /foo/bar:2\n"
-                        "12 releases 34\n"
-                        "56 starts 78\n"
-                        "56 joins 78";
-    std::string::const_iterator first(begin(input)), last(end(input));
-    event_parser<std::string::const_iterator> parser;
-
-    std::vector<event> events;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser % '\n', events));
-    ASSERT_TRUE(first == last);
-
-    std::vector<event> expected;
-    expected +=
-        acquire_event(sync_object((unsigned)34), thread((unsigned)12)),
-        release_event(sync_object((unsigned)34), thread((unsigned)12)),
-        start_event(thread((unsigned)56), thread((unsigned)78)),
-        join_event(thread((unsigned)56), thread((unsigned)78))
-    ;
-
-    ASSERT_TRUE(expected == events);
-}
-
-TEST(event_io, parse_lock_debug_info) {
-    lock_debug_info expected;
-    expected.file = "/Foo/Bar/baz";
-    expected.line = 20;
-    std::string input = "/Foo/Bar/baz:20";
-    std::string::const_iterator first(begin(input)), last(end(input));
-    lock_debug_info_parser<std::string::const_iterator> parser;
-
-    lock_debug_info info;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
-    ASSERT_TRUE(first == last);
-
-    ASSERT_TRUE(expected == info);
-}
-
-TEST(event_io, parse_lock_debug_info_with_colon_in_filename) {
-    lock_debug_info expected;
-    expected.file = "C:/Foo/Bar/:12baz";
-    expected.line = 20;
-    std::string input = "C:/Foo/Bar/:12baz:20";
-    std::string::const_iterator first(begin(input)), last(end(input));
-    lock_debug_info_parser<std::string::const_iterator> parser;
-
-    lock_debug_info info;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
-    ASSERT_TRUE(first == last);
-
-    ASSERT_TRUE(expected == info);
-}
-
-TEST(event_io, generate_lock_debug_info) {
-    typedef std::back_insert_iterator<std::string> Iterator;
-
-    lock_debug_info info;
-    info.file = "/Foo/Bar/baz";
-    info.line = 20;
-
-    std::string result;
-    Iterator out(result);
-    lock_debug_info_generator<Iterator> generator;
-    ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
-    ASSERT_EQ("/Foo/Bar/baz:20", result);
-}
-
-TEST(event_io, generate_lock_debug_info_with_colon_in_filename) {
-    typedef std::back_insert_iterator<std::string> Iterator;
-
-    lock_debug_info info;
-    info.file = "C:/Foo/Bar/:12baz";
-    info.line = 20;
-
-    std::string result;
-    Iterator out(result);
-    lock_debug_info_generator<Iterator> generator;
-    ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
-    ASSERT_EQ("C:/Foo/Bar/:12baz:20", result);
 }

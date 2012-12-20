@@ -13,6 +13,7 @@
 #include <boost/phoenix.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <string>
 
 
 namespace d2 {
@@ -28,19 +29,23 @@ struct lock_debug_info_parser : qi::grammar<Iterator, lock_debug_info()> {
         using namespace qi;
 
         start
-            =   (as_string[*(char_ - line_part)] >> line_part)
-            [
-                &_val->*&lock_debug_info::file = _1,
-                &_val->*&lock_debug_info::line = _2
-            ]
+            =   filename[&_val->*&lock_debug_info::file = _1]
+            >>  line[&_val->*&lock_debug_info::line = _1]
+            >>  -(call_stack[&_val->*&lock_debug_info::call_stack = _1])
             ;
 
-        line_part %= ':' >> uint_;
+        filename %= "[[" >> *(char_ - "]]") >> "]]";
+
+        line %= "[[" >> uint_ >> "]]";
+
+        call_stack %= "[[" >> (*~char_('\n') % '\n') >> "]]";
     }
 
 private:
     qi::rule<Iterator, lock_debug_info()> start;
-    qi::rule<Iterator, unsigned int()> line_part;
+    qi::rule<Iterator, std::string()> filename;
+    qi::rule<Iterator, unsigned int()> line;
+    qi::rule<Iterator, lock_debug_info::CallStack()> call_stack;
 };
 
 template <typename Iterator>
@@ -51,21 +56,28 @@ struct lock_debug_info_generator : karma::grammar<Iterator,lock_debug_info()>{
         namespace phx = boost::phoenix;
 
         start
-            =   (string << ':' << uint_)
-            [
-                _1 = &_val->*&lock_debug_info::file,
-                _2 = &_val->*&lock_debug_info::line
-            ]
+            =   filename[_1 = &_val->*&lock_debug_info::file]
+            <<  line[_1 = &_val->*&lock_debug_info::line]
+            <<  (-call_stack)[
+                phx::if_(!phx::bind(&lock_debug_info::CallStack::empty,
+                                    &_val->*&lock_debug_info::call_stack))[
+                    phx::arg_names::arg1 =&_val->*&lock_debug_info::call_stack
+                ]
+                ]
             ;
+
+        filename %= "[[" << string << "]]";
+
+        line %= "[[" << uint_ << "]]";
+
+        call_stack %= "[[" << (string % '\n') << "]]";
     }
 
 private:
-    static std::vector<char> tovector(std::string const& s) {
-        std::vector<char> v(s.begin(), s.end());
-        return v;
-    }
-
     karma::rule<Iterator, lock_debug_info()> start;
+    karma::rule<Iterator, std::string()> filename;
+    karma::rule<Iterator, unsigned int()> line;
+    karma::rule<Iterator, lock_debug_info::CallStack()> call_stack;
 };
 
 template <typename Iterator>
@@ -77,7 +89,7 @@ struct event_parser : qi::grammar<Iterator, event()> {
         one_event %= acquire | release | start | join;
 
         acquire
-            =   skip(space)
+            =   skip(blank)
             [
                 (parse_thread >> "acquires" >> parse_sync_object)
                 [
@@ -88,7 +100,7 @@ struct event_parser : qi::grammar<Iterator, event()> {
             ;
 
         release
-            =   skip(space)
+            =   skip(blank)
             [
                 (parse_thread >> "releases" >> parse_sync_object)
                 [
@@ -98,7 +110,7 @@ struct event_parser : qi::grammar<Iterator, event()> {
             ;
 
         start
-            =   skip(space)
+            =   skip(blank)
             [
                 (parse_thread >> "starts" >> parse_thread)
                 [
@@ -108,7 +120,7 @@ struct event_parser : qi::grammar<Iterator, event()> {
             ;
 
         join
-            =   skip(space)
+            =   skip(blank)
             [
                 (parse_thread >> "joins" >> parse_thread)
                 [
@@ -144,12 +156,12 @@ struct event_generator : karma::grammar<Iterator, event()> {
         one_event = (acquire | release | start | join);
 
         acquire
-            =   (stream << " acquires " << stream << ' ' << info)
-            [
-                _1 = &_val->*&acquire_event::thread,
-                _2 = &_val->*&acquire_event::lock,
-                _3 = &_val->*&acquire_event::info
-            ]
+            =
+            (   stream[_1 = &_val->*&acquire_event::thread]
+            <<  " acquires "
+            <<  stream[_1 = &_val->*&acquire_event::lock]
+            <<  ' ' << info[_1 = &_val->*&acquire_event::info]
+            )
             ;
 
         release
