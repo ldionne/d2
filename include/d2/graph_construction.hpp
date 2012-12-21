@@ -81,10 +81,10 @@ class graph_builder {
 
     // Given the first event, deduce the main thread.
     struct MainThreadDeducer : boost::static_visitor<thread> {
-        thread operator()(start_event const& first) const {
+        thread operator()(StartEvent const& first) const {
             return first.parent;
         }
-        thread operator()(acquire_event const& first) const {
+        thread operator()(AcquireEvent const& first) const {
             return first.thread;
         }
         template <typename T>
@@ -113,7 +113,7 @@ class graph_builder {
             : lg(lg_), sg(sg_), segment_of(sc), locks_held_by(lc), n(s)
         { }
 
-        void operator()(acquire_event const& e) {
+        void operator()(AcquireEvent const& e) {
             thread t(e.thread);
             BOOST_ASSERT_MSG(contains(t, segment_of),
                 "acquiring a lock in a thread that has not been started yet");
@@ -145,7 +145,7 @@ class graph_builder {
             locks_held_by_t.insert(CurrentlyHeldLock(l2, s2, e.info));
         }
 
-        void operator()(release_event const& e) {
+        void operator()(ReleaseEvent const& e) {
             thread t(e.thread);
             sync_object l(e.lock);
 
@@ -164,7 +164,7 @@ class graph_builder {
             }
         }
 
-        void operator()(start_event const& e) {
+        void operator()(StartEvent const& e) {
             thread parent(e.parent), child(e.child);
             BOOST_ASSERT_MSG(parent != child, "thread starting itself");
             BOOST_ASSERT_MSG(contains(parent, segment_of),
@@ -181,7 +181,7 @@ class graph_builder {
             n = n_plus_2;
         }
 
-        void operator()(join_event const& e) {
+        void operator()(JoinEvent const& e) {
             thread parent(e.parent), child(e.child);
             BOOST_ASSERT_MSG(parent != child, "thread joining itself");
             BOOST_ASSERT_MSG(contains(parent, segment_of),
@@ -250,7 +250,7 @@ void build_graphs(Iterator first, Iterator last,
     BOOST_CONCEPT_ASSERT((boost::InputIteratorConcept<Iterator>));
     BOOST_STATIC_ASSERT((::boost::is_same<
                             typename boost::iterator_value<Iterator>::type,
-                            event
+                            Event
                         >::value));
 
     detail::graph_builder<Iterator, LockGraph, SegmentationGraph> builder;

@@ -17,15 +17,14 @@
 using namespace d2;
 using namespace d2::detail;
 using namespace boost::assign;
-using boost::begin;
-using boost::end;
 
 TEST(event_io, parse_lock_debug_info_without_call_stack) {
     lock_debug_info expected;
     expected.file = "/Foo/Bar/baz";
     expected.line = 20;
     std::string input = "[[/Foo/Bar/baz]][[20]]";
-    std::string::const_iterator first(begin(input)), last(end(input));
+    std::string::const_iterator first(boost::begin(input)),
+                                last(boost::end(input));
     lock_debug_info_parser<std::string::const_iterator> parser;
 
     lock_debug_info info;
@@ -70,7 +69,8 @@ TEST(event_io, parse_lock_debug_info_with_call_stack) {
     expected.line = 20;
     expected.call_stack += "frame1", "frame2";
     std::string input = "[[/Foo/Bar/baz]][[20]][[frame1\nframe2]]";
-    std::string::const_iterator first(begin(input)), last(end(input));
+    std::string::const_iterator first(boost::begin(input)),
+                                last(boost::end(input));
     lock_debug_info_parser<std::string::const_iterator> parser;
 
     lock_debug_info info;
@@ -82,16 +82,17 @@ TEST(event_io, parse_lock_debug_info_with_call_stack) {
 
 TEST(event_io, parse_acquire_event) {
     std::string input = "123 acquires 456";
-    std::string::const_iterator first(begin(input)), last(end(input));
+    std::string::const_iterator first(boost::begin(input)),
+                                last(boost::end(input));
     event_parser<std::string::const_iterator> parser;
 
-    event e;
+    Event e;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, e));
     ASSERT_TRUE(first == last);
 
     ASSERT_TRUE(
-        acquire_event(sync_object((unsigned)456), thread((unsigned)123)) ==
-        boost::get<acquire_event>(e));
+        AcquireEvent(sync_object((unsigned)456), thread((unsigned)123)) ==
+        boost::get<AcquireEvent>(e));
 }
 
 TEST(event_io, parse_mixed_events) {
@@ -99,19 +100,20 @@ TEST(event_io, parse_mixed_events) {
                         "12 releases 34\n"
                         "56 starts 78\n"
                         "56 joins 78";
-    std::string::const_iterator first(begin(input)), last(end(input));
+    std::string::const_iterator first(boost::begin(input)),
+                                last(boost::end(input));
     event_parser<std::string::const_iterator> parser;
 
-    std::vector<event> events;
+    std::vector<Event> events;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser % '\n', events));
     ASSERT_TRUE(first == last);
 
-    std::vector<event> expected;
+    std::vector<Event> expected;
     expected +=
-        acquire_event(sync_object((unsigned)34), thread((unsigned)12)),
-        release_event(sync_object((unsigned)34), thread((unsigned)12)),
-        start_event(thread((unsigned)56), thread((unsigned)78)),
-        join_event(thread((unsigned)56), thread((unsigned)78))
+        AcquireEvent(sync_object((unsigned)34), thread((unsigned)12)),
+        ReleaseEvent(sync_object((unsigned)34), thread((unsigned)12)),
+        StartEvent(thread((unsigned)56), thread((unsigned)78)),
+        JoinEvent(thread((unsigned)56), thread((unsigned)78))
     ;
 
     ASSERT_TRUE(expected == events);
@@ -128,23 +130,23 @@ TEST(logging, log_release_event) {
 
     std::cout << "Logged event:\n" << repo.str();
 
-    std::vector<event> actual(load_events(repo));
-    release_event expected((sync_object(l)), thread(t));
-    ASSERT_TRUE(expected == boost::get<release_event>(actual[0]));
+    std::vector<Event> actual(load_events(repo));
+    ReleaseEvent expected((sync_object(l)), thread(t));
+    ASSERT_TRUE(expected == boost::get<ReleaseEvent>(actual[0]));
 }
 
 TEST(logging, log_mixed_events) {
-    std::vector<event> events;
+    std::vector<Event> events;
     sync_object l1((unsigned)88), l2((unsigned)99);
     thread t1((unsigned)22), t2((unsigned)33);
 
     events +=
-        start_event(t1, t2),
-        acquire_event(l1, t1),
-            acquire_event(l2, t1),
-            release_event(l2, t1),
-        release_event(l1, t1),
-        join_event(t1, t2)
+        StartEvent(t1, t2),
+        AcquireEvent(l1, t1),
+            AcquireEvent(l2, t1),
+            ReleaseEvent(l2, t1),
+        ReleaseEvent(l1, t1),
+        JoinEvent(t1, t2)
     ;
 
     std::stringstream repo;
@@ -152,11 +154,12 @@ TEST(logging, log_mixed_events) {
     enable_event_logging();
     // We use push_event_impl even though it's an implementation detail
     // because it greatly simplifies our task here.
-    std::for_each(begin(events), end(events), d2::detail::push_event_impl);
+    std::for_each(boost::begin(events), boost::end(events),
+                                                d2::detail::push_event_impl);
     disable_event_logging();
 
     std::cout << "Logged events:\n" << repo.str();
 
-    std::vector<event> logged(load_events(repo));
+    std::vector<Event> logged(load_events(repo));
     ASSERT_TRUE(events == logged);
 }

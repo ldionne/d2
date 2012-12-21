@@ -25,7 +25,7 @@ static bool is_enabled = false;
 static std::ostream* event_sink = NULL;
 static event_generator<std::ostream_iterator<char> > generate_event;
 
-extern void push_event_impl(event const& e) {
+extern void push_event_impl(Event const& e) {
     sink_lock.lock();
     if (is_enabled) {
         BOOST_ASSERT_MSG(event_sink != NULL,
@@ -64,13 +64,13 @@ extern void enable_event_logging() {
     detail::sink_lock.unlock();
 }
 
-extern std::vector<event> load_events(std::istream& source) {
+extern std::vector<Event> load_events(std::istream& source) {
     detail::event_parser<std::string::const_iterator> parse_event;
     source.unsetf(std::ios::skipws);
     std::string const input((std::istream_iterator<char>(source)),
                              std::istream_iterator<char>());
 
-    std::vector<event> events;
+    std::vector<Event> events;
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
     bool success = boost::spirit::qi::parse(first, last,

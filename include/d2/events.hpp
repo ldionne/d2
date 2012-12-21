@@ -18,7 +18,7 @@ namespace d2 {
  * Represents the acquisition of a resource guarded by a synchronization
  * object in a given thread.
  */
-struct acquire_event : boost::equality_comparable<acquire_event> {
+struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
     sync_object lock;
     class thread thread;
     detail::lock_debug_info info;
@@ -27,17 +27,17 @@ struct acquire_event : boost::equality_comparable<acquire_event> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline acquire_event() { }
+    inline AcquireEvent() { }
 
-    inline acquire_event(sync_object const& l, class thread const& t)
+    inline AcquireEvent(sync_object const& l, class thread const& t)
         : lock(l), thread(t)
     { }
 
     /**
-     * Return whether two `acquire_event`s represent the same synchronization
+     * Return whether two `AcquireEvent`s represent the same synchronization
      * object acquired by the same thread.
      */
-    friend bool operator==(acquire_event const& a, acquire_event const& b) {
+    friend bool operator==(AcquireEvent const& a, AcquireEvent const& b) {
         return a.lock == b.lock && a.thread == b.thread;
     }
 };
@@ -46,7 +46,7 @@ struct acquire_event : boost::equality_comparable<acquire_event> {
  * Represents the release of a resource guarded by a synchronization
  * object in a given thread.
  */
-struct release_event : boost::equality_comparable<release_event> {
+struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
     sync_object lock;
     class thread thread;
 
@@ -54,17 +54,17 @@ struct release_event : boost::equality_comparable<release_event> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline release_event() { }
+    inline ReleaseEvent() { }
 
-    inline release_event(sync_object const& l, class thread const& t)
+    inline ReleaseEvent(sync_object const& l, class thread const& t)
         : lock(l), thread(t)
     { }
 
     /**
-     * Return whether two `release_event`s represent the same synchronization
+     * Return whether two `ReleaseEvent`s represent the same synchronization
      * object released by the same thread.
      */
-    friend bool operator==(release_event const& a, release_event const& b) {
+    friend bool operator==(ReleaseEvent const& a, ReleaseEvent const& b) {
         return a.lock == b.lock && a.thread == b.thread;
     }
 };
@@ -72,7 +72,7 @@ struct release_event : boost::equality_comparable<release_event> {
 /**
  * Represents the start of a child thread from a parent thread.
  */
-struct start_event : boost::equality_comparable<start_event> {
+struct StartEvent : boost::equality_comparable<StartEvent> {
     thread parent;
     thread child;
 
@@ -80,17 +80,17 @@ struct start_event : boost::equality_comparable<start_event> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline start_event() { }
+    inline StartEvent() { }
 
-    inline start_event(thread const& p, thread const& c)
+    inline StartEvent(thread const& p, thread const& c)
         : parent(p), child(c)
     { }
 
     /**
-     * Return whether two `start_event`s represent the same parent thread
+     * Return whether two `StartEvent`s represent the same parent thread
      * starting the same child thread.
      */
-    friend bool operator==(start_event const& a, start_event const& b) {
+    friend bool operator==(StartEvent const& a, StartEvent const& b) {
         return a.parent == b.parent && a.child == b.child;
     }
 };
@@ -98,7 +98,7 @@ struct start_event : boost::equality_comparable<start_event> {
 /**
  * Represents the joining of a child thread into its parent thread.
  */
-struct join_event {
+struct JoinEvent {
     thread parent;
     thread child;
 
@@ -106,17 +106,17 @@ struct join_event {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline join_event() { }
+    inline JoinEvent() { }
 
-    inline join_event(thread const& p, thread const& c)
+    inline JoinEvent(thread const& p, thread const& c)
         : parent(p), child(c)
     { }
 
     /**
-     * Return whether two `join_event`s represent the same parent thread
+     * Return whether two `JoinEvent`s represent the same parent thread
      * joining the same child thread.
      */
-    friend bool operator==(join_event const& a, join_event const& b) {
+    friend bool operator==(JoinEvent const& a, JoinEvent const& b) {
         return a.parent == b.parent && a.child == b.child;
     }
 };
@@ -124,8 +124,8 @@ struct join_event {
 /**
  * Represents any type of event.
  */
-typedef boost::variant<acquire_event, release_event,
-                       start_event, join_event> event;
+typedef boost::variant<AcquireEvent, ReleaseEvent,
+                       StartEvent, JoinEvent> Event;
 
 } // end namespace d2
 

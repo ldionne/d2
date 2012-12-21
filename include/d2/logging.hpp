@@ -17,7 +17,7 @@
 
 namespace d2 {
 namespace detail {
-    extern void push_event_impl(event const& e);
+    extern void push_event_impl(Event const& e);
 
     // FIXME: We could dispatch cleverly depending on the event type and
     //        improve performances. For example, acquire/release events
@@ -37,7 +37,7 @@ void notify_acquire(SyncObject const& s, Thread const& t,
                                         std::string const& file, int line) {
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    acquire_event e((sync_object(s)), thread(t));
+    AcquireEvent e((sync_object(s)), thread(t));
     e.info.file = file;
     e.info.line = line;
     e.info.init_call_stack();
@@ -57,7 +57,7 @@ template <typename SyncObject, typename Thread>
 void notify_release(SyncObject const& s, Thread const& t) {
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(release_event(sync_object(s), thread(t)));
+    detail::push_event(ReleaseEvent(sync_object(s), thread(t)));
 }
 
 /**
@@ -67,7 +67,7 @@ void notify_release(SyncObject const& s, Thread const& t) {
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(start_event(thread(parent), thread(child)));
+    detail::push_event(StartEvent(thread(parent), thread(child)));
 }
 
 /**
@@ -77,7 +77,7 @@ void notify_start(Thread const& parent, Thread const& child) {
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(join_event(thread(parent), thread(child)));
+    detail::push_event(JoinEvent(thread(parent), thread(child)));
 }
 
 /**
@@ -115,7 +115,7 @@ extern void enable_event_logging();
  * source must have been created by the logging framework to ensure it can be
  * read correctly.
  */
-extern std::vector<event> load_events(std::istream& source);
+extern std::vector<Event> load_events(std::istream& source);
 
 } // end namespace d2
 

@@ -9,6 +9,7 @@
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/logging.hpp>
 
+#include <boost/assert.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -58,11 +59,14 @@ public:
     { }
 
     inline void start() {
+        BOOST_ASSERT_MSG(!actual_, "starting an already started thread");
         actual_.reset(new boost::thread(f_));
     }
 
     inline void join() {
+        BOOST_ASSERT_MSG(actual_, "joining a thread that is not started");
         actual_->join();
+        actual_.reset();
     }
 };
 
