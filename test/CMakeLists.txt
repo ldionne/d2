@@ -9,6 +9,17 @@ add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 # Target to build all the unit tests.
 add_custom_target(unit)
 
+macro(d2_copy_all_boost_libs_after target directory)
+    foreach(lib ${Boost_LIBRARIES})
+        if(EXISTS ${lib})
+            add_custom_command(
+                TARGET ${target} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy ${lib} ${directory}
+            )
+        endif()
+    endforeach()
+endmacro()
+
 macro(d2_add_test name) # sources...
     add_executable(${name}_exec ${ARGN})
     target_link_libraries(${name}_exec d2 ${GTEST_BOTH_LIBRARIES}
@@ -16,6 +27,7 @@ macro(d2_add_test name) # sources...
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
     set_tests_properties(${name} PROPERTIES TIMEOUT 3)
     add_dependencies(unit ${name}_exec)
+    d2_copy_all_boost_libs_after(${name}_exec ${CMAKE_CURRENT_BINARY_DIR})
 endmacro()
 
 d2_add_test(bounded_io_sequence bounded_io_sequence.cpp)
