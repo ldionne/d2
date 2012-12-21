@@ -60,7 +60,7 @@ class all_cycles_dumb_wrapper : public boost::dfs_visitor<> {
     PredecessorMap predecessors_;
 
 public:
-    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const& g)
+    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const&)
         : visitor_(v)
     { }
 
@@ -153,7 +153,7 @@ class cycle_visitor {
      * Return whether segment `u` happens before segment `v` according to
      * the segmentation graph.
      */
-    bool happens_before(segment u, segment v) const {
+    bool happens_before(Segment u, Segment v) const {
         return boost::graph::is_reachable(u, v, sg_);
     }
 

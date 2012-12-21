@@ -51,10 +51,10 @@ int main(int argc, char const *argv[]) {
     }
     std::istream& is(argc == 2 ? ifs : std::cin);
 
-    d2::segmentation_graph sg;
-    d2::lock_graph lg;
+    d2::SegmentationGraph sg;
+    d2::LockGraph lg;
     d2::build_graphs(d2::load_events(is), lg, sg);
 
-    LockGraphWriter<d2::lock_graph> writer(lg);
+    LockGraphWriter<d2::LockGraph> writer(lg);
     boost::write_graphviz(std::cout, lg, writer, writer);
 }

@@ -129,9 +129,9 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             ]
             ;
 
-        parse_sync_object %= stream_parser<char, sync_object>();
+        parse_sync_object %= stream_parser<char, SyncObject>();
 
-        parse_thread %= stream_parser<char, thread>();
+        parse_thread %= stream_parser<char, Thread>();
     }
 
 private:
@@ -140,8 +140,8 @@ private:
     qi::rule<Iterator, ReleaseEvent()> release;
     qi::rule<Iterator, StartEvent()> start;
     qi::rule<Iterator, JoinEvent()> join;
-    qi::rule<Iterator, sync_object()> parse_sync_object;
-    qi::rule<Iterator, thread()> parse_thread;
+    qi::rule<Iterator, SyncObject()> parse_sync_object;
+    qi::rule<Iterator, Thread()> parse_thread;
 
     lock_debug_info_parser<Iterator> info;
 };

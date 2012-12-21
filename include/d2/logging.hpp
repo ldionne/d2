@@ -32,12 +32,12 @@ namespace detail {
  * Notify the deadlock detection system of the acquisition of synchronization
  * object `s` by thread `t`.
  */
-template <typename SyncObject, typename Thread>
-void notify_acquire(SyncObject const& s, Thread const& t,
+template <typename SyncObject_, typename Thread_>
+void notify_acquire(SyncObject_ const& s, Thread_ const& t,
                                         std::string const& file, int line) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    AcquireEvent e((sync_object(s)), thread(t));
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject_>));
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread_>));
+    AcquireEvent e((SyncObject(s)), Thread(t));
     e.info.file = file;
     e.info.line = line;
     e.info.init_call_stack();
@@ -53,31 +53,31 @@ void notify_acquire(SyncObject const& s, Thread const& t) {
  * Notify the deadlock detection system of the release of synchronization
  * object `s` by thread `t`.
  */
-template <typename SyncObject, typename Thread>
-void notify_release(SyncObject const& s, Thread const& t) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(ReleaseEvent(sync_object(s), thread(t)));
+template <typename SyncObject_, typename Thread_>
+void notify_release(SyncObject_ const& s, Thread_ const& t) {
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject_>));
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread_>));
+    detail::push_event(ReleaseEvent(SyncObject(s), Thread(t)));
 }
 
 /**
  * Notify the deadlock detection system of the start of a new thread `child`
  * initiated by `parent`.
  */
-template <typename Thread>
-void notify_start(Thread const& parent, Thread const& child) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(StartEvent(thread(parent), thread(child)));
+template <typename Thread_>
+void notify_start(Thread_ const& parent, Thread_ const& child) {
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread_>));
+    detail::push_event(StartEvent(Thread(parent), Thread(child)));
 }
 
 /**
  * Notify the deadlock detection system of the join of thread `child` by
  * `parent`.
  */
-template <typename Thread>
-void notify_join(Thread const& parent, Thread const& child) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
-    detail::push_event(JoinEvent(thread(parent), thread(child)));
+template <typename Thread_>
+void notify_join(Thread_ const& parent, Thread_ const& child) {
+    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread_>));
+    detail::push_event(JoinEvent(Thread(parent), Thread(child)));
 }
 
 /**

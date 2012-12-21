@@ -42,7 +42,7 @@ class graph_builder {
                                                         LockGraphEdgeLabel;
 
     // Mapping of a thread to the segment in which it currently is.
-    typedef boost::unordered_map<thread, segment> SegmentationContext;
+    typedef boost::unordered_map<Thread, Segment> SegmentationContext;
 
     /**
      * Represents a lock that is currently held by a thread. The segment in
@@ -51,24 +51,24 @@ class graph_builder {
      * locks, such as the call stack.
      */
     struct CurrentlyHeldLock : boost::equality_comparable<CurrentlyHeldLock> {
-        sync_object lock;
-        segment seg;
+        SyncObject lock;
+        Segment segment;
         lock_debug_info info;
 
-        CurrentlyHeldLock(sync_object const& l, segment const& s,
+        CurrentlyHeldLock(SyncObject const& l, Segment const& s,
                           lock_debug_info const& i)
-            : lock(l), seg(s), info(i)
+            : lock(l), segment(s), info(i)
         { }
 
         friend bool operator==(CurrentlyHeldLock const& a,
                                CurrentlyHeldLock const& b) {
-            return a.lock == b.lock && a.seg == b.seg;
+            return a.lock == b.lock && a.segment == b.segment;
         }
 
         friend std::size_t hash_value(CurrentlyHeldLock const& self) {
             std::size_t seed = 0;
             boost::hash_combine(seed, self.lock);
-            boost::hash_combine(seed, self.seg);
+            boost::hash_combine(seed, self.segment);
             return seed;
         }
     };
@@ -77,22 +77,22 @@ class graph_builder {
     typedef boost::unordered_set<CurrentlyHeldLock> HeldLocks;
 
     // Mapping of a thread to the set of locks currently held by it.
-    typedef boost::unordered_map<thread, HeldLocks> LockContext;
+    typedef boost::unordered_map<Thread, HeldLocks> LockContext;
 
     // Given the first event, deduce the main thread.
-    struct MainThreadDeducer : boost::static_visitor<thread> {
-        thread operator()(StartEvent const& first) const {
+    struct MainThreadDeducer : boost::static_visitor<Thread> {
+        Thread operator()(StartEvent const& first) const {
             return first.parent;
         }
-        thread operator()(AcquireEvent const& first) const {
+        Thread operator()(AcquireEvent const& first) const {
             return first.thread;
         }
         template <typename T>
-        thread operator()(T const&) const {
+        Thread operator()(T const&) const {
             boost::throw_exception(
                 std::runtime_error(
                     "first event is not a start or an acquire event"));
-            return *static_cast<thread*>(NULL); // Never reached.
+            return *static_cast<Thread*>(NULL); // Never reached.
         }
     };
 
@@ -106,19 +106,19 @@ class graph_builder {
         SegmentationGraph& sg;
         SegmentationContext& segment_of;
         LockContext& locks_held_by;
-        segment& n;
+        Segment& n;
 
         EventVisitor(LockGraph& lg_, SegmentationGraph& sg_,
-                     SegmentationContext& sc, LockContext& lc, segment& s)
+                     SegmentationContext& sc, LockContext& lc, Segment& s)
             : lg(lg_), sg(sg_), segment_of(sc), locks_held_by(lc), n(s)
         { }
 
         void operator()(AcquireEvent const& e) {
-            thread t(e.thread);
+            Thread t(e.thread);
             BOOST_ASSERT_MSG(contains(t, segment_of),
                 "acquiring a lock in a thread that has not been started yet");
-            segment s2(segment_of[t]);
-            sync_object l2(e.lock);
+            Segment s2(segment_of[t]);
+            SyncObject l2(e.lock);
 
             // Each lock has only one vertex in the lock graph. Normally, we
             // should add a vertex only if a vertex representing the newly
@@ -131,14 +131,14 @@ class graph_builder {
             // Compute the gatelock set, i.e. the set of locks currently
             // held by `t`.
             HeldLocks& locks_held_by_t = locks_held_by[t];
-            boost::unordered_set<sync_object> g;
+            boost::unordered_set<SyncObject> g;
             BOOST_FOREACH(CurrentlyHeldLock const& l, locks_held_by_t)
                 g.insert(l.lock);
 
             // Add an edge from every lock l1 already held by `t` to l2.
             BOOST_FOREACH(CurrentlyHeldLock const& l, locks_held_by_t) {
-                sync_object l1(l.lock);
-                segment s1(l.seg);
+                SyncObject l1(l.lock);
+                Segment s1(l.segment);
                 LockGraphEdgeLabel label = {l.info, s1, t, g, s2, e.info};
                 add_edge(l1, l2, label, lg);
             }
@@ -146,8 +146,8 @@ class graph_builder {
         }
 
         void operator()(ReleaseEvent const& e) {
-            thread t(e.thread);
-            sync_object l(e.lock);
+            Thread t(e.thread);
+            SyncObject l(e.lock);
 
             HeldLocks& context = locks_held_by[t];
             BOOST_ASSERT_MSG(boost::algorithm::any_of(
@@ -165,7 +165,7 @@ class graph_builder {
         }
 
         void operator()(StartEvent const& e) {
-            thread parent(e.parent), child(e.child);
+            Thread parent(e.parent), child(e.child);
             BOOST_ASSERT_MSG(parent != child, "thread starting itself");
             BOOST_ASSERT_MSG(contains(parent, segment_of),
        "starting a thread from another thread that has not been created yet");
@@ -173,7 +173,7 @@ class graph_builder {
             // Segments:      parent    n+1    n+2
             // Parent thread:   o________o
             // Child thread:     \______________o
-            segment n_plus_1 = add_vertex(sg), n_plus_2 = add_vertex(sg);
+            Segment n_plus_1 = add_vertex(sg), n_plus_2 = add_vertex(sg);
             add_edge(segment_of[parent], n_plus_1, sg);
             add_edge(segment_of[parent], n_plus_2, sg);
             segment_of[parent] = n_plus_1;
@@ -182,7 +182,7 @@ class graph_builder {
         }
 
         void operator()(JoinEvent const& e) {
-            thread parent(e.parent), child(e.child);
+            Thread parent(e.parent), child(e.child);
             BOOST_ASSERT_MSG(parent != child, "thread joining itself");
             BOOST_ASSERT_MSG(contains(parent, segment_of),
         "joining a thread into another thread that has not been created yet");
@@ -196,7 +196,7 @@ class graph_builder {
             // Parent thread:   o______________________o
             // Child thread:              o___________/
             // Any thread:                       o
-            segment n_plus_1 = add_vertex(sg);
+            Segment n_plus_1 = add_vertex(sg);
             add_edge(segment_of[parent], n_plus_1, sg);
             add_edge(segment_of[child], n_plus_1, sg);
             segment_of[parent] = n_plus_1;
@@ -213,10 +213,10 @@ public:
 
         SegmentationContext segment_of;
         LockContext locks_held_by;
-        segment n = add_vertex(sg); // Last taken segment.
+        Segment n = add_vertex(sg); // Last taken segment.
 
         // The main thread is deduced using the first event.
-        thread main_thread(boost::apply_visitor(MainThreadDeducer(), *first));
+        Thread main_thread(boost::apply_visitor(MainThreadDeducer(), *first));
 
         // Main thread implicitly starts in the first segment.
         segment_of[main_thread] = n;

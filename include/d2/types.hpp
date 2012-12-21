@@ -73,69 +73,69 @@ public:
  * Represents a synchronization object in a program. Examples of
  * synchronization objects are a mutex and a semaphore.
  *
- * It is important to understand how `sync_object` only _represents_ a
+ * It is important to understand how `SyncObject` only _represents_ a
  * synchronization object without being one. Representing synchronization
  * objects is useful when performing a post-mortem analysis of the execution
  * of a program.
  */
-class sync_object : public boost::equality_comparable<sync_object> {
+class SyncObject : public boost::equality_comparable<SyncObject> {
     std::size_t id_;
 
 public:
     /**
-     * This constructor should only be used when serializing `sync_object`s.
-     * A default-constructed `sync_object` is in an invalid state.
+     * This constructor should only be used when serializing `SyncObject`s.
+     * A default-constructed `SyncObject` is in an invalid state.
      */
-    sync_object() { }
+    SyncObject() { }
 
     /**
-     * Save a `sync_object` to an output stream.
+     * Save a `SyncObject` to an output stream.
      */
     template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, sync_object const& s) {
+    friend Ostream& operator<<(Ostream& os, SyncObject const& s) {
         return os << s.id_, os;
     }
 
     /**
-     * Load a `sync_object` from an input stream.
+     * Load a `SyncObject` from an input stream.
      */
     template <typename Istream>
-    friend Istream& operator>>(Istream& is, sync_object& s) {
+    friend Istream& operator>>(Istream& is, SyncObject& s) {
         return is >> s.id_, is;
     }
 
     /**
-     * Create a `sync_object` representing the `UniquelyIdentifiable` object
+     * Create a `SyncObject` representing the `UniquelyIdentifiable` object
      * `t`. While `t` is not _required_ to represent a synchronization object,
-     * it makes no sense to use `sync_object` if it does not.
+     * it makes no sense to use `SyncObject` if it does not.
      */
     template <typename T>
-    explicit sync_object(T const& t) : id_(unique_id(t)) {
+    explicit SyncObject(T const& t) : id_(unique_id(t)) {
         BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<T>));
     }
 
     /**
-     * Construct a `sync_object` refering to the same synchronization object
+     * Construct a `SyncObject` refering to the same synchronization object
      * in the analyzed program as `other`.
      */
-    inline sync_object(sync_object const& other) : id_(other.id_) { }
+    inline SyncObject(SyncObject const& other) : id_(other.id_) { }
 
     /**
      * Compute a hash value uniquely representing the synchronization object
      * in the analyzed program.
-     * @note This is very useful to efficiently store `sync_object`s in
+     * @note This is very useful to efficiently store `SyncObject`s in
      *       unordered containers.
      */
-    friend std::size_t hash_value(sync_object const& self) {
+    friend std::size_t hash_value(SyncObject const& self) {
         using boost::hash_value;
         return hash_value(self.id_);
     }
 
     /**
-     * Return whether two `sync_object`s refer to the same synchronization
+     * Return whether two `SyncObject`s refer to the same synchronization
      * objects in the analyzed program.
      */
-    friend bool operator==(sync_object const& lhs, sync_object const& rhs) {
+    friend bool operator==(SyncObject const& lhs, SyncObject const& rhs) {
         return lhs.id_ == rhs.id_;
     }
 };
@@ -143,67 +143,67 @@ public:
 /**
  * Represents a thread in a program.
  *
- * Much like `sync_object`s, this is useful to represent a thread during a
+ * Much like `SyncObject`s, this is useful to represent a thread during a
  * post-mortem analysis of a program.
  */
-class thread : public boost::equality_comparable<thread> {
+class Thread : public boost::equality_comparable<Thread> {
     std::size_t id_;
 
 public:
     /**
-     * This constructor should only be used when serializing `thread`s.
-     * A default-constructed `thread` is in an invalid state.
+     * This constructor should only be used when serializing `Thread`s.
+     * A default-constructed `Thread` is in an invalid state.
      */
-    thread() { }
+    Thread() { }
 
     /**
-     * Save a `thread` to an output stream.
+     * Save a `Thread` to an output stream.
      */
     template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, thread const& t) {
+    friend Ostream& operator<<(Ostream& os, Thread const& t) {
         return os << t.id_, os;
     }
 
     /**
-     * Load a `thread` from an input stream.
+     * Load a `Thread` from an input stream.
      */
     template <typename Istream>
-    friend Istream& operator>>(Istream& is, thread& t) {
+    friend Istream& operator>>(Istream& is, Thread& t) {
         return is >> t.id_, is;
     }
 
     /**
-     * Create a `thread` representing the `UniquelyIdentifiable` object
+     * Create a `Thread` representing the `UniquelyIdentifiable` object
      * `t`. While `t` is not _required_ to represent a thread, it makes no
-     * sense to use `thread` if it does not.
+     * sense to use `Thread` if it does not.
      */
     template <typename T>
-    explicit thread(T const& t) : id_(unique_id(t)) {
+    explicit Thread(T const& t) : id_(unique_id(t)) {
         BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<T>));
     }
 
     /**
-     * Construct a `thread` refering to the same thread of the analyzed
+     * Construct a `Thread` refering to the same thread of the analyzed
      * program as `other`.
      */
-    inline thread(thread const& other) : id_(other.id_) { }
+    inline Thread(Thread const& other) : id_(other.id_) { }
 
     /**
      * Compute a hash value uniquely representing the thread of the analyzed
      * program.
-     * @note This is very useful to efficiently store `thread`s in
+     * @note This is very useful to efficiently store `Thread`s in
      *       unordered containers.
      */
-    friend std::size_t hash_value(thread const& self) {
+    friend std::size_t hash_value(Thread const& self) {
         using boost::hash_value;
         return hash_value(self.id_);
     }
 
     /**
-     * Return whether two `thread`s refer to the same thread of the analyzed
+     * Return whether two `Thread`s refer to the same thread of the analyzed
      * program.
      */
-    friend bool operator==(thread const& lhs, thread const& rhs) {
+    friend bool operator==(Thread const& lhs, Thread const& rhs) {
         return lhs.id_ == rhs.id_;
     }
 };
@@ -214,18 +214,18 @@ public:
  * the threads of a program.
  */
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS>
-                                                        segmentation_graph;
-typedef boost::graph_traits<segmentation_graph>::vertex_descriptor segment;
+                                                        SegmentationGraph;
+typedef boost::graph_traits<SegmentationGraph>::vertex_descriptor Segment;
 
 /**
  * Label present on the edges of a lock graph.
  */
-struct lock_graph_label {
+struct LockGraphLabel {
     detail::lock_debug_info l1_info;
-    segment s1;
-    thread t;
-    boost::unordered_set<sync_object> g;
-    segment s2;
+    Segment s1;
+    Thread t;
+    boost::unordered_set<SyncObject> g;
+    Segment s2;
     detail::lock_debug_info l2_info;
 };
 
@@ -234,7 +234,7 @@ struct lock_graph_label {
  * were acquired by threads.
  */
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-                                    sync_object, lock_graph_label> lock_graph;
+                                        SyncObject, LockGraphLabel> LockGraph;
 
 /**
  * Concept specification of a lock graph.
@@ -243,12 +243,12 @@ template <typename G>
 struct LockGraphConcept : boost::GraphConcept<G> {
     BOOST_STATIC_ASSERT((::boost::is_same<
                             typename boost::edge_property_type<G>::type,
-                            lock_graph_label
+                            LockGraphLabel
                         >::value));
 
     BOOST_STATIC_ASSERT((::boost::is_same<
                             typename boost::vertex_property_type<G>::type,
-                            sync_object
+                            SyncObject
                         >::value));
 };
 
@@ -257,15 +257,15 @@ struct LockGraphConcept : boost::GraphConcept<G> {
 namespace boost {
 namespace graph {
     // This is to be able to refer to a vertex in the lock graph using the
-    // sync_object associated to it.
-    template <> struct internal_vertex_name<d2::sync_object> {
-        typedef multi_index::identity<d2::sync_object> type;
+    // SyncObject associated to it.
+    template <> struct internal_vertex_name<d2::SyncObject> {
+        typedef multi_index::identity<d2::SyncObject> type;
     };
 
     // This is to satisfy the EdgeIndexGraph concept, which is
     // BOOST_CONCEPT_ASSERTed in tiernan_all_cycles even though
     // it is not required.
-    void renumber_vertex_indices(d2::lock_graph const&);
+    void renumber_vertex_indices(d2::LockGraph const&);
 } // end namespace graph
 } // end namespace boost
 

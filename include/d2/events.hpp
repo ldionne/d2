@@ -19,8 +19,8 @@ namespace d2 {
  * object in a given thread.
  */
 struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
-    sync_object lock;
-    class thread thread;
+    SyncObject lock;
+    Thread thread;
     detail::lock_debug_info info;
 
     /**
@@ -29,7 +29,7 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
      */
     inline AcquireEvent() { }
 
-    inline AcquireEvent(sync_object const& l, class thread const& t)
+    inline AcquireEvent(SyncObject const& l, Thread const& t)
         : lock(l), thread(t)
     { }
 
@@ -47,8 +47,8 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
  * object in a given thread.
  */
 struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
-    sync_object lock;
-    class thread thread;
+    SyncObject lock;
+    Thread thread;
 
     /**
      * This constructor must only be used when serializing events.
@@ -56,7 +56,7 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
      */
     inline ReleaseEvent() { }
 
-    inline ReleaseEvent(sync_object const& l, class thread const& t)
+    inline ReleaseEvent(SyncObject const& l, Thread const& t)
         : lock(l), thread(t)
     { }
 
@@ -73,8 +73,8 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
  * Represents the start of a child thread from a parent thread.
  */
 struct StartEvent : boost::equality_comparable<StartEvent> {
-    thread parent;
-    thread child;
+    Thread parent;
+    Thread child;
 
     /**
      * This constructor must only be used when serializing events.
@@ -82,7 +82,7 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
      */
     inline StartEvent() { }
 
-    inline StartEvent(thread const& p, thread const& c)
+    inline StartEvent(Thread const& p, Thread const& c)
         : parent(p), child(c)
     { }
 
@@ -99,8 +99,8 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
  * Represents the joining of a child thread into its parent thread.
  */
 struct JoinEvent {
-    thread parent;
-    thread child;
+    Thread parent;
+    Thread child;
 
     /**
      * This constructor must only be used when serializing events.
@@ -108,7 +108,7 @@ struct JoinEvent {
      */
     inline JoinEvent() { }
 
-    inline JoinEvent(thread const& p, thread const& c)
+    inline JoinEvent(Thread const& p, Thread const& c)
         : parent(p), child(c)
     { }
 

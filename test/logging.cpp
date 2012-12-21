@@ -91,7 +91,7 @@ TEST(event_io, parse_acquire_event) {
     ASSERT_TRUE(first == last);
 
     ASSERT_TRUE(
-        AcquireEvent(sync_object((unsigned)456), thread((unsigned)123)) ==
+        AcquireEvent(SyncObject((unsigned)456), Thread((unsigned)123)) ==
         boost::get<AcquireEvent>(e));
 }
 
@@ -110,10 +110,10 @@ TEST(event_io, parse_mixed_events) {
 
     std::vector<Event> expected;
     expected +=
-        AcquireEvent(sync_object((unsigned)34), thread((unsigned)12)),
-        ReleaseEvent(sync_object((unsigned)34), thread((unsigned)12)),
-        StartEvent(thread((unsigned)56), thread((unsigned)78)),
-        JoinEvent(thread((unsigned)56), thread((unsigned)78))
+        AcquireEvent(SyncObject((unsigned)34), Thread((unsigned)12)),
+        ReleaseEvent(SyncObject((unsigned)34), Thread((unsigned)12)),
+        StartEvent(Thread((unsigned)56), Thread((unsigned)78)),
+        JoinEvent(Thread((unsigned)56), Thread((unsigned)78))
     ;
 
     ASSERT_TRUE(expected == events);
@@ -131,14 +131,14 @@ TEST(logging, log_release_event) {
     std::cout << "Logged event:\n" << repo.str();
 
     std::vector<Event> actual(load_events(repo));
-    ReleaseEvent expected((sync_object(l)), thread(t));
+    ReleaseEvent expected((SyncObject(l)), Thread(t));
     ASSERT_TRUE(expected == boost::get<ReleaseEvent>(actual[0]));
 }
 
 TEST(logging, log_mixed_events) {
     std::vector<Event> events;
-    sync_object l1((unsigned)88), l2((unsigned)99);
-    thread t1((unsigned)22), t2((unsigned)33);
+    SyncObject l1((unsigned)88), l2((unsigned)99);
+    Thread t1((unsigned)22), t2((unsigned)33);
 
     events +=
         StartEvent(t1, t2),

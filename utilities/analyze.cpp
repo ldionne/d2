@@ -33,8 +33,8 @@ public:
 
         BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
             LockGraphEdge const& edge = graph[edge_desc];
-            d2::sync_object const& l1 = graph[source(edge_desc, graph)];
-            d2::sync_object const& l2 = graph[target(edge_desc, graph)];
+            d2::SyncObject const& l1 = graph[source(edge_desc, graph)];
+            d2::SyncObject const& l2 = graph[target(edge_desc, graph)];
 
             os_ << "Thread " << edge.t << " acquired lock " << l2 << " at "; format(edge.l2_info);
             os_ << "\n\twhile holding lock " << l1 << " taken at "; format(edge.l1_info); os_ << '\n';
@@ -61,8 +61,8 @@ int main(int argc, char const *argv[]) {
     }
     std::istream& is(argc == 2 ? ifs : std::cin);
 
-    d2::segmentation_graph sg;
-    d2::lock_graph lg;
+    d2::SegmentationGraph sg;
+    d2::LockGraph lg;
     d2::build_graphs(d2::load_events(is), lg, sg);
     d2::analyze(lg, sg, print_cycle(std::cout));
 }
