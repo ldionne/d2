@@ -1,4 +1,6 @@
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 # add Google test
 find_package(GTest 1.50.0 REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})

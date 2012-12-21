@@ -1,24 +1,27 @@
 
+#include "mock.hpp"
 #include <d2/logging.hpp>
-#include <iostream>
+#include <ostream>
 
 
 int main() {
     d2::set_event_sink(&std::cout);
     d2::enable_event_logging();
 
-    unsigned int t0 = 70, t1 = 71, A = 4, B = 8;
-    d2::notify_start(t0, t1);
-        d2::notify_acquire(A, t1, __FILE__, __LINE__);
-            d2::notify_acquire(B, t1, __FILE__, __LINE__);
-            d2::notify_release(B, t1);
-        d2::notify_release(A, t1);
+    mock_thread t0, t1;
+    mock_mutex A, B;
 
-        d2::notify_acquire(B, t0, __FILE__, __LINE__);
-            d2::notify_acquire(A, t0, __FILE__, __LINE__);
-            d2::notify_release(A, t0);
-        d2::notify_release(B, t0);
-    d2::notify_join(t0, t1);
+    t0.start(t1);
+        A.lock_in(t1);
+            B.lock_in(t1);
+            B.unlock_in(t1);
+        A.unlock_in(t1);
+
+        B.lock_in(t0);
+            A.lock_in(t0);
+            A.unlock_in(t0);
+        B.unlock_in(t0);
+    t0.join(t1);
 
     d2::disable_event_logging();
 }
