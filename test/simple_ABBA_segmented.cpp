@@ -25,10 +25,10 @@ int main() {
     });
 
     t0.start();
-    t1.start();
-
-    t1.join();
     t0.join();
+
+    t1.start();
+    t1.join();
 
     d2::disable_event_logging();
 }

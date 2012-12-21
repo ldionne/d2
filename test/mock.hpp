@@ -9,32 +9,62 @@
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/logging.hpp>
 
+#include <boost/function.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/thread/thread.hpp>
 #include <cstddef>
 
 
+namespace boost {
+    inline std::size_t unique_id(boost::thread::id thread_id) {
+        return hash_value(thread_id);
+    }
+}
+
 namespace {
 
-class mock_thread {
-    static d2::detail::basic_atomic<std::size_t> counter;
-    std::size_t id_;
+template <typename F>
+class thread_functor_wrapper {
+    boost::thread::id parent_;
+    F f_;
 
 public:
-    inline mock_thread() : id_(counter++) { }
+    explicit thread_functor_wrapper(F const& f)
+        : parent_(boost::this_thread::get_id()), f_(f)
+    { }
 
-    friend std::size_t unique_id(mock_thread const& self) {
-        return self.id_;
-    }
-
-    inline void start(mock_thread const& child) const {
-        d2::notify_start(*this, child);
-    }
-
-    inline void join(mock_thread const& child) const {
-        d2::notify_join(*this, child);
+    void operator()() const {
+        boost::thread::id child = boost::this_thread::get_id();
+        d2::notify_start(parent_, child);
+        f_();
+        d2::notify_join(parent_, child);
     }
 };
 
-d2::detail::basic_atomic<std::size_t> mock_thread::counter(0);
+template <typename F>
+thread_functor_wrapper<F> make_thread_functor_wrapper(F const& f) {
+    return thread_functor_wrapper<F>(f);
+}
+
+class mock_thread {
+    boost::scoped_ptr<boost::thread> actual_;
+    boost::function<void()> f_;
+
+public:
+    template <typename F>
+    explicit mock_thread(F const& f)
+        : f_(make_thread_functor_wrapper(f))
+    { }
+
+    inline void start() {
+        actual_.reset(new boost::thread(f_));
+    }
+
+    inline void join() {
+        actual_->join();
+    }
+};
 
 class mock_mutex {
     static d2::detail::basic_atomic<std::size_t> counter;
@@ -43,16 +73,12 @@ class mock_mutex {
 public:
     inline mock_mutex() : id_(counter++) { }
 
-    inline void lock_in(mock_thread const& thread) const {
-        d2::notify_acquire(*this, thread);
+    inline void lock() const {
+        d2::notify_acquire(id_, boost::this_thread::get_id());
     }
 
-    inline void unlock_in(mock_thread const& thread) const {
-        d2::notify_release(*this, thread);
-    }
-
-    friend std::size_t unique_id(mock_mutex const& self) {
-        return self.id_;
+    inline void unlock() const {
+        d2::notify_release(id_, boost::this_thread::get_id());
     }
 };
 

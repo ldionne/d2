@@ -16,8 +16,6 @@
 using namespace d2;
 using namespace d2::detail;
 using namespace boost::assign;
-using boost::begin;
-using boost::end;
 
 TEST(bounded_io_sequence, test_should_load_and_save_strings_correctly) {
     std::string initial("abcdef");
@@ -36,13 +34,14 @@ TEST(bounded_io_sequence, test_should_save_and_load_nested_bounded_sequences){
     std::vector<bounded_for_io<std::string> > data = list_of<std::string>
         ("foo")("bar")("baz")
     ;
-    std::vector<std::string> initial(begin(data), end(data));
+    std::vector<std::string> initial(boost::begin(data), boost::end(data));
     std::stringstream stream;
 
     stream << make_bounded_output_sequence(data);
     data.clear();
     stream >> make_bounded_input_sequence(data);
 
-    std::vector<std::string> passed_through_stream(begin(data), end(data));
+    std::vector<std::string> passed_through_stream(boost::begin(data),
+                                                   boost::end(data));
     ASSERT_TRUE(initial == passed_through_stream);
 }
