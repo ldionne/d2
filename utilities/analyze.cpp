@@ -17,9 +17,11 @@ template <typename Ostream>
 class print_cycle_type {
     Ostream& os_;
 
-    Ostream& format(d2::detail::lock_debug_info const& info) const {
-        os_ << '"' << info.file << '"' << ':' << info.line;
-        return os_;
+    void format_call_stack(d2::detail::lock_debug_info const& info,
+                           std::string const& indent = "") const {
+        BOOST_FOREACH(std::string const& frame, info.call_stack) {
+            os_ << indent << frame << '\n';
+        }
     }
 
 public:
@@ -36,10 +38,14 @@ public:
             d2::SyncObject const& l1 = graph[source(edge_desc, graph)];
             d2::SyncObject const& l2 = graph[target(edge_desc, graph)];
 
-            os_ << "Thread " << edge.t << " acquired lock " << l2 << " at "; format(edge.l2_info);
-            os_ << "\n\twhile holding lock " << l1 << " taken at "; format(edge.l1_info); os_ << '\n';
+            os_ << "----------------------------------------------------\n";
+            os_ << "Thread " << edge.t << " acquired lock " << l2 << " in\n";
+            format_call_stack(edge.l2_info, "    ");
+
+            os_ << "\nwhile holding lock " << l1 << " taken in\n";
+            format_call_stack(edge.l1_info, "    ");
+            os_ << "----------------------------------------------------\n\n";
         }
-        os_ << '\n';
     }
 };
 
