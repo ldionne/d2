@@ -12,6 +12,7 @@
 #include <boost/assert.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/move/move.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
@@ -58,6 +59,18 @@ public:
         : f_(make_thread_functor_wrapper(f))
     { }
 
+    inline mock_thread(BOOST_RV_REF(mock_thread) other)
+        : f_(boost::move(other.f_)) {
+        actual_.reset(other.actual_.get());
+        other.actual_.reset();
+    }
+
+    friend void swap(mock_thread& a, mock_thread& b) {
+        using std::swap;
+        swap(a.f_, b.f_);
+        swap(a.actual_, b.actual_);
+    }
+
     inline void start() {
         BOOST_ASSERT_MSG(!actual_, "starting an already started thread");
         actual_.reset(new boost::thread(f_));
@@ -75,7 +88,9 @@ class mock_mutex {
     std::size_t id_;
 
 public:
-    inline mock_mutex() : id_(counter++) { }
+    inline mock_mutex()
+        : id_(counter++)
+    { }
 
     inline void lock() const {
         d2::notify_acquire(id_, boost::this_thread::get_id());

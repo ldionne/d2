@@ -25,7 +25,7 @@ macro(d2_add_test name) # sources...
     target_link_libraries(${name}_exec d2 ${GTEST_BOTH_LIBRARIES}
                                           ${Boost_LIBRARIES})
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
-    set_tests_properties(${name} PROPERTIES TIMEOUT 3)
+    set_tests_properties(${name} PROPERTIES TIMEOUT 60)
     add_dependencies(unit ${name}_exec)
     d2_copy_all_boost_libs_after(${name}_exec ${CMAKE_CURRENT_BINARY_DIR})
 endmacro()
@@ -41,5 +41,7 @@ endmacro()
 
 d2_add_test_cpp11(simple_ABBA simple_ABBA.cpp)
 d2_add_test_cpp11(simple_ABBA_segmented simple_ABBA_segmented.cpp)
+d2_add_test_cpp11(simple_ABBA_noise simple_ABBA_noise.cpp)
+
 d2_add_test_cpp11(simple_ABC simple_ABC.cpp)
 d2_add_test_cpp11(simple_ABC_segmented simple_ABC_segmented.cpp)
