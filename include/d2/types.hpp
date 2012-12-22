@@ -220,7 +220,29 @@ typedef boost::graph_traits<SegmentationGraph>::vertex_descriptor Segment;
 /**
  * Label present on the edges of a lock graph.
  */
-struct LockGraphLabel {
+struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
+    friend bool operator==(LockGraphLabel const& a, LockGraphLabel const& b) {
+        // Note: We test the easiest first, i.e. the threads and segments,
+        //       which are susceptible of being similar to integers.
+        return a.s1 == b.s1 &&
+               a.t == b.t &&
+               a.s2 == b.s2 &&
+               a.l1_info == b.l1_info &&
+               a.l2_info == b.l2_info &&
+               a.g == b.g;
+    }
+
+    inline LockGraphLabel() { }
+
+    inline LockGraphLabel(detail::lock_debug_info const& l1_info,
+                          Segment s1,
+                          Thread t,
+                          boost::unordered_set<SyncObject> const& g,
+                          Segment s2,
+                          detail::lock_debug_info const& l2_info)
+        : l1_info(l1_info), s1(s1), t(t), g(g), s2(s2), l2_info(l2_info)
+    { }
+
     detail::lock_debug_info l1_info;
     Segment s1;
     Thread t;

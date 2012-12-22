@@ -42,6 +42,7 @@ endmacro()
 d2_add_test_cpp11(simple_ABBA simple_ABBA.cpp)
 d2_add_test_cpp11(simple_ABBA_noise simple_ABBA_noise.cpp)
 d2_add_test_cpp11(simple_ABBA_redundant simple_ABBA_redundant.cpp)
+d2_add_test_cpp11(simple_ABBA_redundant_diff_functions simple_ABBA_redundant_diff_functions.cpp)
 d2_add_test_cpp11(simple_ABBA_segmented simple_ABBA_segmented.cpp)
 
 d2_add_test_cpp11(simple_ABC simple_ABC.cpp)

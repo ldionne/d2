@@ -18,6 +18,7 @@
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/static_assert.hpp>
@@ -101,6 +102,27 @@ class graph_builder {
         return c.find(val) != boost::end(c);
     }
 
+    static bool exists_edge_between(SyncObject const& u_,
+                                    SyncObject const& v_,
+                                    LockGraphEdgeLabel const& label,
+                                    LockGraph const& lg) {
+        typedef typename boost::graph_traits<
+                                LockGraph>::edge_descriptor EdgeDescriptor;
+        typedef typename boost::graph_traits<
+                            LockGraph>::vertex_descriptor VertexDescriptor;
+
+        boost::optional<VertexDescriptor> u = find_vertex(u_, lg),
+                                          v = find_vertex(v_, lg);
+        BOOST_ASSERT_MSG(u && v,
+            "trying to find an edge between two synchronization objects of "
+            "which at least one has no associated vertex in the lock graph.");
+        BOOST_FOREACH(EdgeDescriptor e, out_edges(*u, lg)) {
+            if (target(e, lg) == *v && lg[e] == label)
+                return true;
+        }
+        return false;
+    }
+
     struct EventVisitor : boost::static_visitor<void> {
         LockGraph& lg;
         SegmentationGraph& sg;
@@ -139,8 +161,19 @@ class graph_builder {
             BOOST_FOREACH(CurrentlyHeldLock const& l, locks_held_by_t) {
                 SyncObject l1(l.lock);
                 Segment s1(l.segment);
-                LockGraphEdgeLabel label = {l.info, s1, t, g, s2, e.info};
-                add_edge(l1, l2, label, lg);
+                LockGraphEdgeLabel label(l.info, s1, t, g, s2, e.info);
+                // We don't add an edge if there is already an edge that is
+                // exactly the same, since this would only create redundancy
+                // in the graph. Multiple equal parallel edges would happen
+                // if some synchronization objects were acquired and released
+                // in a loop. Right now, the additionnal information carried
+                // on each edge is considered to determine the uniqueness of
+                // an edge, because if the acquisition happened at a different
+                // place in the code, we would still want to detect a
+                // different deadlock during the analysis. See the
+                // simple_ABBA_redudant_diff_functions test for an example.
+                if (!exists_edge_between(l1, l2, label, lg))
+                    add_edge(l1, l2, label, lg);
             }
             locks_held_by_t.insert(CurrentlyHeldLock(l2, s2, e.info));
         }
