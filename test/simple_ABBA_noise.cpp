@@ -11,8 +11,8 @@
 #include <vector>
 
 
-static std::size_t const THREADS = 1000;
-static std::size_t const NOISE_MUTEXES_PER_THREAD = 100;
+static std::size_t const THREADS = 10;
+static std::size_t const NOISE_MUTEXES_PER_THREAD = 10;
 
 int main() {
     auto noise = [&] {
