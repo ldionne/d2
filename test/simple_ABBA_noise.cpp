@@ -11,12 +11,12 @@
 #include <vector>
 
 
-static std::size_t const THREADS = 10;
-static std::size_t const NOISE_MUTEXES_PER_THREAD = 10;
+static std::size_t const NOISE_THREADS = 10;
+static std::size_t const MUTEXES_PER_NOISE_THREAD = 10;
 
 int main() {
     auto noise = [&] {
-        std::vector<mock_mutex> mutexes(NOISE_MUTEXES_PER_THREAD);
+        std::vector<mock_mutex> mutexes(MUTEXES_PER_NOISE_THREAD);
         boost::for_each(mutexes, [](mock_mutex& m) { m.lock(); });
         boost::for_each(mutexes | boost::adaptors::reversed,
                                         [](mock_mutex& m) { m.unlock(); });
@@ -40,7 +40,7 @@ int main() {
 
     std::vector<mock_thread> threads;
     threads.push_back(boost::move(t0)); threads.push_back(boost::move(t1));
-    std::generate_n(boost::back_move_inserter(threads), THREADS - 2, [&] {
+    std::generate_n(boost::back_move_inserter(threads), NOISE_THREADS, [&] {
         return mock_thread(noise);
     });
     boost::range::random_shuffle(threads);
