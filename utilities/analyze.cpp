@@ -14,7 +14,7 @@
 
 
 template <typename Ostream>
-class print_cycle_type {
+class CyclePrinter {
     Ostream& os_;
 
     void format_call_stack(d2::detail::lock_debug_info const& info,
@@ -25,33 +25,36 @@ class print_cycle_type {
     }
 
 public:
-    explicit print_cycle_type(Ostream& os) : os_(os) { }
+    explicit CyclePrinter(Ostream& os) : os_(os) { }
 
     template <typename EdgePath, typename LockGraph>
     void operator()(EdgePath const& cycle, LockGraph const& graph) const {
         typedef typename boost::graph_traits<LockGraph>::edge_descriptor
                                                     LockGraphEdgeDescriptor;
         typedef typename boost::edge_property<LockGraph>::type LockGraphEdge;
+        os_ << "----------------------------------------------------";
 
         BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
             LockGraphEdge const& edge = graph[edge_desc];
             d2::SyncObject const& l1 = graph[source(edge_desc, graph)];
             d2::SyncObject const& l2 = graph[target(edge_desc, graph)];
 
-            os_ << "----------------------------------------------------\n";
+            os_ << '\n';
+
             os_ << "Thread " << edge.t << " acquired lock " << l2 << " in\n";
             format_call_stack(edge.l2_info, "    ");
 
-            os_ << "\nwhile holding lock " << l1 << " taken in\n";
+            os_ << "while holding lock " << l1 << " taken in\n";
             format_call_stack(edge.l1_info, "    ");
-            os_ << "----------------------------------------------------\n\n";
         }
+
+        os_ << "----------------------------------------------------\n\n";
     }
 };
 
 template <typename Ostream>
-print_cycle_type<Ostream> print_cycle(Ostream& os) {
-    return print_cycle_type<Ostream>(os);
+CyclePrinter<Ostream> print_cycle(Ostream& os) {
+    return CyclePrinter<Ostream>(os);
 }
 
 int main(int argc, char const *argv[]) {
