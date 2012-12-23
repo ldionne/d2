@@ -18,6 +18,7 @@
 #include <boost/range/end.hpp>
 #include <boost/unordered_map.hpp>
 #include <deque>
+#include <set>
 #include <vector>
 
 
@@ -58,10 +59,12 @@ class all_cycles_dumb_wrapper : public boost::dfs_visitor<> {
 
     typedef boost::unordered_map<Vertex, Edge> PredecessorMap;
     PredecessorMap predecessors_;
+    std::set<std::deque<Edge> >& seen_cycles;
 
 public:
-    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const&)
-        : visitor_(v)
+    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const&,
+                                     std::set<std::deque<Edge> >& seen)
+        : visitor_(v), seen_cycles(seen)
     { }
 
     void tree_edge(Edge e, Graph const& g) {
@@ -71,11 +74,12 @@ public:
         predecessors_[target(e, g)] =  e;
     }
 
-    void back_edge(Edge e, Graph const& g) const {
+    void back_edge(Edge e, Graph const& g) {
         D2_DEBUG_ALL_CYCLES_DUMB(std::cout <<
             "back edge: " << e << '\n' <<
             "making sure " << source(e, g) << " has a predecessor\n");
-        BOOST_ASSERT_MSG(predecessors_.find(source(e,g))!=predecessors_.end(),
+        BOOST_ASSERT_MSG(
+            predecessors_.find(source(e,g)) != boost::end(predecessors_),
             "the predecessor edge of the source of the current edge is not "
             "defined, something's wrong");
 
@@ -89,13 +93,18 @@ public:
         typedef typename PredecessorMap::const_iterator PredecessorIterator;
         while (true) {
             PredecessorIterator it = predecessors_.find(source(e, g));
-            if (it == predecessors_.end())
+            if (it == boost::end(predecessors_))
                 break;
 
             cycle.push_front(e = it->second);
         }
 
-        visitor_.cycle(cycle, g);
+        // Note: Since the all_cycles_dumb algorithm starts a depth first
+        //       traversal at _each_ vertex, we may encounter the same cycle
+        //       many times. To avoid calling the visitor redundantly, we
+        //       make sure we have not seen the cycle before.
+        if (seen_cycles.insert(cycle).second)
+            visitor_.cycle(cycle, g);
     }
 };
 
@@ -109,9 +118,11 @@ void all_cycles_dumb(Graph const& g, Visitor const& vis) {
     typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
     typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
 
+    std::set<std::deque<Edge> > seen_cycles;
+
+    all_cycles_dumb_wrapper<Visitor, Graph> wrapper(vis, g, seen_cycles);
     BOOST_FOREACH(Vertex u, vertices(g)) {
-        boost::depth_first_search(g, boost::root_vertex(u)
-                .visitor(all_cycles_dumb_wrapper<Visitor, Graph>(vis, g)));
+        boost::depth_first_search(g, boost::root_vertex(u).visitor(wrapper));
     }
 }
 
