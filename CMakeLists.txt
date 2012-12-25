@@ -10,9 +10,9 @@ endif()
 include_directories(include)
 
 # Add my local boost 1.53
-set(BOOST_ROOT ext/boost)
+set(BOOST_ROOT ../boost-trunk)
 set(Boost_NO_SYSTEM_PATHS TRUE)
-find_package(Boost 1.53.0 COMPONENTS graph thread system REQUIRED)
+find_package(Boost 1.53.0 COMPONENTS graph thread system program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
