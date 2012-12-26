@@ -21,7 +21,7 @@ namespace d2 {
 struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
     SyncObject lock;
     Thread thread;
-    detail::lock_debug_info info;
+    detail::LockDebugInfo info;
 
     /**
      * This constructor must only be used when serializing events.

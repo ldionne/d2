@@ -125,7 +125,7 @@ template <typename Ostream>
 class CyclePrinter {
     Ostream& os_;
 
-    void format_call_stack(d2::detail::lock_debug_info const& info,
+    void format_call_stack(d2::detail::LockDebugInfo const& info,
                            std::string const& indent = "") const {
         BOOST_FOREACH(std::string const& frame, info.call_stack) {
             os_ << indent << frame << '\n';

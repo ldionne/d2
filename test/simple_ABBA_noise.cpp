@@ -12,7 +12,7 @@
 
 
 static std::size_t const NOISE_THREADS = 10;
-static std::size_t const MUTEXES_PER_NOISE_THREAD = 10;
+static std::size_t const MUTEXES_PER_NOISE_THREAD = 100;
 
 int main() {
     auto noise = [&] {

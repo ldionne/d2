@@ -19,7 +19,7 @@ using namespace d2::detail;
 using namespace boost::assign;
 
 TEST(event_io, parse_lock_debug_info_without_call_stack) {
-    lock_debug_info expected;
+    LockDebugInfo expected;
     expected.file = "/Foo/Bar/baz";
     expected.line = 20;
     std::string input = "[[/Foo/Bar/baz]][[20]]";
@@ -27,7 +27,7 @@ TEST(event_io, parse_lock_debug_info_without_call_stack) {
                                 last(boost::end(input));
     lock_debug_info_parser<std::string::const_iterator> parser;
 
-    lock_debug_info info;
+    LockDebugInfo info;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
     ASSERT_TRUE(first == last);
 
@@ -37,7 +37,7 @@ TEST(event_io, parse_lock_debug_info_without_call_stack) {
 TEST(event_io, generate_lock_debug_info_without_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
-    lock_debug_info info;
+    LockDebugInfo info;
     info.file = "/Foo/Bar/baz";
     info.line = 20;
 
@@ -51,7 +51,7 @@ TEST(event_io, generate_lock_debug_info_without_call_stack) {
 TEST(event_io, generate_lock_debug_info_with_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
-    lock_debug_info info;
+    LockDebugInfo info;
     info.file = "/Foo/Bar/baz";
     info.line = 20;
     info.call_stack += "frame1", "frame2";
@@ -64,7 +64,7 @@ TEST(event_io, generate_lock_debug_info_with_call_stack) {
 }
 
 TEST(event_io, parse_lock_debug_info_with_call_stack) {
-    lock_debug_info expected;
+    LockDebugInfo expected;
     expected.file = "/Foo/Bar/baz";
     expected.line = 20;
     expected.call_stack += "frame1", "frame2";
@@ -73,7 +73,7 @@ TEST(event_io, parse_lock_debug_info_with_call_stack) {
                                 last(boost::end(input));
     lock_debug_info_parser<std::string::const_iterator> parser;
 
-    lock_debug_info info;
+    LockDebugInfo info;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
     ASSERT_TRUE(first == last);
 

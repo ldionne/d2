@@ -19,7 +19,7 @@
 namespace d2 {
 namespace detail {
 
-struct lock_debug_info : boost::equality_comparable<lock_debug_info> {
+struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     std::string file;
     int line;
     typedef std::vector<std::string> CallStack;
@@ -34,7 +34,7 @@ struct lock_debug_info : boost::equality_comparable<lock_debug_info> {
                         lambda::bind(&btrace::stack_frame::str, lambda::_1)));
     }
 
-    friend bool operator==(lock_debug_info const& a, lock_debug_info const&b){
+    friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b){
         return a.file == b.file && a.line == b.line &&
                a.call_stack == b.call_stack;
     }

@@ -23,15 +23,15 @@ namespace qi = boost::spirit::qi;
 namespace karma = boost::spirit::karma;
 
 template <typename Iterator>
-struct lock_debug_info_parser : qi::grammar<Iterator, lock_debug_info()> {
+struct lock_debug_info_parser : qi::grammar<Iterator, LockDebugInfo()> {
 
     lock_debug_info_parser() : lock_debug_info_parser::base_type(start) {
         using namespace qi;
 
         start
-            =   filename[&_val->*&lock_debug_info::file = _1]
-            >>  line[&_val->*&lock_debug_info::line = _1]
-            >>  -(call_stack[&_val->*&lock_debug_info::call_stack = _1])
+            =   filename[&_val->*&LockDebugInfo::file = _1]
+            >>  line[&_val->*&LockDebugInfo::line = _1]
+            >>  -(call_stack[&_val->*&LockDebugInfo::call_stack = _1])
             ;
 
         filename %= "[[" >> *(char_ - "]]") >> "]]";
@@ -42,26 +42,26 @@ struct lock_debug_info_parser : qi::grammar<Iterator, lock_debug_info()> {
     }
 
 private:
-    qi::rule<Iterator, lock_debug_info()> start;
+    qi::rule<Iterator, LockDebugInfo()> start;
     qi::rule<Iterator, std::string()> filename;
     qi::rule<Iterator, unsigned int()> line;
-    qi::rule<Iterator, lock_debug_info::CallStack()> call_stack;
+    qi::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
 };
 
 template <typename Iterator>
-struct lock_debug_info_generator : karma::grammar<Iterator,lock_debug_info()>{
+struct lock_debug_info_generator : karma::grammar<Iterator,LockDebugInfo()>{
 
     lock_debug_info_generator() : lock_debug_info_generator::base_type(start){
         using namespace karma;
         namespace phx = boost::phoenix;
 
         start
-            =   filename[_1 = &_val->*&lock_debug_info::file]
-            <<  line[_1 = &_val->*&lock_debug_info::line]
+            =   filename[_1 = &_val->*&LockDebugInfo::file]
+            <<  line[_1 = &_val->*&LockDebugInfo::line]
             <<  (-call_stack)[
-                phx::if_(!phx::bind(&lock_debug_info::CallStack::empty,
-                                    &_val->*&lock_debug_info::call_stack))[
-                    phx::arg_names::arg1 =&_val->*&lock_debug_info::call_stack
+                phx::if_(!phx::bind(&LockDebugInfo::CallStack::empty,
+                                    &_val->*&LockDebugInfo::call_stack))[
+                    phx::arg_names::arg1 =&_val->*&LockDebugInfo::call_stack
                 ]
                 ]
             ;
@@ -74,10 +74,10 @@ struct lock_debug_info_generator : karma::grammar<Iterator,lock_debug_info()>{
     }
 
 private:
-    karma::rule<Iterator, lock_debug_info()> start;
+    karma::rule<Iterator, LockDebugInfo()> start;
     karma::rule<Iterator, std::string()> filename;
     karma::rule<Iterator, unsigned int()> line;
-    karma::rule<Iterator, lock_debug_info::CallStack()> call_stack;
+    karma::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
 };
 
 template <typename Iterator>

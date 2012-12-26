@@ -54,10 +54,10 @@ class graph_builder {
     struct CurrentlyHeldLock : boost::equality_comparable<CurrentlyHeldLock> {
         SyncObject lock;
         Segment segment;
-        lock_debug_info info;
+        LockDebugInfo info;
 
         CurrentlyHeldLock(SyncObject const& l, Segment const& s,
-                          lock_debug_info const& i)
+                          LockDebugInfo const& i)
             : lock(l), segment(s), info(i)
         { }
 
