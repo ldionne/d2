@@ -1,2 +1,2 @@
 
-add_library(d2 SHARED logging.cpp)
+add_library(d2_lib SHARED logging.cpp)

@@ -22,7 +22,7 @@ endmacro()
 
 macro(d2_add_test name) # sources...
     add_executable(${name}_exec ${ARGN})
-    target_link_libraries(${name}_exec d2 ${GTEST_BOTH_LIBRARIES}
+    target_link_libraries(${name}_exec d2_lib ${GTEST_BOTH_LIBRARIES}
                                           ${Boost_LIBRARIES})
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
     set_tests_properties(${name} PROPERTIES TIMEOUT 60)
