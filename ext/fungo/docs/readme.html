@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+	<head>
+		<title>fungo readme</title>
+		<style type="text/css">
+		html { font-size: 0.625em; background-color: #333; }
+		body
+		{
+			font-family: 'Lucida Grande', Verdana, sans-serif; font-size: 130%; line-height: 140%;
+			color: #333; background-color: #FFF;
+			margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;
+			width: 660px; padding: 60px;
+		}
+		h1, h2, h3, h4, h5, h6 { font-family: Georgia, serif; font-weight: normal; }
+		h1 { margin-bottom: 30px; font-size: 250%; }
+		h2 { margin-top: 40px; } 
+		code { font-size: 120%; }
+		a { color: black; }
+		a:hover { text-decoration: underline; }
+		</style>
+	</head>
+
+	<body>
+		<h1>fungo readme</h1>
+
+		<h2>Legal notices</h2>
+		<p>
+		fungo is copyright&copy; 2010 Edd Dawson.<br />
+		Distributed under the Boost Software License, Version 1.0.<br />
+		See accompanying file <strong>LICENSE_1_0.txt</strong> or copy at <a href="http://www.boost.org/LICENSE_1_0.txt">http://www.boost.org/LICENSE_1_0.txt</a>
+		</p>
+
+		<h2>Instructions</h2>
+		<p>Thanks for downloading fungo, a C++ library that enables you to store and later re-throw exceptions caught inside a <code>catch(...)</code> block. This is particularly useful when your C++ implementation does not support <code>std::exception_ptr</code> and you have a need to propagate exceptions out of asynchronous tasks, or carry them across a C/C++ boundary interface.</p>
+		<p>Please visit <a href="http://bitbucket.org/edd/fungo/wiki/Home">http://bitbucket.org/edd/fungo/wiki/Home</a> for more information on fungo, including compilation and usage instructions.</p>
+
+		<p>
+		&mdash; Edd
+		</p>
+
+		<h2>Version History</h2>
+
+        <p>Version 0.2.4 released on 29 August 2012</p>
+		<ul>
+            <li>Fix for Visual C++ builds.</li>
+        </ul>
+
+        <p>Version 0.2.3 released on 25 February 2012</p>
+		<ul>
+            <li>Workaround added to support Apple's LLVM-based compilers.</li>
+            <li>Changed build system to doozer.</li>
+        </ul>
+
+        <p>Version 0.2.2 released on 30 July 2011</p>
+		<ul>
+            <li>Workaround for what <i>appears</i> to be a bug in Visual C++'s link-time code generation.</li>
+            <li>Another tweak to silence some Visual C++ compiler warnings.</li>
+        </ul>
+
+        <p>Version 0.2.1 released on 21 June 2011</p>
+		<ul>
+            <li>Small tweak to silence some Visual C++ compiler warnings.</li>
+        </ul>
+
+        <p>Version 0.2.0 released on 8 April 2011</p>
+		<ul>
+            <li>Removed the <code>catcher::learn_by_example()</code> methods. Their extended behaviour has been folded in to <code>catcher::learn()</code>.</li>
+        </ul>
+
+        <p>Version 0.1.2 released on 3 December 2010</p>
+		<ul>
+            <li>Fixed an assertion that didn't compile on some 64 bit systems.</li>
+        </ul>
+
+        <p>Version 0.1.1 released on 17 October 2010</p>
+		<ul>
+            <li>Added <code>raise()</code> function.</li>
+        </ul>
+
+        <p>Version 0.1.0 released on 16 October 2010</p>
+		<ul>
+            <li>Initial release.</li>
+        </ul>
+
+	</body>
+</html>

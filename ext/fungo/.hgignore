@@ -1,0 +1,17 @@
+syntax: glob
+*.ilk
+*.pdb
+*.o
+*.obj
+*.lib
+*.a
+.slam_made_this
+*.exe
+slam.db
+.DS_Store
+*.pyc
+*.swp
+obj/*/debug/*
+obj/*/release/*
+tests.log
+*.map
