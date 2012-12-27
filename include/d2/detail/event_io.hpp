@@ -28,23 +28,13 @@ struct lock_debug_info_parser : qi::grammar<Iterator, LockDebugInfo()> {
     lock_debug_info_parser() : lock_debug_info_parser::base_type(start) {
         using namespace qi;
 
-        start
-            =   filename[&_val->*&LockDebugInfo::file = _1]
-            >>  line[&_val->*&LockDebugInfo::line = _1]
-            >>  -(call_stack[&_val->*&LockDebugInfo::call_stack = _1])
-            ;
-
-        filename %= "[[" >> *(char_ - "]]") >> "]]";
-
-        line %= "[[" >> uint_ >> "]]";
+        start = -(call_stack[&_val->*&LockDebugInfo::call_stack = _1]);
 
         call_stack %= "[[" >> (*(~char_('\n') - "]]") % '\n') >> "]]";
     }
 
 private:
     qi::rule<Iterator, LockDebugInfo()> start;
-    qi::rule<Iterator, std::string()> filename;
-    qi::rule<Iterator, unsigned int()> line;
     qi::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
 };
 
@@ -54,29 +44,23 @@ struct lock_debug_info_generator : karma::grammar<Iterator,LockDebugInfo()>{
     lock_debug_info_generator() : lock_debug_info_generator::base_type(start){
         using namespace karma;
         namespace phx = boost::phoenix;
+        using phx::arg_names::arg1;
 
         start
-            =   filename[_1 = &_val->*&LockDebugInfo::file]
-            <<  line[_1 = &_val->*&LockDebugInfo::line]
-            <<  (-call_stack)[
+            =   (-call_stack)
+            [
                 phx::if_(!phx::bind(&LockDebugInfo::CallStack::empty,
                                     &_val->*&LockDebugInfo::call_stack))[
-                    phx::arg_names::arg1 =&_val->*&LockDebugInfo::call_stack
+                    arg1 = &_val->*&LockDebugInfo::call_stack
                 ]
-                ]
+            ]
             ;
-
-        filename %= "[[" << string << "]]";
-
-        line %= "[[" << uint_ << "]]";
 
         call_stack %= "[[" << (string % '\n') << "]]";
     }
 
 private:
     karma::rule<Iterator, LockDebugInfo()> start;
-    karma::rule<Iterator, std::string()> filename;
-    karma::rule<Iterator, unsigned int()> line;
     karma::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
 };
 
@@ -129,9 +113,10 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             ]
             ;
 
-        parse_sync_object %= stream_parser<char, SyncObject>();
+        // Note: stream_parser is currently broken in spirit, so this is a temporary solution.
+        parse_sync_object = ulong_[_val = phx::construct<SyncObject>(_1)];//stream_parser<char, SyncObject>();
 
-        parse_thread %= stream_parser<char, Thread>();
+        parse_thread = ulong_[_val = phx::construct<Thread>(_1)];//stream_parser<char, Thread>();
     }
 
 private:

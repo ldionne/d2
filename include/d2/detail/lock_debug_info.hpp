@@ -33,8 +33,6 @@ public:
 };
 
 struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
-    std::string file;
-    int line;
     typedef std::vector<std::string> CallStack;
     CallStack call_stack;
 
@@ -51,8 +49,7 @@ struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     }
 
     friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b){
-        return a.file == b.file && a.line == b.line &&
-               a.call_stack == b.call_stack;
+        return a.call_stack == b.call_stack;
     }
 };
 

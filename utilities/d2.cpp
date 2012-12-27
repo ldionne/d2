@@ -52,11 +52,9 @@ public:
     template <typename Ostream>
     void operator()(Ostream& os, EdgeDescriptor edge) const {
         os << "[label=\""
-           << "from " << graph_[edge].l1_info.file << ':'
-                      << graph_[edge].l1_info.line << ' '
+           << "from " << graph_[edge].l1_info.call_stack[0]
 
-           << "to " << graph_[edge].l2_info.file << ':'
-                    << graph_[edge].l2_info.line
+           << "to " << graph_[edge].l2_info.call_stack[0]
            << "\"]";
     }
 

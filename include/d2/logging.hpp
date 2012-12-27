@@ -33,20 +33,12 @@ namespace detail {
  * object `s` by thread `t`.
  */
 template <typename SyncObject_, typename Thread_>
-void notify_acquire(SyncObject_ const& s, Thread_ const& t,
-                                        std::string const& file, int line) {
+void notify_acquire(SyncObject_ const& s, Thread_ const& t) {
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject_>));
     BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread_>));
     AcquireEvent e((SyncObject(s)), Thread(t));
-    e.info.file = file;
-    e.info.line = line;
     e.info.init_call_stack(1); // ignore current frame
     detail::push_event(e);
-}
-
-template <typename SyncObject, typename Thread>
-void notify_acquire(SyncObject const& s, Thread const& t) {
-    notify_acquire(s, t, "no file information", 0);
 }
 
 /**
