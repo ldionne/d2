@@ -99,31 +99,48 @@ public:
             cycle.push_front(e = it->second);
         }
 
-        // Note: Since the all_cycles_dumb algorithm starts a depth first
-        //       traversal at _each_ vertex, we may encounter the same cycle
-        //       many times. To avoid calling the visitor redundantly, we
-        //       make sure we have not seen the cycle before.
+        // Since it is possible to have several connected components in the
+        // graph, we must make sure we do not call the visitor with redundant
+        // cycles that were already found in a previous search.
         if (seen_cycles.insert(cycle).second)
             visitor_.cycle(cycle, g);
     }
 };
 
 /**
- * Incredibly bad algorithm to compute all the cycles in a graph. It starts
- * a depth-first search at every vertex and calls the visitor when it finds
- * a cycle.
+ * Bad algorithm to compute all the cycles in a graph. It first does a depth
+ * first search and detects the cycles in the graph. Then, it starts over a
+ * depth first search at each vertex implicated in a cycle found during the
+ * first pass.
  */
 template <typename Graph, typename Visitor>
 void all_cycles_dumb(Graph const& g, Visitor const& vis) {
     typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
+    typedef typename boost::graph_traits<Graph>::vertex_iterator VertexIter;
     typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
 
     std::set<std::deque<Edge> > seen_cycles;
-
     all_cycles_dumb_wrapper<Visitor, Graph> wrapper(vis, g, seen_cycles);
-    BOOST_FOREACH(Vertex u, vertices(g)) {
-        boost::depth_first_search(g, boost::root_vertex(u).visitor(wrapper));
+
+    VertexIter first, last;
+    boost::tie(first, last) = vertices(g);
+    boost::depth_first_search(g, boost::root_vertex(*first).visitor(wrapper));
+
+    // Find all vertices implicated in cycles.
+    std::set<Vertex> hot_vertices;
+    BOOST_FOREACH(std::deque<Edge> const& cycle, seen_cycles) {
+        hot_vertices.insert(source(cycle[0], g));
+        BOOST_FOREACH(Edge const& edge, cycle)
+            hot_vertices.insert(target(edge, g));
     }
+
+    // Start over a depth-first search at every vertex implicated in a cycle.
+    // This allows us to find all the different cycles in the directed graph.
+    // Let's say the first dfs found a->b->a;
+    // the subsequent searches will find b->a->b
+    hot_vertices.erase(*first); // We already visited that.
+    BOOST_FOREACH(Vertex v, hot_vertices)
+        boost::depth_first_search(g, boost::root_vertex(v).visitor(wrapper));
 }
 
 /**
