@@ -40,13 +40,13 @@ void notify_acquire(SyncObject_ const& s, Thread_ const& t,
     AcquireEvent e((SyncObject(s)), Thread(t));
     e.info.file = file;
     e.info.line = line;
-    e.info.init_call_stack();
+    e.info.init_call_stack(1); // ignore current frame
     detail::push_event(e);
 }
 
 template <typename SyncObject, typename Thread>
 void notify_acquire(SyncObject const& s, Thread const& t) {
-    notify_acquire(s, t, "no file information", -1);
+    notify_acquire(s, t, "no file information", 0);
 }
 
 /**

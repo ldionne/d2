@@ -5,13 +5,11 @@
 #ifndef D2_DETAIL_LOCK_DEBUG_INFO_HPP
 #define D2_DETAIL_LOCK_DEBUG_INFO_HPP
 
-#include <d2/btrace/call_stack.hpp>
-
-#include <boost/lambda/bind.hpp>
 #include <boost/operators.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/algorithm_ext/push_back.hpp>
-#include <cstddef>
+#include <dbg/frames.hpp>
+#include <dbg/symbols.hpp>
+#include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -19,19 +17,37 @@
 namespace d2 {
 namespace detail {
 
+template <typename OutputIterator>
+class FormattingSymSink : public dbg::symsink {
+    OutputIterator out_;
+
+public:
+    explicit FormattingSymSink(OutputIterator const& out) : out_(out) { }
+
+    virtual void process_function(void const* ip, char const* name,
+                                                  char const* module) {
+        std::stringstream format;
+        format << ip << "    " << name << " in " << module;
+        *out_++ = format.str();
+    }
+};
+
 struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     std::string file;
     int line;
     typedef std::vector<std::string> CallStack;
-
     CallStack call_stack;
 
-    inline void init_call_stack(std::size_t max_frames = 100) {
-        using namespace boost;
-        btrace::dynamic_call_stack cs(max_frames);
-        call_stack.reserve(cs.size());
-        range::push_back(call_stack, cs | adaptors::transformed(
-                        lambda::bind(&btrace::stack_frame::str, lambda::_1)));
+    inline void init_call_stack(unsigned int ignore = 0) {
+        dbg::call_stack<100> stack;
+        dbg::symdb symbols;
+        stack.collect(ignore + 1); // ignore our frame
+
+        typedef FormattingSymSink<std::back_insert_iterator<CallStack> >
+                                                                    SymSink;
+        SymSink sink(std::back_inserter(call_stack));
+        for (unsigned int frame = 0; frame < stack.size(); ++frame)
+            symbols.lookup_function(stack.pc(frame), sink);
     }
 
     friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b){
