@@ -52,9 +52,9 @@ public:
     template <typename Ostream>
     void operator()(Ostream& os, EdgeDescriptor edge) const {
         os << "[label=\""
-           << "from " << graph_[edge].l1_info.call_stack[0]
+           << "from " << graph_[edge].l1_info.call_stack[0].function
 
-           << "to " << graph_[edge].l2_info.call_stack[0]
+           << " to " << graph_[edge].l2_info.call_stack[0].function
            << "\"]";
     }
 
@@ -125,7 +125,7 @@ class CyclePrinter {
 
     void format_call_stack(d2::detail::LockDebugInfo const& info,
                            std::string const& indent = "") const {
-        BOOST_FOREACH(std::string const& frame, info.call_stack) {
+        BOOST_FOREACH(d2::detail::StackFrame const& frame, info.call_stack) {
             os_ << indent << frame << '\n';
         }
     }

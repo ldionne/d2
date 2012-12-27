@@ -30,12 +30,20 @@ struct lock_debug_info_parser : qi::grammar<Iterator, LockDebugInfo()> {
 
         start = -(call_stack[&_val->*&LockDebugInfo::call_stack = _1]);
 
-        call_stack %= "[[" >> (*(~char_('\n') - "]]") % '\n') >> "]]";
+        call_stack %= "[[" >> *stack_frame >> "]]";
+
+        stack_frame
+            %=  as<void*>()[voidp] >> omit[blank]
+            >>  +(char_ - "%%") >> "%%"
+            >>  +~char_('\n') >> '\n'
+            ;
     }
 
 private:
     qi::rule<Iterator, LockDebugInfo()> start;
     qi::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
+    qi::rule<Iterator, StackFrame()> stack_frame;
+    qi::stream_parser<char, void*> voidp;
 };
 
 template <typename Iterator>
@@ -56,12 +64,15 @@ struct lock_debug_info_generator : karma::grammar<Iterator,LockDebugInfo()>{
             ]
             ;
 
-        call_stack %= "[[" << (string % '\n') << "]]";
+        call_stack %= "[[" << *stack_frame << "]]";
+
+        stack_frame %= hex << ' ' << +char_ << "%%" << +char_ << '\n';
     }
 
 private:
     karma::rule<Iterator, LockDebugInfo()> start;
     karma::rule<Iterator, LockDebugInfo::CallStack()> call_stack;
+    karma::rule<Iterator, StackFrame()> stack_frame;
 };
 
 template <typename Iterator>

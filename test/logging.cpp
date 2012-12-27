@@ -23,19 +23,21 @@ TEST(event_io, generate_lock_debug_info_with_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
     LockDebugInfo info;
-    info.call_stack += "frame1", "frame2";
+    info.call_stack += StackFrame(0x0, "function1", "file1"),
+                       StackFrame(0x0, "function2", "file2");
 
     std::string result;
     Iterator out(result);
     lock_debug_info_generator<Iterator> generator;
     ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
-    ASSERT_EQ("[[frame1\nframe2]]", result);
+    ASSERT_EQ("[[0 function1%%file1\n0 function2%%file2\n]]", result);
 }
 
 TEST(event_io, parse_lock_debug_info_with_call_stack) {
     LockDebugInfo expected;
-    expected.call_stack += "frame1", "frame2";
-    std::string input = "[[frame1\nframe2]]";
+    expected.call_stack += StackFrame(0x0, "function1", "file1"),
+                           StackFrame(0x0, "function2", "file2");
+    std::string input = "[[0 function1%%file1\n0 function2%%file2\n]]";
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
     lock_debug_info_parser<std::string::const_iterator> parser;
@@ -44,6 +46,9 @@ TEST(event_io, parse_lock_debug_info_with_call_stack) {
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
     ASSERT_TRUE(first == last);
 
+    if (expected != info)
+        std::cout << "Expected \"" << expected
+                  << "\" but got \"" << info << "\"\n";
     ASSERT_TRUE(expected == info);
 }
 
