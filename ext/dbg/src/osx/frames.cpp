@@ -4,7 +4,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "dbg/frames.hpp"
-#include "memcpy_cast.hpp"
+#include "../memcpy_cast.hpp"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -13,7 +13,7 @@
 #   error "unsupported architecture :("
 #endif
 
-namespace dbg 
+namespace dbg
 {
     namespace
     {

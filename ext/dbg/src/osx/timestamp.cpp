@@ -3,14 +3,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "timestamp.hpp"
+#include "../timestamp.hpp"
 
-#include <ctime>
 #include <cstdio>
+#include <cstring>
+#include <ctime>
 
 #include <sys/time.h>
 
-namespace dbg 
+namespace dbg
 {
     void generate_timestamp(stamp_buff &buff)
     {

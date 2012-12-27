@@ -3,17 +3,17 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "throw_state.hpp"
-#include "spin_mutex.hpp"
+#include "../throw_state.hpp"
+#include "../spin_mutex.hpp"
 
 #include <new>
 #include <cstring>
 
 #include <pthread.h>
 
-namespace dbg 
+namespace dbg
 {
-    namespace  
+    namespace
     {
         spin_mutex tls_creation_mutex = SPIN_MUTEX_INITIALIZER;
         pthread_key_t key;
@@ -36,7 +36,7 @@ namespace dbg
 
             return true;
         }
-    } 
+    }
 
     throw_state *throw_state::get()
     {
