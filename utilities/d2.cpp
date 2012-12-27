@@ -175,7 +175,7 @@ int main(int argc, char const* argv[]) {
     )(
         "version,v", "print version and exit"
     )(
-        "output-file,o", "file to write the output to"
+        "output-file,o", po::value<std::string>(), "file to write the output to"
     )(
         "analyze", "perform the analysis for deadlocks"
     )(
@@ -186,7 +186,9 @@ int main(int argc, char const* argv[]) {
     ;
 
     po::options_description hidden;
-    hidden.add_options()("input-file", "input file to process");
+    hidden.add_options()
+        ("input-file", po::value<std::string>(), "input file to process")
+    ;
 
     po::options_description analysis("Analysis options");
 
