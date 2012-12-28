@@ -199,6 +199,13 @@ public:
      */
     template <typename EdgePath>
     void cycle(EdgePath const& edge_path, LockGraph const& graph) const {
+        D2_DEBUG_ALL_CYCLES_DUMB(
+            std::cout << "Found cycle: ";
+            std::copy(boost::begin(edge_path), boost::end(edge_path),
+                std::ostream_iterator<typename EdgePath::value_type>(
+                    std::cout, " "));
+            std::cout << '\n';
+        );
         // For any given pair of edges (e1, e2)
         EdgeLabelMap labels = get(boost::edge_bundle, graph);
         BOOST_FOREACH(LockGraphEdgeDescriptor e1, edge_path) {
