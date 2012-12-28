@@ -47,3 +47,5 @@ d2_add_test_cpp11(simple_ABBA_segmented simple_ABBA_segmented.cpp)
 
 d2_add_test_cpp11(simple_ABC simple_ABC.cpp)
 d2_add_test_cpp11(simple_ABC_segmented simple_ABC_segmented.cpp)
+
+d2_add_test_cpp11(miss_unless_transitive_closure miss_unless_transitive_closure.cpp)
