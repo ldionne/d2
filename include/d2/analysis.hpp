@@ -191,11 +191,11 @@ public:
     { }
 
     /**
-     * Function called by `tiernan_all_cycles` whenever a cycle is found.
-     * It calls the wrapped function with a sequence containing the edges
-     * in the cycle and a constant reference to the lock graph, but only if
-     * the cycle respects certain conditions, i.e. if the cycle represents a
-     * deadlock in the lock graph.
+     * Function called whenever a cycle is found. It calls the wrapped
+     * function with a sequence containing the edges in the cycle and a
+     * constant reference to the lock graph, but only if the cycle respects
+     * certain conditions, i.e. if the cycle represents a deadlock in the
+     * lock graph.
      */
     template <typename EdgePath>
     void cycle(EdgePath const& edge_path, LockGraph const& graph) const {
