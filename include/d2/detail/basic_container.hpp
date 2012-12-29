@@ -3,16 +3,13 @@
  * begin and end functions for containers.
  */
 
-#ifndef D2_BTRACE_DETAIL_BASIC_CONTAINER_HPP
-#define D2_BTRACE_DETAIL_BASIC_CONTAINER_HPP
+#ifndef D2_DETAIL_BASIC_CONTAINER_HPP
+#define D2_DETAIL_BASIC_CONTAINER_HPP
 
 namespace d2 {
-namespace btrace {
 namespace detail {
 
 class basic_container_core_access {
-    basic_container_core_access();
-
 public:
     template <typename Facade>
     static typename Facade::iterator iterator_begin(Facade& f) {
@@ -100,7 +97,6 @@ public:
 };
 
 } // end namespace detail
-} // end namespace btrace
 } // end namespace d2
 
-#endif // !D2_BTRACE_DETAIL_BASIC_CONTAINER_HPP
+#endif // !D2_DETAIL_BASIC_CONTAINER_HPP
