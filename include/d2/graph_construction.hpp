@@ -36,7 +36,7 @@ namespace d2 {
 namespace detail {
 
 template <typename Iterator, typename LockGraph, typename SegmentationGraph>
-class graph_builder {
+class GraphBuilder {
     // Label present on each edge of the lock graph. It contains
     // arbitrary information.
     typedef typename boost::edge_property_type<LockGraph>::type
@@ -286,7 +286,7 @@ void build_graphs(Iterator first, Iterator last,
                             Event
                         >::value));
 
-    detail::graph_builder<Iterator, LockGraph, SegmentationGraph> builder;
+    detail::GraphBuilder<Iterator, LockGraph, SegmentationGraph> builder;
     builder(first, last, lg, sg);
 }
 

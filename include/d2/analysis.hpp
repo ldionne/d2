@@ -52,7 +52,7 @@ namespace detail {
  * the wrapped visitor to keep the same interface as for `tiernan_all_cycles`.
  */
 template <typename Adapted, typename Graph>
-class all_cycles_dumb_wrapper : public boost::dfs_visitor<> {
+class AllCyclesWrapper : public boost::dfs_visitor<> {
     Adapted visitor_;
     typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
     typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
@@ -62,8 +62,8 @@ class all_cycles_dumb_wrapper : public boost::dfs_visitor<> {
     std::set<std::deque<Edge> >& seen_cycles;
 
 public:
-    explicit all_cycles_dumb_wrapper(Adapted const& v, Graph const&,
-                                     std::set<std::deque<Edge> >& seen)
+    explicit AllCyclesWrapper(Adapted const& v, Graph const&,
+                              std::set<std::deque<Edge> >& seen)
         : visitor_(v), seen_cycles(seen)
     { }
 
@@ -120,7 +120,7 @@ void all_cycles_dumb(Graph const& g, Visitor const& vis) {
     typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
 
     std::set<std::deque<Edge> > seen_cycles;
-    all_cycles_dumb_wrapper<Visitor, Graph> wrapper(vis, g, seen_cycles);
+    AllCyclesWrapper<Visitor, Graph> wrapper(vis, g, seen_cycles);
 
     VertexIter first, last;
     boost::tie(first, last) = vertices(g);
@@ -164,7 +164,7 @@ bool unordered_intersects(Unordered1 const& a, Unordered2 const& b) {
  *       the happens-before relation.
  */
 template <typename LockGraph, typename SegmentationGraph, typename Function>
-class cycle_visitor {
+class CycleVisitor {
     typedef typename boost::graph_traits<LockGraph>::edge_descriptor
                                                     LockGraphEdgeDescriptor;
     typedef typename boost::graph_traits<LockGraph>::vertex_descriptor
@@ -186,7 +186,7 @@ class cycle_visitor {
     }
 
 public:
-    cycle_visitor(SegmentationGraph const& sg, Function& f)
+    CycleVisitor(SegmentationGraph const& sg, Function& f)
         : sg_(sg), f_(f)
     { }
 
@@ -236,13 +236,13 @@ public:
  * Analyze the lock graph and the segmentation graph to determine whether the
  * program execution represented by them contains a deadlock. `f` is called
  * whenever a potential deadlock is detected.
- * @see `detail::cycle_visitor` for more details.
+ * @see `detail::CycleVisitor` for more details.
  */
 template <typename LockGraph, typename SegmentationGraph, typename Function>
 void analyze(LockGraph const& lg, SegmentationGraph const& sg, Function f) {
     BOOST_CONCEPT_ASSERT((LockGraphConcept<LockGraph>));
 
-    detail::cycle_visitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
+    detail::CycleVisitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
     detail::all_cycles_dumb(lg, vis);
 }
 
