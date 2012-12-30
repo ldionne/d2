@@ -16,7 +16,7 @@ macro(d2_copy_all_boost_libs_after target directory)
     endforeach()
 endmacro()
 
-if (${GTEST_FOUND} AND ${Boost_FOUND})
+if(${GTEST_FOUND} AND ${Boost_FOUND})
     macro(d2_add_test name) # sources...
         add_executable(${name}_exec ${ARGN})
         target_link_libraries(${name}_exec d2_lib ${GTEST_BOTH_LIBRARIES}
@@ -38,7 +38,7 @@ d2_add_test(logging logging.cpp)
 
 macro(d2_add_test_cpp11 name) # sources...
     d2_add_test(${name} ${ARGN})
-    if (TARGET ${name}_exec)
+    if(TARGET ${name}_exec AND NOT MSVC)
         set_target_properties(${name}_exec PROPERTIES COMPILE_FLAGS -std=c++11)
     endif()
 endmacro()
