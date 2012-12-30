@@ -29,7 +29,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX})
+if((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_COMPILER_IS_GNUCXX}))
     add_definitions(-Wextra -pedantic -std=c++98)
 elseif(MSVC)
     add_definitions(-Za) # Disable Microsoft extensions
