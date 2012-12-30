@@ -16,8 +16,8 @@ macro(d2_copy_all_boost_libs_after target directory)
     endforeach()
 endmacro()
 
-macro(d2_add_test name) # sources...
-    if (${GTEST_FOUND} AND ${Boost_FOUND})
+if (${GTEST_FOUND} AND ${Boost_FOUND})
+    macro(d2_add_test name) # sources...
         add_executable(${name}_exec ${ARGN})
         target_link_libraries(${name}_exec d2_lib ${GTEST_BOTH_LIBRARIES}
                                                   ${Boost_LIBRARIES})
@@ -25,10 +25,12 @@ macro(d2_add_test name) # sources...
         set_tests_properties(${name} PROPERTIES TIMEOUT 60)
         add_dependencies(unit ${name}_exec)
         d2_copy_all_boost_libs_after(${name}_exec ${CMAKE_CURRENT_BINARY_DIR})
-    else()
-        message("Missing Boost libraries and/or Google test library. Some unit tests won't be available.")
-    endif()
-endmacro()
+    endmacro()
+else()
+    macro(d2_add_test name) # sources...
+        message("Missing Boost libraries and/or Google test library. Unit test ${name} won't be available.")
+    endmacro()
+endif()
 
 d2_add_test(bounded_io_sequence bounded_io_sequence.cpp)
 d2_add_test(logging logging.cpp)
