@@ -4,20 +4,20 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "ms_symdb.hpp"
-#include "spin_mutex.hpp"
-#include "memcpy_cast.hpp"
+#include "../spin_mutex.hpp"
+#include "../memcpy_cast.hpp"
 #include "dbghelp.hpp"
 #include "dbg/symbols.hpp"
 
 #include <new>
 
-namespace dbg 
+namespace dbg
 {
     namespace
     {
         // MSDN says that SymInitialize() should not be called again before a call to SymCleanup().
         // So we keep a global reference count of the number of users of the symbol database.
-        
+
         spin_mutex symdb_users_mtx = SPIN_MUTEX_INITIALIZER;
             unsigned symdb_users = 0;
 
@@ -93,7 +93,7 @@ namespace dbg
     }
 
     bool ms_symdb::try_lookup_function(const void *program_counter, symsink &sink)
-    { 
+    {
         if (!process)
             return false;
 

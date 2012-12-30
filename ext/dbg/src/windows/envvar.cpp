@@ -3,13 +3,13 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "envvar.hpp"
+#include "../envvar.hpp"
 
 #include <cassert>
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
     bool envvar_is_set(const char *name)
     {

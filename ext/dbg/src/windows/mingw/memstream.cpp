@@ -4,14 +4,14 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "memstream.hpp"
-#include "memcpy_cast.hpp"
+#include "../../memcpy_cast.hpp"
 
 #include <algorithm>
 #include <cstring>
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
     memstream::memstream() :
         begin(0),
@@ -138,7 +138,7 @@ namespace dbg
 
         if ((shift < 64) && (b & 0x80) != 0)
             ret |= ~((uint64_t(1) << shift) - uint64_t(1));
-        
+
         return memcpy_cast<int64_t>(ret);
     }
 
@@ -169,8 +169,8 @@ namespace dbg
         std::swap(left,  other.left);
     }
 
-    uint_reader::uint_reader(unsigned byte_size) : 
-        byte_size(byte_size) 
+    uint_reader::uint_reader(unsigned byte_size) :
+        byte_size(byte_size)
     {
         if (byte_size == 0 || byte_size > 8)
             throw stream_error("unsupported integer size");
@@ -201,8 +201,8 @@ namespace dbg
                 PAGE_READWRITE |
                 PAGE_WRITECOPY;
 
-            return 
-                info.State == MEM_COMMIT && 
+            return
+                info.State == MEM_COMMIT &&
                 (info.Protect & readable_bits) != 0 &&
                 (info.Protect & (PAGE_GUARD | PAGE_NOACCESS)) == 0;
         }

@@ -4,7 +4,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "dbg/frames.hpp"
-#include "memcpy_cast.hpp"
+#include "../memcpy_cast.hpp"
 #include "dbghelp.hpp"
 #include "dll.hpp"
 
@@ -16,7 +16,7 @@
 #   error "unsupported architecture :("
 #endif
 
-namespace dbg 
+namespace dbg
 {
     bool walk_frames(frame_sink &sink)
     {
@@ -63,9 +63,9 @@ namespace dbg
         const DWORD machine = 0x014c; // IMAGE_FILE_MACHINE_I386;
 #endif
 
-        while (ms::StackWalk64(machine, 
-                               process, thread, 
-                               &frame, &context, 
+        while (ms::StackWalk64(machine,
+                               process, thread,
+                               &frame, &context,
                                0, ms::SymFunctionTableAccess64, ms::SymGetModuleBase64, 0))
         {
             if (skip)
@@ -76,7 +76,7 @@ namespace dbg
 
             const UINT_PTR pc = static_cast<UINT_PTR>(frame.AddrPC.Offset & ~UINT_PTR(0));
 
-            if (!sink.on_frame(level++, memcpy_cast<const void*>(pc))) 
+            if (!sink.on_frame(level++, memcpy_cast<const void*>(pc)))
                 return false;
         }
 

@@ -8,7 +8,7 @@
 #include "dwarf.hpp"
 #include "file.hpp"
 #include "memstream.hpp"
-#include "ms_symdb.hpp"
+#include "../ms_symdb.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -16,7 +16,7 @@
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
     namespace
     {
@@ -37,7 +37,7 @@ namespace dbg
                         utf16_name[--len] = L'\0';
 
                     // Store it as UTF-8.
-                    if (len == 0 || 
+                    if (len == 0 ||
                         WideCharToMultiByte(CP_UTF8, 0, utf16_name, -1, utf8_name, sizeof utf8_name, 0, 0) == 0)
                     {
                         utf8_name[0] = '\0';
@@ -60,7 +60,7 @@ namespace dbg
                     // So we bump the reference count to ensure it's not unloaded as long as we're around.
 
                     HMODULE temp = 0;
-                    own_ref = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, 
+                    own_ref = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
                                                  reinterpret_cast<const char *>(mod),
                                                  &temp);
 
@@ -76,16 +76,16 @@ namespace dbg
                 const char *name() const { return utf8_name; }
 
                 const char *function_spanning(const void *program_counter) const
-                { 
-                    return dw.function_spanning(program_counter); 
+                {
+                    return dw.function_spanning(program_counter);
                 }
 
                 static const module_node *find(HMODULE needle, const module_node *head)
                 {
                     for ( ; head; head = head->next)
-                        if (head->mod == needle) 
+                        if (head->mod == needle)
                             return head;
-                    
+
                     return 0;
                 }
 
@@ -98,7 +98,7 @@ namespace dbg
                         head = next;
                     }
                 }
-                
+
             private:
                 HMODULE mod;
                 char utf8_name[3 * 32 * 1024];

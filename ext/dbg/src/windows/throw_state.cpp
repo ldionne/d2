@@ -3,16 +3,16 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "throw_state.hpp"
-#include "spin_mutex.hpp"
+#include "../throw_state.hpp"
+#include "../spin_mutex.hpp"
 
 #include <new>
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
-    namespace  
+    namespace
     {
         spin_mutex tls_creation_mutex = SPIN_MUTEX_INITIALIZER;
         DWORD key = 0;
@@ -44,7 +44,7 @@ namespace dbg
 
             if (!key_created)
             {
-                if ((key = TlsAlloc()) == TLS_OUT_OF_INDEXES) 
+                if ((key = TlsAlloc()) == TLS_OUT_OF_INDEXES)
                     return false;
 
                 key_created = true;
@@ -66,8 +66,8 @@ namespace dbg
                 key = 0;
             }
         };
- 
-        // This is needed if we're linked in to a dynamically loaded dll, where TLS 
+
+        // This is needed if we're linked in to a dynamically loaded dll, where TLS
         // callbacks aren't invoked by the Windows loader.
         static_tls_release str;
 

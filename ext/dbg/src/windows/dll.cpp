@@ -4,13 +4,13 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "dll.hpp"
-#include "memcpy_cast.hpp"
+#include "../memcpy_cast.hpp"
 
 #include <algorithm>
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
     dll::dll() :
         module(0)

@@ -9,7 +9,7 @@
 #include "pe.hpp"
 #include "file.hpp"
 #include "memstream.hpp"
-#include "memcpy_cast.hpp"
+#include "../../memcpy_cast.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -21,7 +21,7 @@
 
 #include <cxxabi.h>
 
-namespace dbg 
+namespace dbg
 {
     namespace
     {
@@ -32,7 +32,7 @@ namespace dbg
             section(std::size_t image_offset, std::size_t file_offset, std::size_t length) :
                 image_offset(image_offset),
                 file_offset(file_offset),
-                length(length) 
+                length(length)
             {
             }
 
@@ -54,15 +54,15 @@ namespace dbg
             section debug_info;
         };
 
-        bool streq(const char *lhs, const char *rhs) 
-        { 
-            return std::strcmp(lhs, rhs) == 0; 
+        bool streq(const char *lhs, const char *rhs)
+        {
+            return std::strcmp(lhs, rhs) == 0;
         }
 
         struct dwarf_section_sink : pe_sink
         {
             explicit dwarf_section_sink(dwarf_sections &sections) : sections(sections) { }
-        
+
             virtual void on_preferred_address(std::size_t addr)
             {
                 sections.preferred_image_address = addr;
@@ -118,7 +118,7 @@ namespace dbg
             {
                 if (lhs.address < rhs.address) return true;
                 if (lhs.address > rhs.address) return false;
-                
+
                 return lhs.mangled && !rhs.mangled; // mangled names considered 'less'
             }
         };
@@ -142,7 +142,7 @@ namespace dbg
         class function_details_collector : public debug_info_listener
         {
             public:
-                function_details_collector(const die_lookup &lookup, const debug_str &strtab) : 
+                function_details_collector(const die_lookup &lookup, const debug_str &strtab) :
                     lookup(lookup),
                     strtab(strtab),
                     die_is_function(false),
@@ -219,7 +219,7 @@ namespace dbg
                         if (address == 0) // DW_AT_low_pc takes precedence
                             address = cu.address(cu.dies);
                     }
-                    else 
+                    else
                         skip_value(dw_form, cu);
                 }
 
@@ -346,7 +346,7 @@ namespace dbg
             abbrev.load(da);
 
             // .debug_abbrev memory not needed anymore, so release it if we loaded it from disk.
-            blocks.release(da.base()); 
+            blocks.release(da.base());
         }
 
         // Find the functions and their addresses in .debug_info
@@ -420,11 +420,11 @@ namespace dbg
         {
             // Some older versions of GCC set IMAGE_SCN_MEM_DISCARDABLE in the PE section header
             // for DWARF sections allowing the loader to discard it. Load it again here.
-            
+
             uint8_t *mem = blocks.allocate(sec.length);
             original_pe.go(sec.file_offset);
             original_pe.read(mem, sec.length);
-           
+
             memstream reloaded(mem, sec.length);
             ret.swap(reloaded);
         }

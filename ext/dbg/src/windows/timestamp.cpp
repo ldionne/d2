@@ -3,14 +3,14 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "timestamp.hpp"
+#include "../timestamp.hpp"
 
 #include <cstring>
 #include <cstdio>
 
 #include <windows.h>
 
-namespace dbg 
+namespace dbg
 {
     void generate_timestamp(stamp_buff &buff)
     {
@@ -20,7 +20,7 @@ namespace dbg
         GetLocalTime(&st);
 
         std::sprintf(
-            buff, 
+            buff,
             "%02d:%02d:%02d.%03d",
             static_cast<int>(st.wHour),
             static_cast<int>(st.wMinute),

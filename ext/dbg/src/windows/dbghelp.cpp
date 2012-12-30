@@ -4,16 +4,16 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "dbghelp.hpp"
-#include "spin_mutex.hpp"
+#include "../spin_mutex.hpp"
 #include "dll.hpp"
 
 #if !defined(DBG_RECENT_DBGHELP_DLL)
 #   define DBG_RECENT_DBGHELP_DLL "dbghelp.dll"
 #endif
 
-namespace dbg 
+namespace dbg
 {
-    namespace ms 
+    namespace ms
     {
         namespace
         {
@@ -29,14 +29,14 @@ namespace dbg
                 BOOL (WINAPI *SymGetSymFromAddr64_)(HANDLE, DWORD64, PDWORD64, PIMAGEHLP_SYMBOL64) = 0;
                 PVOID (WINAPI *SymFunctionTableAccess64_)(HANDLE hProcess, DWORD64 AddrBase) = 0;
 
-                BOOL (WINAPI *StackWalk64_)(DWORD, 
-                                            HANDLE, 
-                                            HANDLE, 
-                                            LPSTACKFRAME64, 
-                                            PVOID, 
-                                            PREAD_PROCESS_MEMORY_ROUTINE64, 
-                                            PFUNCTION_TABLE_ACCESS_ROUTINE64, 
-                                            PGET_MODULE_BASE_ROUTINE64, 
+                BOOL (WINAPI *StackWalk64_)(DWORD,
+                                            HANDLE,
+                                            HANDLE,
+                                            LPSTACKFRAME64,
+                                            PVOID,
+                                            PREAD_PROCESS_MEMORY_ROUTINE64,
+                                            PFUNCTION_TABLE_ACCESS_ROUTINE64,
+                                            PGET_MODULE_BASE_ROUTINE64,
                                             PTRANSLATE_ADDRESS_ROUTINE64);
 
 
@@ -56,10 +56,10 @@ namespace dbg
                 SymFunctionTableAccess64_ = temp.find_function("SymFunctionTableAccess64");
                 StackWalk64_ = temp.find_function("StackWalk64");
 
-                if (!SymInitialize_ || 
-                    !SymCleanup_ || 
-                    !SymGetModuleBase64_ || 
-                    !SymGetSymFromAddr64_ || 
+                if (!SymInitialize_ ||
+                    !SymCleanup_ ||
+                    !SymGetModuleBase64_ ||
+                    !SymGetSymFromAddr64_ ||
                     !SymFunctionTableAccess64_ ||
                     !StackWalk64_)
                 {
@@ -101,15 +101,15 @@ namespace dbg
             const scoped_spin_lock lk(dbghelp_mtx);
             return ensure_initialized(lk) ? SymFunctionTableAccess64_(process, addrbase) : 0;
         }
-    
+
         BOOL WINAPI StackWalk64(DWORD machine,
-                                HANDLE process, 
-                                HANDLE thread, 
-                                LPSTACKFRAME64 frame, 
-                                PVOID ctx, 
+                                HANDLE process,
+                                HANDLE thread,
+                                LPSTACKFRAME64 frame,
+                                PVOID ctx,
                                 PREAD_PROCESS_MEMORY_ROUTINE64 read_func,
-                                PFUNCTION_TABLE_ACCESS_ROUTINE64 ft_access_func, 
-                                PGET_MODULE_BASE_ROUTINE64 modbase_func, 
+                                PFUNCTION_TABLE_ACCESS_ROUTINE64 ft_access_func,
+                                PGET_MODULE_BASE_ROUTINE64 modbase_func,
                                 PTRANSLATE_ADDRESS_ROUTINE64 xl8_func)
         {
             {
@@ -118,8 +118,8 @@ namespace dbg
                     return FALSE;
             }
 
-            return StackWalk64_(machine, process, thread, 
-                                frame, ctx, 
+            return StackWalk64_(machine, process, thread,
+                                frame, ctx,
                                 read_func, ft_access_func, modbase_func, xl8_func);
         }
 
