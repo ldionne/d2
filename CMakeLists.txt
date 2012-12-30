@@ -7,7 +7,16 @@ enable_testing()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/dbg)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/dbg/include)
 
-# Add my local boost 1.53
+# Try finding Google test. This is required for some unit tests.
+find_package(GTest 1.50.0)
+if (${GTEST_FOUND})
+    include_directories(${GTEST_INCLUDE_DIRS})
+    add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+else()
+    message("Google test library not found.")
+endif()
+
+# Try finding Boost libraries.
 set(BOOST_ROOT ../boost-trunk)
 set(Boost_NO_SYSTEM_PATHS TRUE)
 find_package(Boost 1.53.0 COMPONENTS graph thread system program_options REQUIRED)
