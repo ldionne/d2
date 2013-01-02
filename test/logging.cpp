@@ -18,33 +18,32 @@
 
 
 using namespace d2;
-using namespace d2::detail;
 using namespace boost::assign;
 
 TEST(event_io, generate_lock_debug_info_with_call_stack) {
     typedef std::back_insert_iterator<std::string> Iterator;
 
-    LockDebugInfo info;
-    info.call_stack += StackFrame(0x0, "function1", "file1"),
-                       StackFrame(0x0, "function2", "file2");
+    d2::detail::LockDebugInfo info;
+    info.call_stack += d2::detail::StackFrame(0x0, "function1", "file1"),
+                       d2::detail::StackFrame(0x0, "function2", "file2");
 
     std::string result;
     Iterator out(result);
-    lock_debug_info_generator<Iterator> generator;
+    d2::detail::lock_debug_info_generator<Iterator> generator;
     ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
     ASSERT_EQ("[[0 function1%%file1\n0 function2%%file2\n]]", result);
 }
 
 TEST(event_io, parse_lock_debug_info_with_call_stack) {
-    LockDebugInfo expected;
-    expected.call_stack += StackFrame(0x0, "function1", "file1"),
-                           StackFrame(0x0, "function2", "file2");
+    d2::detail::LockDebugInfo expected;
+    expected.call_stack += d2::detail::StackFrame(0x0, "function1", "file1"),
+                           d2::detail::StackFrame(0x0, "function2", "file2");
     std::string input = "[[0 function1%%file1\n0 function2%%file2\n]]";
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
-    lock_debug_info_parser<std::string::const_iterator> parser;
+    d2::detail::lock_debug_info_parser<std::string::const_iterator> parser;
 
-    LockDebugInfo info;
+    d2::detail::LockDebugInfo info;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
     ASSERT_TRUE(first == last);
 
@@ -58,7 +57,7 @@ TEST(event_io, parse_acquire_event) {
     std::string input = "123 acquires 456";
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
-    event_parser<std::string::const_iterator> parser;
+    d2::detail::event_parser<std::string::const_iterator> parser;
 
     Event e;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, e));
@@ -78,7 +77,7 @@ TEST(event_io, parse_mixed_events) {
                         "56 joins 78";
     std::string::const_iterator first(boost::begin(input)),
                                 last(boost::end(input));
-    event_parser<std::string::const_iterator> parser;
+    d2::detail::event_parser<std::string::const_iterator> parser;
 
     std::vector<Event> events;
     ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser % '\n', events));
