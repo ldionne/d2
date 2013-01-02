@@ -23,7 +23,7 @@ elseif(NOT ${Boost_SYSTEM_FOUND})
     message("Missing Boost.System library: mock library and integration tests will be unavailable.")
 else()
     # Mock library.
-    add_library(mock SHARED ${CMAKE_CURRENT_SOURCE_DIR}/mock.cpp)
+    add_library(mock ${CMAKE_CURRENT_SOURCE_DIR}/mock.cpp)
     target_link_libraries(mock d2_lib ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY})
     if(NOT MSVC)
         set_target_properties(mock PROPERTIES COMPILE_FLAGS -std=c++11)
