@@ -9,7 +9,6 @@
 #include <d2/events.hpp>
 #include <d2/types.hpp>
 
-#define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/phoenix.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>

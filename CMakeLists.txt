@@ -36,6 +36,7 @@ if(${Boost_INCLUDE_DIR} STREQUAL "NOTFOUND")
 else()
     include_directories(${Boost_INCLUDE_DIR})
     link_directories(${Boost_LIBRARY_DIRS})
+    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3)
 endif()
 
 
