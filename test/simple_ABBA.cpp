@@ -9,16 +9,16 @@ int main() {
     d2::set_event_sink(&std::cout);
     d2::enable_event_logging();
 
-    mock_mutex A, B;
+    mock::mutex A, B;
 
-    mock_thread t0([&] {
+    mock::thread t0([&] {
         A.lock();
             B.lock();
             B.unlock();
         A.unlock();
     });
 
-    mock_thread t1([&] {
+    mock::thread t1([&] {
         B.lock();
             A.lock();
             A.unlock();

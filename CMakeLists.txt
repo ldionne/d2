@@ -46,9 +46,9 @@ target_link_libraries(d2_lib dbg)
 
 # Add the d2 command line utility.
 if(NOT ${Boost_GRAPH_FOUND})
-    message("Boost.Graph library missing: d2 command line utility will be unavailable.")
+    message("Missing Boost.Graph library: d2 command line utility will be unavailable.")
 elseif(NOT ${Boost_PROGRAM_OPTIONS_FOUND})
-    message("Boost.ProgramOptions library missing: d2 command line utility will be unavailable.")
+    message("Missing Boost.ProgramOptions library: d2 command line utility will be unavailable.")
 else()
     add_executable(d2 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/d2.cpp)
     target_link_libraries(d2 d2_lib ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})

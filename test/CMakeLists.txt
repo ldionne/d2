@@ -17,16 +17,24 @@ else()
 endif()
 
 
-# Add integration tests.
+# Add mock library and integration tests.
 if(NOT ${Boost_THREAD_FOUND})
-    message("Missing Boost.Thread library: integration tests will be unavailable.")
+    message("Missing Boost.Thread library: mock library and integration tests will be unavailable.")
 elseif(NOT ${Boost_SYSTEM_FOUND})
-    message("Boost.System library missing: d2 command line utility will be unavailable.")
+    message("Missing Boost.System library: mock library and integration tests will be unavailable.")
 else()
+    # Mock library.
+    add_library(mock SHARED ${CMAKE_CURRENT_SOURCE_DIR}/mock.cpp)
+    target_link_libraries(mock d2_lib ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+    if(NOT MSVC)
+        set_target_properties(mock PROPERTIES COMPILE_FLAGS -std=c++11)
+    endif()
+
+    # Integration tests.
     add_custom_target(integration)
     macro(d2_add_integration_test name)
         add_executable(${name}_exec ${name}.cpp)
-        target_link_libraries(${name}_exec d2_lib ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+        target_link_libraries(${name}_exec d2_lib mock)
         add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
         add_dependencies(integration ${name}_exec)
         if(NOT MSVC)

@@ -12,9 +12,9 @@ int main() {
     d2::set_event_sink(&std::cout);
     d2::enable_event_logging();
 
-    mock_mutex A, B;
+    mock::mutex A, B;
 
-    mock_thread t0([&] {
+    mock::thread t0([&] {
         for (std::size_t i = 0; i < REPETITIONS; ++i) {
             A.lock();
                 B.lock();
@@ -23,7 +23,7 @@ int main() {
         }
     });
 
-    mock_thread t1([&] {
+    mock::thread t1([&] {
         for (std::size_t i = 0; i < REPETITIONS; ++i) {
             B.lock();
                 A.lock();
