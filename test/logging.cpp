@@ -6,8 +6,10 @@
 #include <d2/logging.hpp>
 
 #include <boost/assign.hpp>
+#include <boost/range/algorithm/for_each.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/variant.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <sstream>
@@ -111,6 +113,34 @@ TEST(logging, log_release_event) {
     ASSERT_TRUE(expected == boost::get<ReleaseEvent>(actual[0]));
 }
 
+namespace {
+    struct push_event {
+        template <typename Event>
+        void operator()(Event const& event) const {
+            boost::apply_visitor(as_visitor(), event);
+        }
+
+    private:
+        struct as_visitor : boost::static_visitor<void> {
+            void operator()(d2::AcquireEvent const& event) const {
+                d2::notify_acquire(event.lock, event.thread);
+            }
+
+            void operator()(d2::ReleaseEvent const& event) const {
+                d2::notify_release(event.lock, event.thread);
+            }
+
+            void operator()(d2::StartEvent const& event) const {
+                d2::notify_start(event.parent, event.child);
+            }
+
+            void operator()(d2::JoinEvent const& event) const {
+                d2::notify_join(event.parent, event.child);
+            }
+        };
+    };
+} // end namespace detail
+
 TEST(logging, log_mixed_events) {
     std::vector<Event> events;
     SyncObject l1((unsigned)88), l2((unsigned)99);
@@ -128,10 +158,7 @@ TEST(logging, log_mixed_events) {
     std::stringstream repo;
     set_event_sink(&repo);
     enable_event_logging();
-    // We use push_event_impl even though it's an implementation detail
-    // because it greatly simplifies our task here.
-    std::for_each(boost::begin(events), boost::end(events),
-                                                d2::detail::push_event_impl);
+    boost::for_each(events, push_event());
     disable_event_logging();
 
     std::cout << "Logged events:\n" << repo.str();
