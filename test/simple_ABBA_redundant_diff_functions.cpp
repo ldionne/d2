@@ -33,7 +33,8 @@ int main() {
 
     mock::thread t0(g), t1(h);
 
-    d2::set_event_sink(&std::cout);
+    d2::OstreamEventSink<std::ostream> sink(std::cout);
+    d2::set_event_sink(&sink);
     d2::enable_event_logging();
 
     t0.start();

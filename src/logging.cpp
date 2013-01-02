@@ -7,19 +7,20 @@
 #include <d2/detail/config.hpp>
 #include <d2/detail/event_io.hpp>
 #include <d2/detail/lock_debug_info.hpp>
+#include <d2/event_sink.hpp>
 #include <d2/events.hpp>
 #include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <cstddef>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
-#include <iostream>
+#include <istream>
 #include <iterator>
+#include <string>
 #include <vector>
 
 
@@ -28,25 +29,33 @@ namespace detail {
 
 static basic_mutex sink_lock;
 static bool event_logging_enabled = false;
-static std::ostream* event_sink = NULL;
-static event_generator<std::ostream_iterator<char> > generate_event;
+static EventSink* event_sink = NULL;
 
-extern void D2_API push_event_impl(Event const& e) {
+template <typename Event>
+void push_event_impl(Event const& event) {
     sink_lock.lock();
     BOOST_ASSERT_MSG(event_logging_enabled,
                         "pushing an event while event logging is disabled");
     BOOST_ASSERT_MSG(event_sink != NULL,
                                 "logging events in an invalid NULL sink");
-
-    bool success = boost::spirit::karma::generate(
-                    std::ostream_iterator<char>(*event_sink),
-                    generate_event << '\n',
-                    e);
-    (void)success;
-
-    BOOST_ASSERT_MSG(success,
-                "unable to generate the event using the karma generator");
+    event_sink->write(event);
     sink_lock.unlock();
+}
+
+extern void D2_API push_event(AcquireEvent const& event) {
+    push_event_impl(event);
+}
+
+extern void D2_API push_event(ReleaseEvent const& event) {
+    push_event_impl(event);
+}
+
+extern void D2_API push_event(StartEvent const& event) {
+    push_event_impl(event);
+}
+
+extern void D2_API push_event(JoinEvent const& event) {
+    push_event_impl(event);
 }
 
 template <typename OutputIterator>
@@ -75,7 +84,7 @@ void D2_API LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
 
 } // end namespace detail
 
-extern void D2_API set_event_sink(std::ostream* sink) {
+extern void D2_API set_event_sink(EventSink* sink) {
     BOOST_ASSERT_MSG(sink != NULL, "setting an invalid NULL sink");
     detail::sink_lock.lock();
     detail::event_sink = sink;
@@ -117,6 +126,12 @@ extern std::vector<Event> D2_API load_events(std::istream& source) {
                             "unable to parse events using the qi grammar");
 
     return events;
+}
+
+D2_API EventSink::~EventSink() { }
+
+namespace detail {
+    event_generator<std::ostream_iterator<char> > generate_event;
 }
 
 } // end namespace d2

@@ -6,7 +6,8 @@
 
 
 int main() {
-    d2::set_event_sink(&std::cout);
+    d2::OstreamEventSink<std::ostream> sink(std::cout);
+    d2::set_event_sink(&sink);
     d2::enable_event_logging();
 
     mock::mutex A, B;

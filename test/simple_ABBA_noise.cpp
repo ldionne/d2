@@ -45,7 +45,8 @@ int main() {
     });
     boost::range::random_shuffle(threads);
 
-    d2::set_event_sink(&std::cout);
+    d2::OstreamEventSink<std::ostream> sink(std::cout);
+    d2::set_event_sink(&sink);
     d2::enable_event_logging();
 
     boost::for_each(threads, [](mock::thread& t) { t.start(); });

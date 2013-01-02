@@ -98,9 +98,10 @@ TEST(event_io, parse_mixed_events) {
 
 TEST(logging, log_release_event) {
     std::stringstream repo;
+    d2::OstreamEventSink<std::stringstream> sink(repo);
 
     unsigned short t = 888, l = 999;
-    set_event_sink(&repo);
+    set_event_sink(&sink);
     enable_event_logging();
     notify_release(l, t);
     disable_event_logging();
@@ -155,7 +156,8 @@ TEST(logging, log_mixed_events) {
     ;
 
     std::stringstream repo;
-    set_event_sink(&repo);
+    d2::OstreamEventSink<std::stringstream> sink(repo);
+    set_event_sink(&sink);
     enable_event_logging();
     boost::for_each(events, push_event());
     disable_event_logging();

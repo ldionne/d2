@@ -11,7 +11,8 @@
 // building of the lock graph, the found cycle is A->C->A instead, which is
 // valid.
 int main() {
-    d2::set_event_sink(&std::cout);
+    d2::OstreamEventSink<std::ostream> sink(std::cout);
+    d2::set_event_sink(&sink);
     d2::enable_event_logging();
 
     mock::mutex A, B, C;

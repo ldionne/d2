@@ -7,25 +7,22 @@
 #define D2_LOGGING_HPP
 
 #include <d2/detail/config.hpp>
+#include <d2/event_sink.hpp>
 #include <d2/events.hpp>
 #include <d2/types.hpp>
 
-#include <iostream>
+#include <istream>
 #include <string>
 #include <vector>
 
 
 namespace d2 {
 namespace detail {
-    extern void D2_API push_event_impl(Event const& e);
-
-    // FIXME: We could dispatch cleverly depending on the event type and
-    //        improve performances. For example, acquire/release events
-    //        could be logged inside thread local storage.
-    template <typename Event>
-    void push_event(Event const& e) {
-        push_event_impl(e);
-    }
+    // These methods are not part of the public API.
+    extern void D2_API push_event(AcquireEvent const& event);
+    extern void D2_API push_event(ReleaseEvent const& event);
+    extern void D2_API push_event(StartEvent const& event);
+    extern void D2_API push_event(JoinEvent const& event);
 } // end namespace detail
 
 /**
@@ -33,13 +30,11 @@ namespace detail {
  * A sink must be set before logging may start, i.e. before
  * `enable_event_logging` is called for the first time.
  * @note This operation can be considered atomic.
- * @note `sink` must be a valid pointer.
+ * @note `sink` must be a pointer to a valid sink.
  * @note `*sink` must be in scope as long as the logging of events is enabled
  *       with that sink.
- * @note We use a pointer to make it explicit that only a reference to `sink`
- *       is taken.
  */
-extern void D2_API set_event_sink(std::ostream* sink);
+extern void D2_API set_event_sink(EventSink* sink);
 
 /**
  * Disable the logging of events by the deadlock detection framework.
@@ -74,6 +69,8 @@ inline bool is_disabled() {
  * Load and return the events contained in `source` as a vector of events. The
  * source must have been created by the logging framework to ensure it can be
  * read correctly.
+ * @todo Remove this from the public logging api.
+ * @todo Use a generalization of `EventSink` instead of `std::istream`.
  */
 extern std::vector<Event> D2_API load_events(std::istream& source);
 
