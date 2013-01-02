@@ -10,7 +10,6 @@
 #include <d2/events.hpp>
 #include <d2/types.hpp>
 
-#include <boost/concept_check.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -84,8 +83,6 @@ extern std::vector<Event> D2_API load_events(std::istream& source);
  */
 template <typename SyncObject, typename Thread>
 void notify_acquire(SyncObject const& s, Thread const& t) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
     if (is_enabled()) {
         AcquireEvent e((d2::SyncObject(s)), d2::Thread(t));
         e.info.init_call_stack(1); // ignore current frame
@@ -99,8 +96,6 @@ void notify_acquire(SyncObject const& s, Thread const& t) {
  */
 template <typename SyncObject, typename Thread>
 void notify_release(SyncObject const& s, Thread const& t) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<SyncObject>));
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
     if (is_enabled())
         detail::push_event(ReleaseEvent(d2::SyncObject(s), d2::Thread(t)));
 }
@@ -111,7 +106,6 @@ void notify_release(SyncObject const& s, Thread const& t) {
  */
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
     if (is_enabled())
         detail::push_event(StartEvent(d2::Thread(parent), d2::Thread(child)));
 }
@@ -122,7 +116,6 @@ void notify_start(Thread const& parent, Thread const& child) {
  */
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
-    BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<Thread>));
     if (is_enabled())
         detail::push_event(JoinEvent(d2::Thread(parent), d2::Thread(child)));
 }
