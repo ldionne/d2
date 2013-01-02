@@ -9,12 +9,12 @@
 
 #if defined(D2_DYN_LINK)
 #   if defined(D2_SOURCE)
-#       define D2_DECL BOOST_SYMBOL_EXPORT
+#       define D2_API BOOST_SYMBOL_EXPORT
 #   else
-#       define D2_DECL BOOST_SYMBOL_IMPORT
+#       define D2_API BOOST_SYMBOL_IMPORT
 #   endif
 #else
-#   define D2_DECL /* nothing */
+#   define D2_API /* nothing */
 #endif
 
 #endif // !D2_DETAIL_CONFIG_HPP

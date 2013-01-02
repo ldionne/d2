@@ -18,7 +18,7 @@
 
 namespace d2 {
 namespace detail {
-    extern void D2_DECL push_event_impl(Event const& e);
+    extern void D2_API push_event_impl(Event const& e);
 
     // FIXME: We could dispatch cleverly depending on the event type and
     //        improve performances. For example, acquire/release events
@@ -40,7 +40,7 @@ namespace detail {
  * @note We use a pointer to make it explicit that only a reference to `sink`
  *       is taken.
  */
-extern void D2_DECL set_event_sink(std::ostream* sink);
+extern void D2_API set_event_sink(std::ostream* sink);
 
 /**
  * Disable the logging of events by the deadlock detection framework.
@@ -48,7 +48,7 @@ extern void D2_DECL set_event_sink(std::ostream* sink);
  * @note This function is idempotent, i.e. calling it when the logging is
  *       already disabled is useless yet harmless.
  */
-extern void D2_DECL disable_event_logging();
+extern void D2_API disable_event_logging();
 
 /**
  * Enable the logging of events by the deadlock detection framework.
@@ -57,12 +57,12 @@ extern void D2_DECL disable_event_logging();
  * @note This function is idempotent, i.e. calling it when the logging is
  *       already enabled is useless yet harmless.
  */
-extern void D2_DECL enable_event_logging();
+extern void D2_API enable_event_logging();
 
 /**
  * Return whether event logging is currently enabled.
  */
-extern bool D2_DECL is_enabled();
+extern bool D2_API is_enabled();
 
 /**
  * Return whether event logging is currently disabled.
@@ -76,7 +76,7 @@ inline bool is_disabled() {
  * source must have been created by the logging framework to ensure it can be
  * read correctly.
  */
-extern std::vector<Event> D2_DECL load_events(std::istream& source);
+extern std::vector<Event> D2_API load_events(std::istream& source);
 
 /**
  * Notify the deadlock detection system of the acquisition of synchronization

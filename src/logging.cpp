@@ -31,7 +31,7 @@ static bool event_logging_enabled = false;
 static std::ostream* event_sink = NULL;
 static event_generator<std::ostream_iterator<char> > generate_event;
 
-extern void D2_DECL push_event_impl(Event const& e) {
+extern void D2_API push_event_impl(Event const& e) {
     sink_lock.lock();
     BOOST_ASSERT_MSG(event_logging_enabled,
                         "pushing an event while event logging is disabled");
@@ -62,7 +62,7 @@ public:
     }
 };
 
-void D2_DECL LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
+void D2_API LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
     dbg::call_stack<100> stack;
     dbg::symdb symbols;
     stack.collect(ignore + 1); // ignore our frame
@@ -75,33 +75,33 @@ void D2_DECL LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
 
 } // end namespace detail
 
-extern void D2_DECL set_event_sink(std::ostream* sink) {
+extern void D2_API set_event_sink(std::ostream* sink) {
     BOOST_ASSERT_MSG(sink != NULL, "setting an invalid NULL sink");
     detail::sink_lock.lock();
     detail::event_sink = sink;
     detail::sink_lock.unlock();
 }
 
-extern void D2_DECL disable_event_logging() {
+extern void D2_API disable_event_logging() {
     detail::sink_lock.lock();
     detail::event_logging_enabled = false;
     detail::sink_lock.unlock();
 }
 
-extern void D2_DECL enable_event_logging() {
+extern void D2_API enable_event_logging() {
     detail::sink_lock.lock();
     detail::event_logging_enabled = true;
     detail::sink_lock.unlock();
 }
 
-extern bool D2_DECL is_enabled() {
+extern bool D2_API is_enabled() {
     detail::sink_lock.lock();
     bool const enabled = detail::event_logging_enabled;
     detail::sink_lock.unlock();
     return enabled;
 }
 
-extern std::vector<Event> D2_DECL load_events(std::istream& source) {
+extern std::vector<Event> D2_API load_events(std::istream& source) {
     detail::event_parser<std::string::const_iterator> parse_event;
     source.unsetf(std::ios::skipws);
     std::string const input((std::istream_iterator<char>(source)),
