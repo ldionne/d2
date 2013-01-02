@@ -26,25 +26,25 @@ namespace d2 {
 namespace detail {
 
 static basic_mutex sink_lock;
-static bool is_enabled = false;
+static bool event_logging_enabled = false;
 static std::ostream* event_sink = NULL;
 static event_generator<std::ostream_iterator<char> > generate_event;
 
 extern void D2_DECL push_event_impl(Event const& e) {
     sink_lock.lock();
-    if (is_enabled) {
-        BOOST_ASSERT_MSG(event_sink != NULL,
-                                    "logging events in an invalid NULL sink");
+    BOOST_ASSERT_MSG(event_logging_enabled,
+                        "pushing an event while event logging is disabled");
+    BOOST_ASSERT_MSG(event_sink != NULL,
+                                "logging events in an invalid NULL sink");
 
-        bool success = boost::spirit::karma::generate(
-                        std::ostream_iterator<char>(*event_sink),
-                        generate_event << '\n',
-                        e);
-        (void)success;
+    bool success = boost::spirit::karma::generate(
+                    std::ostream_iterator<char>(*event_sink),
+                    generate_event << '\n',
+                    e);
+    (void)success;
 
-        BOOST_ASSERT_MSG(success,
-                    "unable to generate the event using the karma generator");
-    }
+    BOOST_ASSERT_MSG(success,
+                "unable to generate the event using the karma generator");
     sink_lock.unlock();
 }
 
@@ -83,14 +83,21 @@ extern void D2_DECL set_event_sink(std::ostream* sink) {
 
 extern void D2_DECL disable_event_logging() {
     detail::sink_lock.lock();
-    detail::is_enabled = false;
+    detail::event_logging_enabled = false;
     detail::sink_lock.unlock();
 }
 
 extern void D2_DECL enable_event_logging() {
     detail::sink_lock.lock();
-    detail::is_enabled = true;
+    detail::event_logging_enabled = true;
     detail::sink_lock.unlock();
+}
+
+extern bool D2_DECL is_enabled() {
+    detail::sink_lock.lock();
+    bool const enabled = detail::event_logging_enabled;
+    detail::sink_lock.unlock();
+    return enabled;
 }
 
 extern std::vector<Event> D2_DECL load_events(std::istream& source) {
