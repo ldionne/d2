@@ -129,7 +129,7 @@ extern std::vector<Event> D2_API load_events(std::istream& source) {
     return events;
 }
 
-D2_API EventSink::~EventSink() { }
+EventSink::~EventSink() { }
 
 namespace detail {
     namespace {

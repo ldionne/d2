@@ -23,11 +23,11 @@ namespace d2 {
  */
 class D2_API EventSink {
 public:
-    virtual void D2_API write(AcquireEvent const& event) = 0;
-    virtual void D2_API write(ReleaseEvent const& event) = 0;
-    virtual void D2_API write(StartEvent const& event) = 0;
-    virtual void D2_API write(JoinEvent const& event) = 0;
-    virtual D2_API ~EventSink();
+    virtual void write(AcquireEvent const& event) = 0;
+    virtual void write(ReleaseEvent const& event) = 0;
+    virtual void write(StartEvent const& event) = 0;
+    virtual void write(JoinEvent const& event) = 0;
+    virtual ~EventSink();
 };
 
 namespace detail {
