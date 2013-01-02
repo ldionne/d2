@@ -6,13 +6,9 @@
 #define D2_EVENT_SINK_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/detail/event_io.hpp>
 #include <d2/events.hpp>
 
-#include <boost/assert.hpp>
-#include <boost/spirit/include/karma_format.hpp>
-#include <cstddef>
-#include <iterator>
+#include <ostream>
 
 
 namespace d2 {
@@ -35,7 +31,7 @@ public:
 };
 
 namespace detail {
-    extern event_generator<std::ostream_iterator<char> > generate_event;
+    extern void D2_API generate(std::ostream& os, Event const& event);
 }
 
 /**
@@ -48,34 +44,23 @@ template <typename Ostream>
 class OstreamEventSink : public EventSink {
     Ostream& os_;
 
-    template <typename Event>
-    void generate(Event const& event) {
-        bool const success = boost::spirit::karma::generate(
-                                std::ostream_iterator<char>(os_),
-                                detail::generate_event << '\n',
-                                event);
-
-        BOOST_ASSERT_MSG(success,
-                    "unable to generate the event using the karma generator");
-    }
-
 public:
     explicit OstreamEventSink(Ostream& os) : os_(os) { }
 
     virtual void write(AcquireEvent const& event) {
-        generate(event);
+        detail::generate(os_, event);
     }
 
     virtual void write(ReleaseEvent const& event) {
-        generate(event);
+        detail::generate(os_, event);
     }
 
     virtual void write(StartEvent const& event) {
-        generate(event);
+        detail::generate(os_, event);
     }
 
     virtual void write(JoinEvent const& event) {
-        generate(event);
+        detail::generate(os_, event);
     }
 };
 
@@ -83,7 +68,7 @@ public:
  * Simple factory to create `OstreamEventSink`s.
  */
 template <typename Ostream>
-OstreamEventSink<Ostream> make_ostream_event_sink(Ostream* os) {
+OstreamEventSink<Ostream> make_ostream_event_sink(Ostream& os) {
     return OstreamEventSink<Ostream>(os);
 }
 

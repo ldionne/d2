@@ -14,6 +14,7 @@
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <cstddef>
 #include <dbg/frames.hpp>
@@ -131,7 +132,19 @@ extern std::vector<Event> D2_API load_events(std::istream& source) {
 D2_API EventSink::~EventSink() { }
 
 namespace detail {
-    event_generator<std::ostream_iterator<char> > generate_event;
-}
+    namespace {
+        static event_generator<std::ostream_iterator<char> > generate_event;
+    }
+
+    extern void D2_API generate(std::ostream& os, Event const& event) {
+        bool const success = boost::spirit::karma::generate(
+                                std::ostream_iterator<char>(os),
+                                generate_event << '\n',
+                                event);
+
+        BOOST_ASSERT_MSG(success,
+                    "unable to generate the event using the karma generator");
+    }
+} // end namespace detail
 
 } // end namespace d2
