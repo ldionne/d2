@@ -2,7 +2,9 @@
  * This file implements the event logging.
  */
 
+#define D2_SOURCE
 #include <d2/detail/basic_mutex.hpp>
+#include <d2/detail/config.hpp>
 #include <d2/detail/event_io.hpp>
 #include <d2/events.hpp>
 
@@ -25,7 +27,7 @@ static bool is_enabled = false;
 static std::ostream* event_sink = NULL;
 static event_generator<std::ostream_iterator<char> > generate_event;
 
-extern void push_event_impl(Event const& e) {
+extern void D2_DECL push_event_impl(Event const& e) {
     sink_lock.lock();
     if (is_enabled) {
         BOOST_ASSERT_MSG(event_sink != NULL,
@@ -45,26 +47,26 @@ extern void push_event_impl(Event const& e) {
 
 } // end namespace detail
 
-extern void set_event_sink(std::ostream* sink) {
+extern void D2_DECL set_event_sink(std::ostream* sink) {
     BOOST_ASSERT_MSG(sink != NULL, "setting an invalid NULL sink");
     detail::sink_lock.lock();
     detail::event_sink = sink;
     detail::sink_lock.unlock();
 }
 
-extern void disable_event_logging() {
+extern void D2_DECL disable_event_logging() {
     detail::sink_lock.lock();
     detail::is_enabled = false;
     detail::sink_lock.unlock();
 }
 
-extern void enable_event_logging() {
+extern void D2_DECL enable_event_logging() {
     detail::sink_lock.lock();
     detail::is_enabled = true;
     detail::sink_lock.unlock();
 }
 
-extern std::vector<Event> load_events(std::istream& source) {
+extern std::vector<Event> D2_DECL load_events(std::istream& source) {
     detail::event_parser<std::string::const_iterator> parse_event;
     source.unsetf(std::ios::skipws);
     std::string const input((std::istream_iterator<char>(source)),

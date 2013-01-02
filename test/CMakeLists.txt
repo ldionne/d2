@@ -1,4 +1,3 @@
-
 # Add unit tests.
 if(NOT ${GTEST_FOUND})
     message("Missing Google test library: unit tests will be unavailable.")

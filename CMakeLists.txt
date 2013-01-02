@@ -41,6 +41,7 @@ endif()
 # Add the d2 library.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_library(d2_lib SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp)
+add_definitions(-DD2_DYN_LINK)
 target_link_libraries(d2_lib dbg)
 
 
