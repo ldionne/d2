@@ -4,14 +4,15 @@ project(d2)
 enable_testing()
 
 # Add some custom compiler flags.
-add_definitions(-Wall)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     add_definitions(-stdlib=libc++)
     list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
 endif()
 
 if((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_COMPILER_IS_GNUCXX}))
-    add_definitions(-Wextra -pedantic -std=c++98)
+    add_definitions(-Wall -Wextra -pedantic -std=c++98)
+elseif(MSVC)
+    add_definitions(-W4) # -Wall on MSVC yields 1000s of warnings
 endif()
 
 
