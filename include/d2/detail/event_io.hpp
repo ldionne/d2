@@ -27,7 +27,7 @@ struct lock_debug_info_parser : qi::grammar<Iterator, LockDebugInfo()> {
     lock_debug_info_parser() : lock_debug_info_parser::base_type(start) {
         using namespace qi;
 
-        start = -(call_stack[&_val->*&LockDebugInfo::call_stack = _1]);
+        start = -(call_stack[&_val->*&LockDebugInfo::call_stack = qi::_1]);
 
         call_stack %= "[[" >> *stack_frame >> "]]";
 
@@ -87,9 +87,9 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             [
                 (parse_thread >> "acquires" >> parse_sync_object)
                 [
-                    _val = phx::construct<AcquireEvent>(_2, _1)
+                    _val = phx::construct<AcquireEvent>(qi::_2, qi::_1)
                 ]
-                >> -(info[&_val->*&AcquireEvent::info = _1])
+                >> -(info[&_val->*&AcquireEvent::info = qi::_1])
             ]
             ;
 
@@ -98,7 +98,7 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             [
                 (parse_thread >> "releases" >> parse_sync_object)
                 [
-                    _val = phx::construct<ReleaseEvent>(_2, _1)
+                    _val = phx::construct<ReleaseEvent>(qi::_2, qi::_1)
                 ]
             ]
             ;
@@ -108,7 +108,7 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             [
                 (parse_thread >> "starts" >> parse_thread)
                 [
-                    _val = phx::construct<StartEvent>(_1, _2)
+                    _val = phx::construct<StartEvent>(qi::_1, qi::_2)
                 ]
             ]
             ;
@@ -118,15 +118,15 @@ struct event_parser : qi::grammar<Iterator, Event()> {
             [
                 (parse_thread >> "joins" >> parse_thread)
                 [
-                    _val = phx::construct<JoinEvent>(_1, _2)
+                    _val = phx::construct<JoinEvent>(qi::_1, qi::_2)
                 ]
             ]
             ;
 
         // Note: stream_parser is currently broken in spirit, so this is a temporary solution.
-        parse_sync_object = ulong_[_val = phx::construct<SyncObject>(_1)];//stream_parser<char, SyncObject>();
+        parse_sync_object = ulong_[_val = phx::construct<SyncObject>(qi::_1)];//stream_parser<char, SyncObject>();
 
-        parse_thread = ulong_[_val = phx::construct<Thread>(_1)];//stream_parser<char, Thread>();
+        parse_thread = ulong_[_val = phx::construct<Thread>(qi::_1)];//stream_parser<char, Thread>();
     }
 
 private:
@@ -152,34 +152,34 @@ struct event_generator : karma::grammar<Iterator, Event()> {
 
         acquire
             =
-            (   stream[_1 = &_val->*&AcquireEvent::thread]
+            (   stream[qi::_1 = &_val->*&AcquireEvent::thread]
             <<  " acquires "
-            <<  stream[_1 = &_val->*&AcquireEvent::lock]
-            <<  ' ' << info[_1 = &_val->*&AcquireEvent::info]
+            <<  stream[qi::_1 = &_val->*&AcquireEvent::lock]
+            <<  ' ' << info[qi::_1 = &_val->*&AcquireEvent::info]
             )
             ;
 
         release
             =   (stream << " releases " << stream)
             [
-                _1 = &_val->*&ReleaseEvent::thread,
-                _2 = &_val->*&ReleaseEvent::lock
+                qi::_1 = &_val->*&ReleaseEvent::thread,
+                qi::_2 = &_val->*&ReleaseEvent::lock
             ]
             ;
 
         start
             =   (stream << " starts " << stream)
             [
-                _1 = &_val->*&StartEvent::parent,
-                _2 = &_val->*&StartEvent::child
+                qi::_1 = &_val->*&StartEvent::parent,
+                qi::_2 = &_val->*&StartEvent::child
             ]
             ;
 
         join
             =   (stream << " joins " << stream)
             [
-                _1 = &_val->*&JoinEvent::parent,
-                _2 = &_val->*&JoinEvent::child
+                qi::_1 = &_val->*&JoinEvent::parent,
+                qi::_2 = &_val->*&JoinEvent::child
             ]
             ;
     }
