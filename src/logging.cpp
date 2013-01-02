@@ -8,6 +8,7 @@
 #include <d2/detail/event_io.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/events.hpp>
+#include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
