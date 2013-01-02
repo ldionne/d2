@@ -38,6 +38,6 @@ if (DEFINED DBGHELP_PATH)
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-add_library(dbg SHARED ${all_sources})
+add_library(dbg ${all_sources})
 target_link_libraries(dbg fungo)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)

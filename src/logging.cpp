@@ -6,6 +6,7 @@
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/event_io.hpp>
+#include <d2/detail/lock_debug_info.hpp>
 #include <d2/events.hpp>
 
 #include <boost/assert.hpp>
@@ -14,6 +15,8 @@
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <cstddef>
+#include <dbg/frames.hpp>
+#include <dbg/symbols.hpp>
 #include <iostream>
 #include <iterator>
 #include <vector>
@@ -43,6 +46,30 @@ extern void D2_DECL push_event_impl(Event const& e) {
                     "unable to generate the event using the karma generator");
     }
     sink_lock.unlock();
+}
+
+template <typename OutputIterator>
+class StackFrameSink : public dbg::symsink {
+    OutputIterator out_;
+
+public:
+    explicit StackFrameSink(OutputIterator const& out) : out_(out) { }
+
+    virtual void process_function(void const* ip, char const* name,
+                                                  char const* module) {
+        *out_++ = StackFrame(ip, name, module);
+    }
+};
+
+void D2_DECL LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
+    dbg::call_stack<100> stack;
+    dbg::symdb symbols;
+    stack.collect(ignore + 1); // ignore our frame
+
+    StackFrameSink<std::back_insert_iterator<CallStack> >
+                                    sink(std::back_inserter(call_stack));
+    for (unsigned int frame = 0; frame < stack.size(); ++frame)
+        symbols.lookup_function(stack.pc(frame), sink);
 }
 
 } // end namespace detail
