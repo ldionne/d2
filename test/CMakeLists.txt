@@ -1,26 +1,32 @@
-# Add unit tests.
-if(NOT ${GTEST_FOUND})
-    message("Missing Google test library: unit tests will be unavailable.")
-else()
-    add_custom_target(unit)
-    macro(d2_add_unit_test name)
-        add_executable(${name}_exec ${name}.cpp)
-        target_link_libraries(${name}_exec d2_lib ${GTEST_BOTH_LIBRARIES})
-        add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
-        set_tests_properties(${name} PROPERTIES TIMEOUT 60)
-        add_dependencies(unit ${name}_exec)
-    endmacro()
+# Add standalone unit tests.
+add_custom_target(unit)
+macro(d2_add_unit_test name)
+    add_executable(${name}_exec ${name}.cpp)
+    target_link_libraries(${name}_exec d2_lib)
+    add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exec)
+    add_dependencies(unit ${name}_exec)
+endmacro()
+d2_add_unit_test(concepts)
 
-    d2_add_unit_test(bounded_io_sequence bounded_io_sequence.cpp)
-    d2_add_unit_test(logging logging.cpp)
+
+# Add unit tests requiring Google test.
+if(NOT ${GTEST_FOUND})
+    message("Missing Google test library: some unit tests will be unavailable.")
+else()
+    macro(d2_add_gtest_unit_test name)
+        d2_add_unit_test(${name})
+        target_link_libraries(${name}_exec ${GTEST_BOTH_LIBRARIES})
+    endmacro()
+    d2_add_gtest_unit_test(bounded_io_sequence)
+    d2_add_gtest_unit_test(logging)
 endif()
 
 
 # Add mock library and integration tests.
 if(NOT ${Boost_THREAD_FOUND})
-    message("Missing Boost.Thread library: mock library and integration tests will be unavailable.")
+    message("Missing Boost.Thread library: integration tests will be unavailable.")
 elseif(NOT ${Boost_SYSTEM_FOUND})
-    message("Missing Boost.System library: mock library and integration tests will be unavailable.")
+    message("Missing Boost.System library: integration tests will be unavailable.")
 else()
     # Mock library.
     add_library(mock ${CMAKE_CURRENT_SOURCE_DIR}/mock.cpp)

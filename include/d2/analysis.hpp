@@ -5,7 +5,9 @@
 #ifndef D2_ANALYSIS_HPP
 #define D2_ANALYSIS_HPP
 
-#include <d2/types.hpp>
+#include <d2/graphs.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/concept_check.hpp>

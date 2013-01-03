@@ -9,7 +9,8 @@
 #include <d2/detail/config.hpp>
 #include <d2/event_sink.hpp>
 #include <d2/events.hpp>
-#include <d2/types.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #include <istream>
 #include <string>

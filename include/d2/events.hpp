@@ -1,12 +1,13 @@
 /**
- * This file defines the different event types captured by the logging system.
+ * This file defines the event types captured by the logging system.
  */
 
 #ifndef D2_EVENTS_HPP
 #define D2_EVENTS_HPP
 
 #include <d2/detail/lock_debug_info.hpp>
-#include <d2/types.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
 #include <boost/variant.hpp>

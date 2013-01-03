@@ -6,7 +6,9 @@
 #define D2_GRAPH_CONSTRUCTION_HPP
 
 #include <d2/events.hpp>
-#include <d2/types.hpp>
+#include <d2/graphs.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/assert.hpp>

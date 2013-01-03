@@ -7,7 +7,8 @@
 
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/events.hpp>
-#include <d2/types.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #include <boost/phoenix.hpp>
 #include <boost/spirit/include/karma.hpp>

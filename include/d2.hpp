@@ -6,10 +6,13 @@
 #define D2_HPP
 
 #include <d2/analysis.hpp>
+#include <d2/concepts.hpp>
 #include <d2/event_sink.hpp>
 #include <d2/events.hpp>
 #include <d2/graph_construction.hpp>
+#include <d2/graphs.hpp>
 #include <d2/logging.hpp>
-#include <d2/types.hpp>
+#include <d2/sync_object.hpp>
+#include <d2/thread.hpp>
 
 #endif // !D2_HPP
