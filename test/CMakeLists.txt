@@ -7,6 +7,7 @@ macro(d2_add_unit_test name)
     add_dependencies(unit ${name}_exec)
 endmacro()
 d2_add_unit_test(concepts)
+d2_add_unit_test(event_traits)
 
 
 # Add unit tests requiring Google test.
