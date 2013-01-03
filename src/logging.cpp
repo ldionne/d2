@@ -12,6 +12,7 @@
 #include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/function_output_iterator.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/spirit/include/karma.hpp>
@@ -133,14 +134,31 @@ EventSink::~EventSink() { }
 
 namespace detail {
     namespace {
-        static event_generator<std::ostream_iterator<char> > generate_event;
-    }
+        struct OstreamWrapperAsFunction {
+            OstreamWrapper& wrapper_;
 
-    extern void D2_API generate(std::ostream& os, Event const& event) {
+            explicit OstreamWrapperAsFunction(OstreamWrapper& wrapper)
+                : wrapper_(wrapper)
+            { }
+
+            typedef void result_type;
+
+            result_type operator()(char c) {
+                wrapper_.put(c);
+            }
+        };
+
+        typedef boost::function_output_iterator<OstreamWrapperAsFunction>
+                                                       OstreamWrapperIterator;
+
+        static event_generator<OstreamWrapperIterator> generate_event;
+    } // end anonymous namespace
+
+    extern void D2_API generate(OstreamWrapper& os, Event const& event) {
         bool const success = boost::spirit::karma::generate(
-                                std::ostream_iterator<char>(os),
-                                generate_event << '\n',
-                                event);
+                        OstreamWrapperIterator(OstreamWrapperAsFunction(os)),
+                        generate_event << '\n',
+                        event);
 
         BOOST_ASSERT_MSG(success,
                     "unable to generate the event using the karma generator");

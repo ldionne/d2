@@ -8,8 +8,6 @@
 #include <d2/detail/config.hpp>
 #include <d2/events.hpp>
 
-#include <ostream>
-
 
 namespace d2 {
 
@@ -31,8 +29,23 @@ public:
 };
 
 namespace detail {
-    extern void D2_API generate(std::ostream& os, Event const& event);
-}
+    struct OstreamWrapper {
+        virtual void put(char c) = 0;
+    };
+
+    template <typename Ostream>
+    struct OstreamHolder : OstreamWrapper {
+        Ostream& os_;
+
+        explicit OstreamHolder(Ostream& os) : os_(os) { }
+
+        virtual void put(char c) {
+            os_.put(c);
+        }
+    };
+
+    extern void D2_API generate(OstreamWrapper& os, Event const& event);
+} // end namespace detail
 
 /**
  * Adaptor to create an `EventSink` from an object implementing the `ostream`
@@ -42,7 +55,7 @@ namespace detail {
  */
 template <typename Ostream>
 class OstreamEventSink : public EventSink {
-    Ostream& os_;
+    detail::OstreamHolder<Ostream> os_;
 
 public:
     explicit OstreamEventSink(Ostream& os) : os_(os) { }
