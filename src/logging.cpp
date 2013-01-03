@@ -29,34 +29,32 @@
 namespace d2 {
 namespace detail {
 
-static basic_mutex sink_lock;
-static bool event_logging_enabled = false;
+D2_API basic_mutex sink_lock;
+D2_API bool event_logging_enabled = false;
 static EventSink* event_sink = NULL;
 
 template <typename Event>
 void push_event_impl(Event const& event) {
-    sink_lock.lock();
     BOOST_ASSERT_MSG(event_logging_enabled,
                         "pushing an event while event logging is disabled");
     BOOST_ASSERT_MSG(event_sink != NULL,
                                 "logging events in an invalid NULL sink");
     event_sink->write(event);
-    sink_lock.unlock();
 }
 
-extern void D2_API push_event(AcquireEvent const& event) {
+D2_API extern void push_event(AcquireEvent const& event) {
     push_event_impl(event);
 }
 
-extern void D2_API push_event(ReleaseEvent const& event) {
+D2_API extern void push_event(ReleaseEvent const& event) {
     push_event_impl(event);
 }
 
-extern void D2_API push_event(StartEvent const& event) {
+D2_API extern void push_event(StartEvent const& event) {
     push_event_impl(event);
 }
 
-extern void D2_API push_event(JoinEvent const& event) {
+D2_API extern void push_event(JoinEvent const& event) {
     push_event_impl(event);
 }
 
@@ -73,7 +71,7 @@ public:
     }
 };
 
-void D2_API LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
+D2_API void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
     dbg::call_stack<100> stack;
     dbg::symdb symbols;
     stack.collect(ignore + 1); // ignore our frame
@@ -86,33 +84,33 @@ void D2_API LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
 
 } // end namespace detail
 
-extern void D2_API set_event_sink(EventSink* sink) {
+D2_API extern void set_event_sink(EventSink* sink) {
     BOOST_ASSERT_MSG(sink != NULL, "setting an invalid NULL sink");
     detail::sink_lock.lock();
     detail::event_sink = sink;
     detail::sink_lock.unlock();
 }
 
-extern void D2_API disable_event_logging() {
+D2_API extern void disable_event_logging() {
     detail::sink_lock.lock();
     detail::event_logging_enabled = false;
     detail::sink_lock.unlock();
 }
 
-extern void D2_API enable_event_logging() {
+D2_API extern void enable_event_logging() {
     detail::sink_lock.lock();
     detail::event_logging_enabled = true;
     detail::sink_lock.unlock();
 }
 
-extern bool D2_API is_enabled() {
+D2_API extern bool is_enabled() {
     detail::sink_lock.lock();
     bool const enabled = detail::event_logging_enabled;
     detail::sink_lock.unlock();
     return enabled;
 }
 
-extern std::vector<Event> D2_API load_events(std::istream& source) {
+D2_API extern std::vector<Event> load_events(std::istream& source) {
     detail::event_parser<std::string::const_iterator> parse_event;
     source.unsetf(std::ios::skipws);
     std::string const input((std::istream_iterator<char>(source)),
@@ -154,7 +152,7 @@ namespace detail {
         static event_generator<OstreamWrapperIterator> generate_event;
     } // end anonymous namespace
 
-    extern void D2_API generate(OstreamWrapper& os, Event const& event) {
+    D2_API extern void generate(OstreamWrapper& os, Event const& event) {
         bool const success = boost::spirit::karma::generate(
                         OstreamWrapperIterator(OstreamWrapperAsFunction(os)),
                         generate_event << '\n',

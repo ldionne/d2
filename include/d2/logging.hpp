@@ -6,6 +6,7 @@
 #ifndef D2_LOGGING_HPP
 #define D2_LOGGING_HPP
 
+#include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/event_sink.hpp>
 #include <d2/events.hpp>
@@ -19,11 +20,14 @@
 
 namespace d2 {
 namespace detail {
-    // These methods are not part of the public API.
-    extern void D2_API push_event(AcquireEvent const& event);
-    extern void D2_API push_event(ReleaseEvent const& event);
-    extern void D2_API push_event(StartEvent const& event);
-    extern void D2_API push_event(JoinEvent const& event);
+    // These methods/variables are not part of the public API.
+    D2_API extern void push_event(AcquireEvent const& event);
+    D2_API extern void push_event(ReleaseEvent const& event);
+    D2_API extern void push_event(StartEvent const& event);
+    D2_API extern void push_event(JoinEvent const& event);
+
+    D2_API extern basic_mutex sink_lock;
+    D2_API extern bool event_logging_enabled;
 } // end namespace detail
 
 /**
@@ -35,7 +39,7 @@ namespace detail {
  * @note `*sink` must be in scope as long as the logging of events is enabled
  *       with that sink.
  */
-extern void D2_API set_event_sink(EventSink* sink);
+D2_API extern void set_event_sink(EventSink* sink);
 
 /**
  * Disable the logging of events by the deadlock detection framework.
@@ -43,7 +47,7 @@ extern void D2_API set_event_sink(EventSink* sink);
  * @note This function is idempotent, i.e. calling it when the logging is
  *       already disabled is useless yet harmless.
  */
-extern void D2_API disable_event_logging();
+D2_API extern void disable_event_logging();
 
 /**
  * Enable the logging of events by the deadlock detection framework.
@@ -52,12 +56,12 @@ extern void D2_API disable_event_logging();
  * @note This function is idempotent, i.e. calling it when the logging is
  *       already enabled is useless yet harmless.
  */
-extern void D2_API enable_event_logging();
+D2_API extern void enable_event_logging();
 
 /**
  * Return whether event logging is currently enabled.
  */
-extern bool D2_API is_enabled();
+D2_API extern bool is_enabled();
 
 /**
  * Return whether event logging is currently disabled.
@@ -73,7 +77,7 @@ inline bool is_disabled() {
  * @todo Remove this from the public logging api.
  * @todo Use a generalization of `EventSink` instead of `std::istream`.
  */
-extern std::vector<Event> D2_API load_events(std::istream& source);
+D2_API extern std::vector<Event> load_events(std::istream& source);
 
 /**
  * Notify the deadlock detection system of the acquisition of synchronization
@@ -81,11 +85,13 @@ extern std::vector<Event> D2_API load_events(std::istream& source);
  */
 template <typename SyncObject, typename Thread>
 void notify_acquire(SyncObject const& s, Thread const& t) {
-    if (is_enabled()) {
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled) {
         AcquireEvent e((d2::SyncObject(s)), d2::Thread(t));
         e.info.init_call_stack(1); // ignore current frame
         detail::push_event(e);
     }
+    detail::sink_lock.unlock();
 }
 
 /**
@@ -94,8 +100,10 @@ void notify_acquire(SyncObject const& s, Thread const& t) {
  */
 template <typename SyncObject, typename Thread>
 void notify_release(SyncObject const& s, Thread const& t) {
-    if (is_enabled())
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
         detail::push_event(ReleaseEvent(d2::SyncObject(s), d2::Thread(t)));
+    detail::sink_lock.unlock();
 }
 
 /**
@@ -104,8 +112,10 @@ void notify_release(SyncObject const& s, Thread const& t) {
  */
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
-    if (is_enabled())
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
         detail::push_event(StartEvent(d2::Thread(parent), d2::Thread(child)));
+    detail::sink_lock.unlock();
 }
 
 /**
@@ -114,8 +124,10 @@ void notify_start(Thread const& parent, Thread const& child) {
  */
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
-    if (is_enabled())
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
         detail::push_event(JoinEvent(d2::Thread(parent), d2::Thread(child)));
+    detail::sink_lock.unlock();
 }
 
 } // end namespace d2
