@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 2.8)
 project(d2)
 enable_testing()
 
+# Macro copying files after a given target has been built.
+macro(d2_post_build_copy target destination) # files...
+    foreach(file ${ARGN})
+        add_custom_command(
+            TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+            ${file} ${destination})
+    endforeach()
+endmacro()
+
+
 # Add some custom compiler flags.
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     add_definitions(-stdlib=libc++)
@@ -55,6 +65,7 @@ elseif(NOT ${Boost_PROGRAM_OPTIONS_FOUND})
 else()
     add_executable(d2 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/d2.cpp)
     target_link_libraries(d2 d2_lib ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+    d2_post_build_copy(d2 ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 endif()
 
 
