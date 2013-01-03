@@ -189,6 +189,8 @@ int main(int argc, char const* argv[]) {
     hidden.add_options()
         ("input-file", po::value<std::string>(), "input file to process")
     ;
+    po::positional_options_description positionals;
+    positionals.add("input-file", 0);
 
     po::options_description analysis("Analysis options");
 
@@ -203,7 +205,8 @@ int main(int argc, char const* argv[]) {
     all.add(allowed).add(hidden);
 
     po::variables_map args;
-    po::store(po::command_line_parser(argc, argv).options(all).run(), args);
+    po::command_line_parser parser(argc, argv);
+    po::store(parser.options(all).positional(positionals).run(), args);
 
     // Some options make us do something and exit right away. These cases
     // are handled here.
