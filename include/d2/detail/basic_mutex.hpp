@@ -79,7 +79,7 @@ private:
 public:
     inline basic_mutex() {
         bool const success =
-                        ::InitializeCriticalSectionAndSpinCount(&section_, 0);
+                ::InitializeCriticalSectionAndSpinCount(&section_, 0) != 0;
         BOOST_ASSERT_MSG(success,
             "failed to initialize the critical section of the basic_mutex");
     }
