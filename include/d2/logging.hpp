@@ -6,7 +6,6 @@
 #ifndef D2_LOGGING_HPP
 #define D2_LOGGING_HPP
 
-#include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/event_sink.hpp>
 #include <d2/events.hpp>
@@ -14,20 +13,17 @@
 #include <d2/thread.hpp>
 
 #include <istream>
-#include <string>
 #include <vector>
 
 
 namespace d2 {
 namespace detail {
-    // These methods/variables are not part of the public API.
-    D2_API extern void push_event(AcquireEvent const& event);
-    D2_API extern void push_event(ReleaseEvent const& event);
-    D2_API extern void push_event(StartEvent const& event);
-    D2_API extern void push_event(JoinEvent const& event);
-
-    D2_API extern basic_mutex sink_lock;
-    D2_API extern bool event_logging_enabled;
+    // These methods are not part of the public API.
+    D2_API extern void push_acquire(SyncObject const&, Thread const&,
+                                                       unsigned int);
+    D2_API extern void push_release(SyncObject const&, Thread const&);
+    D2_API extern void push_start(Thread const&, Thread const&);
+    D2_API extern void push_join(Thread const&, Thread const&);
 } // end namespace detail
 
 /**
@@ -85,13 +81,8 @@ D2_API extern std::vector<Event> load_events(std::istream& source);
  */
 template <typename SyncObject, typename Thread>
 void notify_acquire(SyncObject const& s, Thread const& t) {
-    detail::sink_lock.lock();
-    if (detail::event_logging_enabled) {
-        AcquireEvent e((d2::SyncObject(s)), d2::Thread(t));
-        e.info.init_call_stack(1); // ignore current frame
-        detail::push_event(e);
-    }
-    detail::sink_lock.unlock();
+                                                // ignore this frame
+    detail::push_acquire(d2::SyncObject(s), d2::Thread(t), 1);
 }
 
 /**
@@ -100,10 +91,7 @@ void notify_acquire(SyncObject const& s, Thread const& t) {
  */
 template <typename SyncObject, typename Thread>
 void notify_release(SyncObject const& s, Thread const& t) {
-    detail::sink_lock.lock();
-    if (detail::event_logging_enabled)
-        detail::push_event(ReleaseEvent(d2::SyncObject(s), d2::Thread(t)));
-    detail::sink_lock.unlock();
+    detail::push_release(d2::SyncObject(s), d2::Thread(t));
 }
 
 /**
@@ -112,10 +100,7 @@ void notify_release(SyncObject const& s, Thread const& t) {
  */
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
-    detail::sink_lock.lock();
-    if (detail::event_logging_enabled)
-        detail::push_event(StartEvent(d2::Thread(parent), d2::Thread(child)));
-    detail::sink_lock.unlock();
+    detail::push_start(d2::Thread(parent), d2::Thread(child));
 }
 
 /**
@@ -124,10 +109,7 @@ void notify_start(Thread const& parent, Thread const& child) {
  */
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
-    detail::sink_lock.lock();
-    if (detail::event_logging_enabled)
-        detail::push_event(JoinEvent(d2::Thread(parent), d2::Thread(child)));
-    detail::sink_lock.unlock();
+    detail::push_join(d2::Thread(parent), d2::Thread(child));
 }
 
 } // end namespace d2

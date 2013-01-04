@@ -16,8 +16,8 @@
 namespace d2 {
 
 namespace detail {
-D2_API basic_mutex sink_lock;
-D2_API bool event_logging_enabled = false;
+static basic_mutex sink_lock;
+static bool event_logging_enabled = false;
 static EventSink* event_sink = NULL;
 
 template <typename Event>
@@ -29,20 +29,36 @@ void push_event_impl(Event const& event) {
     event_sink->write(event);
 }
 
-D2_API extern void push_event(AcquireEvent const& event) {
-    push_event_impl(event);
+D2_API extern void push_acquire(SyncObject const& s, Thread const& t,
+                                                     unsigned int ignore) {
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled) {
+        AcquireEvent event(s, t);
+        event.info.init_call_stack(ignore + 1); // ignore current frame
+        push_event_impl(event);
+    }
+    detail::sink_lock.unlock();
 }
 
-D2_API extern void push_event(ReleaseEvent const& event) {
-    push_event_impl(event);
+D2_API extern void push_release(SyncObject const& s, Thread const& t) {
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
+        push_event_impl(ReleaseEvent(s, t));
+    detail::sink_lock.unlock();
 }
 
-D2_API extern void push_event(StartEvent const& event) {
-    push_event_impl(event);
+D2_API extern void push_start(Thread const& parent, Thread const& child) {
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
+        push_event_impl(StartEvent(parent, child));
+    detail::sink_lock.unlock();
 }
 
-D2_API extern void push_event(JoinEvent const& event) {
-    push_event_impl(event);
+D2_API extern void push_join(Thread const& parent, Thread const& child) {
+    detail::sink_lock.lock();
+    if (detail::event_logging_enabled)
+        push_event_impl(JoinEvent(parent, child));
+    detail::sink_lock.unlock();
 }
 } // end namespace detail
 
