@@ -59,7 +59,7 @@ struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     typedef std::vector<StackFrame> CallStack;
     CallStack call_stack;
 
-    void D2_API init_call_stack(unsigned int ignore = 0);
+    D2_API void init_call_stack(unsigned int ignore = 0);
 
     friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b){
         return a.call_stack == b.call_stack;

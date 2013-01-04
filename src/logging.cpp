@@ -1,34 +1,21 @@
 /**
- * This file implements the event logging.
+ * This file implements the event logging API in d2/logging.hpp.
  */
 
 #define D2_SOURCE
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
-#include <d2/detail/event_io.hpp>
-#include <d2/detail/lock_debug_info.hpp>
 #include <d2/event_sink.hpp>
 #include <d2/events.hpp>
 #include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
-#include <boost/function_output_iterator.hpp>
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/spirit/include/karma.hpp>
-#include <boost/spirit/include/qi.hpp>
 #include <cstddef>
-#include <dbg/frames.hpp>
-#include <dbg/symbols.hpp>
-#include <istream>
-#include <iterator>
-#include <string>
-#include <vector>
 
 
 namespace d2 {
-namespace detail {
 
+namespace detail {
 D2_API basic_mutex sink_lock;
 D2_API bool event_logging_enabled = false;
 static EventSink* event_sink = NULL;
@@ -57,31 +44,6 @@ D2_API extern void push_event(StartEvent const& event) {
 D2_API extern void push_event(JoinEvent const& event) {
     push_event_impl(event);
 }
-
-template <typename OutputIterator>
-class StackFrameSink : public dbg::symsink {
-    OutputIterator out_;
-
-public:
-    explicit StackFrameSink(OutputIterator const& out) : out_(out) { }
-
-    virtual void process_function(void const* ip, char const* name,
-                                                  char const* module) {
-        *out_++ = StackFrame(ip, name, module);
-    }
-};
-
-D2_API void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
-    dbg::call_stack<100> stack;
-    dbg::symdb symbols;
-    stack.collect(ignore + 1); // ignore our frame
-
-    StackFrameSink<std::back_insert_iterator<CallStack> >
-                                    sink(std::back_inserter(call_stack));
-    for (unsigned int frame = 0; frame < stack.size(); ++frame)
-        symbols.lookup_function(stack.pc(frame), sink);
-}
-
 } // end namespace detail
 
 D2_API extern void set_event_sink(EventSink* sink) {
@@ -109,58 +71,5 @@ D2_API extern bool is_enabled() {
     detail::sink_lock.unlock();
     return enabled;
 }
-
-D2_API extern std::vector<Event> load_events(std::istream& source) {
-    detail::event_parser<std::string::const_iterator> parse_event;
-    source.unsetf(std::ios::skipws);
-    std::string const input((std::istream_iterator<char>(source)),
-                             std::istream_iterator<char>());
-
-    std::vector<Event> events;
-    std::string::const_iterator first(boost::begin(input)),
-                                last(boost::end(input));
-    bool success = boost::spirit::qi::parse(first, last,
-                                            *(parse_event >> '\n'), events);
-    (void)success;
-    BOOST_ASSERT_MSG(success && first == last,
-                            "unable to parse events using the qi grammar");
-
-    return events;
-}
-
-EventSink::~EventSink() { }
-
-namespace detail {
-    namespace {
-        struct OstreamWrapperAsFunction {
-            OstreamWrapper& wrapper_;
-
-            explicit OstreamWrapperAsFunction(OstreamWrapper& wrapper)
-                : wrapper_(wrapper)
-            { }
-
-            typedef void result_type;
-
-            result_type operator()(char c) {
-                wrapper_.put(c);
-            }
-        };
-
-        typedef boost::function_output_iterator<OstreamWrapperAsFunction>
-                                                       OstreamWrapperIterator;
-
-        static event_generator<OstreamWrapperIterator> generate_event;
-    } // end anonymous namespace
-
-    D2_API extern void generate(OstreamWrapper& os, Event const& event) {
-        bool const success = boost::spirit::karma::generate(
-                        OstreamWrapperIterator(OstreamWrapperAsFunction(os)),
-                        generate_event << '\n',
-                        event);
-
-        BOOST_ASSERT_MSG(success,
-                    "unable to generate the event using the karma generator");
-    }
-} // end namespace detail
 
 } // end namespace d2
