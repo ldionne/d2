@@ -44,7 +44,7 @@ namespace detail {
         }
     };
 
-    extern void D2_API generate(OstreamWrapper& os, Event const& event);
+    D2_API extern void generate(OstreamWrapper& os, Event const& event);
 } // end namespace detail
 
 /**
