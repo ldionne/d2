@@ -50,12 +50,12 @@ else()
 endif()
 
 
-# Add the d2 library.
+# Add the d2 logging library.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-file(GLOB d2_lib_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-add_library(d2_lib SHARED ${d2_lib_sources})
+file(GLOB d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+add_library(d2log SHARED ${d2log_sources})
 add_definitions(-DD2_DYN_LINK)
-target_link_libraries(d2_lib dbg)
+target_link_libraries(d2log dbg)
 
 
 # Add the d2 command line utility.
@@ -65,7 +65,7 @@ elseif(NOT ${Boost_PROGRAM_OPTIONS_FOUND})
     message("Missing Boost.ProgramOptions library: d2 command line utility will be unavailable.")
 else()
     add_executable(d2 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/d2.cpp)
-    target_link_libraries(d2 d2_lib ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+    target_link_libraries(d2 d2log ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
     d2_post_build_copy(d2 ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 endif()
 
