@@ -22,6 +22,8 @@ static EventSink* event_sink = NULL;
 
 template <typename Event>
 void push_event_impl(Event const& event) {
+    // Note: We're locked by the push_* functions below, so we don't lock.
+
     BOOST_ASSERT_MSG(event_logging_enabled,
                         "pushing an event while event logging is disabled");
     BOOST_ASSERT_MSG(event_sink != NULL,
