@@ -8,6 +8,7 @@
 #include <d2/analysis.hpp>
 #include <d2/concepts.hpp>
 #include <d2/event_sink.hpp>
+#include <d2/event_traits.hpp>
 #include <d2/events.hpp>
 #include <d2/graph_construction.hpp>
 #include <d2/graphs.hpp>
