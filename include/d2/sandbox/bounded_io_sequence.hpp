@@ -2,8 +2,8 @@
  * This file defines bounded input/ouput sequences.
  */
 
-#ifndef D2_DETAIL_BOUNDED_IO_SEQUENCE_HPP
-#define D2_DETAIL_BOUNDED_IO_SEQUENCE_HPP
+#ifndef D2_SANDBOX_BOUNDED_IO_SEQUENCE_HPP
+#define D2_SANDBOX_BOUNDED_IO_SEQUENCE_HPP
 
 #include <algorithm>
 #include <boost/algorithm/cxx11/copy_n.hpp>
@@ -23,10 +23,10 @@
 
 
 namespace d2 {
-namespace detail {
+namespace sandbox {
 
 template <typename Iterator,
-          typename OutputType =typename boost::iterator_value<Iterator>::type>
+          typename OutputType = typename boost::iterator_value<Iterator>::type>
 class bounded_output_sequence {
     Iterator first_, last_;
 
@@ -211,7 +211,7 @@ public:
     }
 };
 
-} // end namespace detail
+} // end namespace sandbox
 } // end namespace d2
 
-#endif // !D2_DETAIL_BOUNDED_IO_SEQUENCE_HPP
+#endif // !D2_SANDBOX_BOUNDED_IO_SEQUENCE_HPP

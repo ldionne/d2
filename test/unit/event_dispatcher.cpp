@@ -2,7 +2,8 @@
  * This file contains compile-time tests for the `EventDispatcher` class.
  */
 
-#include <d2/event_dispatcher.hpp>
+#include <d2/sandbox/event_dispatcher.hpp>
+#include <d2/event_traits.hpp>
 
 
 namespace {
@@ -37,7 +38,7 @@ struct TestEvent {
 
 template <typename Policy>
 void instantiate() {
-    d2::EventDispatcher<TestSinkContainerTypePolicy> dispatcher;
+    d2::sandbox::EventDispatcher<TestSinkContainerTypePolicy> dispatcher;
     TestEvent e;
     dispatcher.dispatch(e);
 }

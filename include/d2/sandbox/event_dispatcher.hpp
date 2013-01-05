@@ -2,8 +2,8 @@
  * This file defines the `EventDispatcher` class.
  */
 
-#ifndef D2_EVENT_DISPATCHER_HPP
-#define D2_EVENT_DISPATCHER_HPP
+#ifndef D2_SANDBOX_EVENT_DISPATCHER_HPP
+#define D2_SANDBOX_EVENT_DISPATCHER_HPP
 
 #include <d2/event_traits.hpp>
 
@@ -26,6 +26,7 @@
 
 
 namespace d2 {
+namespace sandbox {
 
 /**
  * Tag type used to signify the usage of the default alternative.
@@ -154,6 +155,7 @@ public:
     }
 };
 
+} // end namespace sandbox
 } // end namespace d2
 
-#endif // !D2_EVENT_DISPATCHER_HPP
+#endif // !D2_SANDBOX_EVENT_DISPATCHER_HPP

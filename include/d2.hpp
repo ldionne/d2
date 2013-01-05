@@ -8,7 +8,6 @@
 #include <d2/acquire_event.hpp>
 #include <d2/analysis.hpp>
 #include <d2/concepts.hpp>
-#include <d2/event_dispatcher.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/graph_construction.hpp>

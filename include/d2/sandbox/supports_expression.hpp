@@ -3,8 +3,8 @@
  * supports a given expression.
  */
 
-#ifndef D2_DETAIL_SUPPORTS_EXPRESSION_HPP
-#define D2_DETAIL_SUPPORTS_EXPRESSION_HPP
+#ifndef D2_SANDBOX_SUPPORTS_EXPRESSION_HPP
+#define D2_SANDBOX_SUPPORTS_EXPRESSION_HPP
 
 #include <boost/mpl/bool.hpp>
 
@@ -29,4 +29,4 @@ public:                                                                     \
 }                                                                           \
 /**/
 
-#endif // !D2_DETAIL_SUPPORTS_EXPRESSION_HPP
+#endif // !D2_SANDBOX_SUPPORTS_EXPRESSION_HPP

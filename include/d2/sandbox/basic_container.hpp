@@ -3,11 +3,11 @@
  * begin and end functions for containers.
  */
 
-#ifndef D2_DETAIL_BASIC_CONTAINER_HPP
-#define D2_DETAIL_BASIC_CONTAINER_HPP
+#ifndef D2_SANDBOX_BASIC_CONTAINER_HPP
+#define D2_SANDBOX_BASIC_CONTAINER_HPP
 
 namespace d2 {
-namespace detail {
+namespace sandbox {
 
 class basic_container_core_access {
 public:
@@ -96,7 +96,7 @@ public:
 
 };
 
-} // end namespace detail
+} // end namespace sandbox
 } // end namespace d2
 
-#endif // !D2_DETAIL_BASIC_CONTAINER_HPP
+#endif // !D2_SANDBOX_BASIC_CONTAINER_HPP

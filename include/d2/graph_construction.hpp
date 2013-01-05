@@ -5,8 +5,11 @@
 #ifndef D2_GRAPH_CONSTRUCTION_HPP
 #define D2_GRAPH_CONSTRUCTION_HPP
 
-#include <d2/events.hpp>
+#include <d2/acquire_event.hpp>
 #include <d2/graphs.hpp>
+#include <d2/join_event.hpp>
+#include <d2/release_event.hpp>
+#include <d2/start_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
@@ -25,12 +28,12 @@
 #include <boost/range/end.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/type_traits/is_same.hpp>
+#include <boost/type_traits/is_convertible.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/variant.hpp>
 #include <cstddef>
-#include <stdexcept>
+#include <stdexcept> // for std::runtime_error
 #include <utility>
 
 
@@ -283,10 +286,13 @@ void build_graphs(Iterator first, Iterator last,
 
     BOOST_CONCEPT_ASSERT((LockGraphConcept<LockGraph>));
     BOOST_CONCEPT_ASSERT((boost::InputIteratorConcept<Iterator>));
-    BOOST_STATIC_ASSERT((::boost::is_same<
-                            typename boost::iterator_value<Iterator>::type,
-                            Event
-                        >::value));
+
+    typedef boost::variant<AcquireEvent, ReleaseEvent,
+                           StartEvent, JoinEvent> Event;
+    BOOST_MPL_ASSERT((boost::is_convertible<
+                        typename boost::iterator_value<Iterator>::type,
+                        Event
+                    >));
 
     detail::GraphBuilder<Iterator, LockGraph, SegmentationGraph> builder;
     builder(first, last, lg, sg);

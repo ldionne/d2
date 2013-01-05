@@ -4,7 +4,6 @@
 
 #define D2_SOURCE
 #include <d2/detail/config.hpp>
-#include <d2/events.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
