@@ -40,7 +40,8 @@ endif()
 
 
 # Try finding Boost libraries.
-find_package(Boost 1.53.0 COMPONENTS graph thread system program_options)
+find_package(Boost 1.53.0 REQUIRED filesystem # required to build d2log
+                          OPTIONAL_COMPONENTS graph thread system program_options)
 if(${Boost_INCLUDE_DIR} STREQUAL "NOTFOUND")
     message(FATAL_ERROR "Boost include directory was not found. Stopping CMake generation.")
 else()
@@ -55,7 +56,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_library(d2log SHARED ${d2log_sources})
 add_definitions(-DD2_DYN_LINK)
-target_link_libraries(d2log dbg)
+target_link_libraries(d2log dbg ${Boost_FILESYSTEM_LIBRARY})
 
 
 # Add the d2 command line utility.

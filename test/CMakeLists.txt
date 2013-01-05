@@ -15,11 +15,13 @@ d2_add_unit_test(event_traits)
 if(NOT ${GTEST_FOUND})
     message("Missing Google test library: some unit tests will be unavailable.")
 else()
-    macro(d2_add_gtest_unit_test name)
+    macro(d2_add_gtest_unit_test name) # additional dependencies...
         d2_add_unit_test(${name})
-        target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES})
+        target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} ${ARGN})
     endmacro()
     d2_add_gtest_unit_test(bounded_io_sequence)
+    d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY}
+                                                 ${Boost_SYSTEM_LIBRARY})
     d2_add_gtest_unit_test(logging)
 endif()
 
