@@ -4,8 +4,9 @@
  */
 
 #include <d2/analysis.hpp>
+#include <d2/detail/config.hpp>
+#include <d2/events.hpp>
 #include <d2/graph_construction.hpp>
-#include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/assign.hpp>
@@ -28,6 +29,10 @@
 #include <utility>
 #include <vector>
 
+
+namespace d2 {
+    D2_API extern std::vector<Event> load_events(std::istream& source);
+}
 
 static std::string const VERSION = "0.1a";
 

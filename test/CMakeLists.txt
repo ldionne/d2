@@ -19,10 +19,9 @@ else()
         d2_add_unit_test(${name})
         target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} ${ARGN})
     endmacro()
-    d2_add_gtest_unit_test(bounded_io_sequence)
     d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY}
                                                  ${Boost_SYSTEM_LIBRARY})
-    d2_add_gtest_unit_test(logging)
+    d2_add_gtest_unit_test(lock_debug_info)
 endif()
 
 

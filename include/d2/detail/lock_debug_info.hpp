@@ -49,7 +49,6 @@ struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     }
 
     D2_API friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
-
     D2_API friend std::istream& operator>>(std::istream&, LockDebugInfo&);
 };
 
