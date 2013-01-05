@@ -6,6 +6,7 @@
 #include <d2/logging.hpp>
 
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>

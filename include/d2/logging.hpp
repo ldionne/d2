@@ -7,13 +7,10 @@
 #define D2_LOGGING_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/event_sink.hpp>
-#include <d2/events.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
-#include <istream>
-#include <vector>
+#include <string>
 
 
 namespace d2 {
@@ -27,15 +24,20 @@ namespace detail {
 } // end namespace detail
 
 /**
- * Set the sink to which events are written when logging of events is enabled.
- * A sink must be set before logging may start, i.e. before
+ * Set the path of the repository into which events are written when logging
+ * is enabled. A path must be set before logging may start, i.e. before
  * `enable_event_logging` is called for the first time.
+ *
+ * The `path` must either
+ *  - Point to nothing (no file, no directory, etc..).
+ *  - Point to an empty directory.
+ * Anything else will make the call fail.
+ *
+ * @return Whether the operation succeeded. Causes of failure include the
+ *         non respect of the preconditions amongst others.
  * @note This operation can be considered atomic.
- * @note `sink` must be a pointer to a valid sink.
- * @note `*sink` must be in scope as long as the logging of events is enabled
- *       with that sink.
  */
-D2_API extern void set_event_sink(EventSink* sink);
+D2_API extern bool set_log_repository(std::string const& path);
 
 /**
  * Disable the logging of events by the deadlock detection framework.
@@ -47,7 +49,6 @@ D2_API extern void disable_event_logging();
 
 /**
  * Enable the logging of events by the deadlock detection framework.
- * The sink that is used is the same that was set last with `set_event_sink`.
  * @note This operation can be considered atomic.
  * @note This function is idempotent, i.e. calling it when the logging is
  *       already enabled is useless yet harmless.
@@ -65,15 +66,6 @@ D2_API extern bool is_enabled();
 inline bool is_disabled() {
     return !is_enabled();
 }
-
-/**
- * Load and return the events contained in `source` as a vector of events. The
- * source must have been created by the logging framework to ensure it can be
- * read correctly.
- * @todo Remove this from the public logging api.
- * @todo Use a generalization of `EventSink` instead of `std::istream`.
- */
-D2_API extern std::vector<Event> load_events(std::istream& source);
 
 /**
  * Notify the deadlock detection system of the acquisition of synchronization
