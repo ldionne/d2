@@ -7,6 +7,7 @@
 #define D2_GRAPHS_HPP
 
 #include <d2/detail/lock_debug_info.hpp>
+#include <d2/segment.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
@@ -27,8 +28,8 @@ namespace d2 {
  * Directed acyclic graph representing the order of starts and joins between
  * the threads of a program.
  */
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS>
-                                                        SegmentationGraph;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
+                                                Segment> SegmentationGraph;
 typedef boost::graph_traits<SegmentationGraph>::vertex_descriptor Segment;
 
 /**
@@ -96,6 +97,11 @@ namespace graph {
     // SyncObject associated to it.
     template <> struct internal_vertex_name<d2::SyncObject> {
         typedef multi_index::identity<d2::SyncObject> type;
+    };
+
+    // Idem for the SegmentationGraph with Segments.
+    template <> struct internal_vertex_name<d2::Segment> {
+        typedef multi_index::identity<d2::Segment> type;
     };
 
     // This is to satisfy the EdgeIndexGraph concept, which is

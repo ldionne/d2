@@ -7,7 +7,7 @@
 
 #include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/thread.hpp>
+#include <d2/segment.hpp>
 
 #include <boost/operators.hpp>
 #include <iosfwd>
@@ -18,9 +18,10 @@ namespace d2 {
 /**
  * Represents the joining of a child thread into its parent thread.
  */
-struct JoinEvent {
-    Thread parent;
-    Thread child;
+struct JoinEvent : boost::equality_comparable<JoinEvent> {
+    Segment parent;
+    Segment new_parent;
+    Segment child;
 
     /**
      * This constructor must only be used when serializing events.
@@ -28,8 +29,10 @@ struct JoinEvent {
      */
     inline JoinEvent() { }
 
-    inline JoinEvent(Thread const& p, Thread const& c)
-        : parent(p), child(c)
+    inline JoinEvent(Segment const& parent,
+                      Segment const& new_parent,
+                      Segment const& child)
+        : parent(parent), new_parent(new_parent), child(child)
     { }
 
     /**
@@ -37,7 +40,9 @@ struct JoinEvent {
      * joining the same child thread.
      */
     friend bool operator==(JoinEvent const& a, JoinEvent const& b) {
-        return a.parent == b.parent && a.child == b.child;
+        return a.parent == b.parent &&
+               a.new_parent == b.new_parent &&
+               a.child == b.child;
     }
 
     D2_API friend std::ostream& operator<<(std::ostream&, JoinEvent const&);

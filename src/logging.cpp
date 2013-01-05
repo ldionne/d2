@@ -5,11 +5,13 @@
 #define D2_SOURCE
 #include <d2/acquire_event.hpp>
 #include <d2/detail/basic_atomic.hpp>
+#include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/join_event.hpp>
 #include <d2/logging.hpp>
 #include <d2/release_event.hpp>
+#include <d2/segment_hop_event.hpp>
 #include <d2/start_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
@@ -36,14 +38,66 @@ D2_API extern void push_release(SyncObject const& s, Thread const& t) {
         dispatcher.dispatch(ReleaseEvent(s, t));
 }
 
+static basic_mutex segment_lock;
+static Segment current_segment; // initialized to the initial segment value
+static boost::unordered_map<Thread, Segment> segment_of;
+
+namespace {
+    template <typename Value, typename Container>
+    bool contains(Value const& v, Container const& c) {
+        return c.find(v) != c.end();
+    }
+}
+
 D2_API extern void push_start(Thread const& parent, Thread const& child) {
-    if (is_enabled())
-        dispatcher.dispatch(StartEvent(parent, child));
+    if (is_enabled()) {
+        segment_lock.lock();
+        BOOST_ASSERT_MSG(parent != child, "thread starting itself");
+        BOOST_ASSERT_MSG(segment_of.empty() || contains(parent, segment_of),
+        "starting a thread from another thread that has not been created yet");
+        // segment_of[parent] will be the initial segment value on the very
+        // first call, which is the same as current_segment. so this means
+        // two things:
+        //  - parent_segment will be the initial segment value on the very
+        //    first call, and the segment of `parent` on subsequent calls,
+        //    which is fine.
+        //  - we must PREincrement the current_segment so it is distinct from
+        //    the initial value.
+        Segment parent_segment = segment_of[parent];
+        Segment new_parent_segment = ++current_segment;
+        Segment child_segment = ++current_segment;
+        segment_of[child] = child_segment;
+        segment_of[parent] = new_parent_segment;
+        segment_lock.unlock();
+
+        dispatcher.dispatch(StartEvent(parent_segment, new_parent_segment,
+                                                       child_segment));
+        dispatcher.dispatch(SegmentHopEvent(parent, new_parent_segment));
+        dispatcher.dispatch(SegmentHopEvent(child, child_segment));
+    }
 }
 
 D2_API extern void push_join(Thread const& parent, Thread const& child) {
-    if (is_enabled())
-        dispatcher.dispatch(JoinEvent(parent, child));
+    if (is_enabled()) {
+        segment_lock.lock();
+        BOOST_ASSERT_MSG(parent != child, "thread joining itself");
+        BOOST_ASSERT_MSG(contains(parent, segment_of),
+        "joining a thread into another thread that has not been created yet");
+        BOOST_ASSERT_MSG(contains(child, segment_of),
+                            "joining a thread that has not been created yet");
+        Segment parent_segment = segment_of[parent];
+        Segment child_segment = segment_of[child];
+        Segment new_parent_segment = ++current_segment;
+        segment_of[parent] = new_parent_segment;
+        segment_of.erase(child);
+        segment_lock.unlock();
+
+        dispatcher.dispatch(JoinEvent(parent_segment, new_parent_segment,
+                                                      child_segment));
+        dispatcher.dispatch(SegmentHopEvent(parent, new_parent_segment));
+        // We could possibly generate informative events like end-of-thread
+        // in the child thread, but that's not strictly necessary right now.
+    }
 }
 } // end namespace detail
 

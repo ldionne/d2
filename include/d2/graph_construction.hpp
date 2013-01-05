@@ -40,15 +40,70 @@
 namespace d2 {
 namespace detail {
 
-template <typename Iterator, typename LockGraph, typename SegmentationGraph>
-class GraphBuilder {
+template <typename SegmentationGraph>
+class SegmentationGraphBuilder {
+
+    struct EventVisitor : boost::static_visitor<void> {
+        SegmentationGraph& graph;
+
+        explicit EventVisitor(SegmentationGraph& sg) : graph(sg) { }
+
+        void operator()(StartEvent const& event) {
+            Segment parent_segment = event.parent;
+            Segment child_segment = event.child;
+            Segment new_parent_segment = event.new_parent;
+
+            // Segments:      parent    n+1    n+2
+            // Parent thread:   o________o
+            // Child thread:     \______________o
+            add_vertex(new_parent_segment, graph);
+            add_vertex(child_segment, graph);
+            add_edge(parent_segment, new_parent_segment, graph);
+            add_edge(parent_segment, child_segment, graph);
+        }
+
+        void operator()(JoinEvent const& event) {
+            Segment parent_segment = event.parent;
+            Segment child_segment = event.child;
+            Segment new_parent_segment = event.new_parent;
+
+            // Note: Below, the (parent, child, n) segments are not
+            //       necessarily ordered that way. `Any thread` can refer
+            //       to any thread, including `parent` or `child`.
+            // Segments:      parent    child    n    n+1
+            // Parent thread:   o______________________o
+            // Child thread:              o___________/
+            // Any thread:                       o
+            add_vertex(new_parent_segment, graph);
+            add_edge(parent_segment, new_parent_segment, graph);
+            add_edge(child_segment, new_parent_segment, graph);
+        }
+    };
+
+public:
+    template <typename Iterator>
+    void operator()(Iterator first, Iterator last, SegmentationGraph& graph) {
+        if (first == last)
+            return;
+
+        // The first event should be a StartEvent. We deduce the initial
+        // segment from it.
+        Segment initial_segment = boost::get<StartEvent>(*first).parent;
+        add_vertex(initial_segment, graph);
+
+        EventVisitor visitor(graph);
+        do {
+            boost::apply_visitor(visitor, *first);
+        } while (++first != last);
+    }
+};
+
+template <typename LockGraph, typename SegmentationGraph>
+class LockGraphBuilder {
     // Label present on each edge of the lock graph. It contains
     // arbitrary information.
     typedef typename boost::edge_property_type<LockGraph>::type
                                                         LockGraphEdgeLabel;
-
-    // Mapping of a thread to the segment in which it currently is.
-    typedef boost::unordered_map<Thread, Segment> SegmentationContext;
 
     /**
      * Represents a lock that is currently held by a thread. The segment in
@@ -82,31 +137,6 @@ class GraphBuilder {
     // Set of locks held by a thread at any given time.
     typedef boost::unordered_set<CurrentlyHeldLock> HeldLocks;
 
-    // Mapping of a thread to the set of locks currently held by it.
-    typedef boost::unordered_map<Thread, HeldLocks> LockContext;
-
-    // Given the first event, deduce the main thread.
-    struct MainThreadDeducer : boost::static_visitor<Thread> {
-        Thread operator()(StartEvent const& first) const {
-            return first.parent;
-        }
-        Thread operator()(AcquireEvent const& first) const {
-            return first.thread;
-        }
-        template <typename T>
-        Thread operator()(T const&) const {
-            boost::throw_exception(
-                std::runtime_error(
-                    "first event is not a start or an acquire event"));
-            return *static_cast<Thread*>(NULL); // Never reached.
-        }
-    };
-
-    template <typename T, typename Container>
-    static bool contains(T const& val, Container const& c) {
-        return c.find(val) != boost::end(c);
-    }
-
     static bool exists_edge_between(SyncObject const& u_,
                                     SyncObject const& v_,
                                     LockGraphEdgeLabel const& label,
@@ -131,20 +161,35 @@ class GraphBuilder {
     struct EventVisitor : boost::static_visitor<void> {
         LockGraph& lg;
         SegmentationGraph& sg;
-        SegmentationContext& segment_of;
-        LockContext& locks_held_by;
-        Segment& n;
+        HeldLocks& held_locks;
+        Thread& this_thread;
+        Segment current_segment;
 
-        EventVisitor(LockGraph& lg_, SegmentationGraph& sg_,
-                     SegmentationContext& sc, LockContext& lc, Segment& s)
-            : lg(lg_), sg(sg_), segment_of(sc), locks_held_by(lc), n(s)
+        // Note:
+        // There are two possible cases for the current_segment:
+        //      - this_thread is not the main thread, the first event is a
+        //          SegmentHopEvent, and the current_segment will be set to
+        //          the correct value on the first application of the visitor.
+        //      - this_thread is the main thread, the first event is NOT a
+        //          SegmentHopEvent, and the current_segment is set to 0 (the
+        //          initial segment) until we encounter a SegmentHopEvent.
+        EventVisitor(LockGraph& lg, SegmentationGraph& sg,
+                                        HeldLocks& hl, Thread& this_thread)
+            : lg(lg), sg(sg), held_locks(hl), this_thread(this_thread),
+              current_segment(0)
         { }
 
+        void operator()(SegmentHopEvent const& e) {
+            BOOST_ASSERT_MSG(e.thread == this_thread,
+                                "processing an event from the wrong thread");
+            current_segment = e.segment;
+        }
+
         void operator()(AcquireEvent const& e) {
+            BOOST_ASSERT_MSG(e.thread == this_thread,
+                                "processing an event from the wrong thread");
             Thread t(e.thread);
-            BOOST_ASSERT_MSG(contains(t, segment_of),
-                "acquiring a lock in a thread that has not been started yet");
-            Segment s2(segment_of[t]);
+            Segment s2(current_segment);
             SyncObject l2(e.lock);
 
             // Each lock has only one vertex in the lock graph. Normally, we
@@ -156,14 +201,14 @@ class GraphBuilder {
             add_vertex(l2, lg);
 
             // Compute the gatelock set, i.e. the set of locks currently
-            // held by `t`.
-            HeldLocks& locks_held_by_t = locks_held_by[t];
+            // held by this thread.
             boost::unordered_set<SyncObject> g;
-            BOOST_FOREACH(CurrentlyHeldLock const& l, locks_held_by_t)
+            BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks)
                 g.insert(l.lock);
 
-            // Add an edge from every lock l1 already held by `t` to l2.
-            BOOST_FOREACH(CurrentlyHeldLock const& l, locks_held_by_t) {
+            // Add an edge from every lock l1 already held by
+            // this thread to l2.
+            BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks) {
                 SyncObject l1(l.lock);
                 Segment s1(l.segment);
                 LockGraphEdgeLabel label(l.info, s1, t, g, s2, e.info);
@@ -180,99 +225,59 @@ class GraphBuilder {
                 if (!exists_edge_between(l1, l2, label, lg))
                     add_edge(l1, l2, label, lg);
             }
-            locks_held_by_t.insert(CurrentlyHeldLock(l2, s2, e.info));
+            held_locks.insert(CurrentlyHeldLock(l2, s2, e.info));
         }
 
         void operator()(ReleaseEvent const& e) {
+            BOOST_ASSERT_MSG(e.thread == this_thread,
+                                "processing an event from the wrong thread");
             Thread t(e.thread);
             SyncObject l(e.lock);
 
-            HeldLocks& context = locks_held_by[t];
-            BOOST_ASSERT_MSG(boost::algorithm::any_of(
-                                boost::begin(context), boost::end(context),
+            BOOST_ASSERT_MSG(boost::any_of(held_locks,
                         &boost::lambda::_1->*&CurrentlyHeldLock::lock == l),
                             "thread releasing a lock that it is not holding");
 
             //Release the lock; remove all locks equal to it from the context.
-            {
-                typedef typename HeldLocks::const_iterator Iter;
-                Iter it(boost::begin(context)), last(boost::end(context));
-                while (it != last)
-                    it->lock == l ? (void)context.erase(it++) : (void)++it;
-            }
-        }
-
-        void operator()(StartEvent const& e) {
-            Thread parent(e.parent), child(e.child);
-            BOOST_ASSERT_MSG(parent != child, "thread starting itself");
-            BOOST_ASSERT_MSG(contains(parent, segment_of),
-       "starting a thread from another thread that has not been created yet");
-
-            // Segments:      parent    n+1    n+2
-            // Parent thread:   o________o
-            // Child thread:     \______________o
-            Segment n_plus_1 = add_vertex(sg), n_plus_2 = add_vertex(sg);
-            add_edge(segment_of[parent], n_plus_1, sg);
-            add_edge(segment_of[parent], n_plus_2, sg);
-            segment_of[parent] = n_plus_1;
-            segment_of[child] = n_plus_2;
-            n = n_plus_2;
-        }
-
-        void operator()(JoinEvent const& e) {
-            Thread parent(e.parent), child(e.child);
-            BOOST_ASSERT_MSG(parent != child, "thread joining itself");
-            BOOST_ASSERT_MSG(contains(parent, segment_of),
-        "joining a thread into another thread that has not been created yet");
-            BOOST_ASSERT_MSG(contains(child, segment_of),
-                            "joining a thread that has not been created yet");
-
-            // Note: Below, the (parent, child, n) segments are not
-            //       necessarily ordered that way. `Any thread` can refer
-            //       to any thread, including `parent` or `child`.
-            // Segments:      parent    child    n    n+1
-            // Parent thread:   o______________________o
-            // Child thread:              o___________/
-            // Any thread:                       o
-            Segment n_plus_1 = add_vertex(sg);
-            add_edge(segment_of[parent], n_plus_1, sg);
-            add_edge(segment_of[child], n_plus_1, sg);
-            segment_of[parent] = n_plus_1;
-            segment_of.erase(child);
-            n = n_plus_1;
+            typename HeldLocks::const_iterator it(boost::begin(held_locks)),
+                                               last(boost::end(held_locks));
+            while (it != last)
+                it->lock == l ? (void)held_locks.erase(it++) : (void)++it;
         }
     };
 
 public:
+    template <typename Iterator>
     void operator()(Iterator first, Iterator last,
-                                LockGraph& lg, SegmentationGraph& sg) const {
+                                    LockGraph& lg, SegmentationGraph& sg) {
         if (first == last)
             return;
 
-        SegmentationContext segment_of;
-        LockContext locks_held_by;
-        Segment n = add_vertex(sg); // Last taken segment.
+        // The set of locks currently held by the thread we're processing.
+        // It obviously starts empty.
+        HeldLocks held_locks;
 
-        // The main thread is deduced using the first event.
-        Thread main_thread(boost::apply_visitor(MainThreadDeducer(), *first));
+        // The first event must be a SegmentHopEvent, because generating a
+        // SegmentHopEvent is the first thing we do when a thread is started.
+        // The only case where the first event is not a SegmentHopEvent is
+        // for the main thread. We deduce the thread we're processing from
+        // the first event.
+        struct DeduceMainThread {
+            Thread operator()(AcquireEvent const& e) const
+            { return e.thread; }
+            Thread operator()(SegmentHopEvent const& e) const
+            { return e.parent; }
+        };
+        Thread this_thread = boost::apply_visitor(DeduceMainThread(), *first);
 
-        // Main thread implicitly starts in the first segment.
-        segment_of[main_thread] = n;
-
-        EventVisitor visitor(lg, sg, segment_of, locks_held_by, n);
+        EventVisitor visitor(lg, sg, held_locks, this_thread);
         for (; first != last; ++first)
             boost::apply_visitor(visitor, *first);
     }
 };
-} // end namespace detail
 
-/**
- * Build a lock graph and a segmentation graph from the events contained in
- * the range delimited by [first, last).
- */
 template <typename Iterator, typename LockGraph, typename SegmentationGraph>
-void build_graphs(Iterator first, Iterator last,
-                                    LockGraph& lg, SegmentationGraph& sg) {
+void common_checks() {
     // We must be able to add new vertices/edges and to set their
     // respective properties to build the lock graph.
     BOOST_CONCEPT_ASSERT((
@@ -293,14 +298,45 @@ void build_graphs(Iterator first, Iterator last,
                         typename boost::iterator_value<Iterator>::type,
                         Event
                     >));
+}
+} // end namespace detail
 
-    detail::GraphBuilder<Iterator, LockGraph, SegmentationGraph> builder;
+/**
+ * Partly build a lock graph and a segmentation graph from the events
+ * contained in the range delimited by [first, last).
+ * Use this call to input Start/Join events and such.
+ */
+template <typename Iterator, typename LockGraph, typename SegmentationGraph>
+void input_process_wide_events(Iterator first, Iterator last,
+                               LockGraph& lg, SegmentationGraph& sg) {
+    detail::common_checks<Iterator, LockGraph, SegmentationGraph>();
+    detail::GraphBuilder<LockGraph, SegmentationGraph> builder;
     builder(first, last, lg, sg);
 }
 
 template <typename Range, typename LockGraph, typename SegmentationGraph>
-void build_graphs(Range const& range, LockGraph& lg, SegmentationGraph& sg) {
-    build_graphs(boost::begin(range), boost::end(range), lg, sg);
+void input_process_wide_events(Range const& range, LockGraph& lg,
+                                                   SegmentationGraph& sg) {
+    input_process_wide_events(boost::begin(range), boost::end(range), lg, sg);
+}
+
+/**
+ * Partly build a lock graph and a segmentation graph from the events
+ * contained in the range delimited by [first, last).
+ * Use this call to input Acquire/Release events and such.
+ */
+template <typename Iterator, typename LockGraph, typename SegmentationGraph>
+void input_thread_wide_event(Iterator first, Iterator last,
+                             LockGraph& lg, SegmentationGraph& sg) {
+    detail::common_checks<Iterator, LockGraph, SegmentationGraph>();
+    detail::LockGraphConcept<LockGraph, SegmentationGraph> builder;
+    builder(first, last, lg, sg);
+}
+
+template <typename Range, typename LockGraph, typename SegmentationGraph>
+void input_thread_wide_event(Range const& range, LockGraph& lg,
+                                                   SegmentationGraph& sg) {
+    input_thread_wide_event(boost::begin(range), boost::end(range), lg, sg);
 }
 
 } // end namespace d2

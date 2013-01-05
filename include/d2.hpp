@@ -15,6 +15,7 @@
 #include <d2/join_event.hpp>
 #include <d2/logging.hpp>
 #include <d2/release_event.hpp>
+#include <d2/segment.hpp>
 #include <d2/start_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>

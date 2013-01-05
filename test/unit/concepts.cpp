@@ -5,6 +5,7 @@
 #include <d2/concepts.hpp>
 
 #include <boost/concept/assert.hpp>
+#include <cstddef>
 
 
 namespace {

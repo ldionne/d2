@@ -6,6 +6,7 @@
 #define D2_ANALYSIS_HPP
 
 #include <d2/graphs.hpp>
+#include <d2/segment.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 

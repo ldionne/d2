@@ -7,7 +7,7 @@
 
 #include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/thread.hpp>
+#include <d2/segment.hpp>
 
 #include <boost/operators.hpp>
 #include <iosfwd>
@@ -19,8 +19,9 @@ namespace d2 {
  * Represents the start of a child thread from a parent thread.
  */
 struct StartEvent : boost::equality_comparable<StartEvent> {
-    Thread parent;
-    Thread child;
+    Segment parent;
+    Segment new_parent;
+    Segment child;
 
     /**
      * This constructor must only be used when serializing events.
@@ -28,8 +29,10 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
      */
     inline StartEvent() { }
 
-    inline StartEvent(Thread const& p, Thread const& c)
-        : parent(p), child(c)
+    inline StartEvent(Segment const& parent,
+                      Segment const& new_parent,
+                      Segment const& child)
+        : parent(parent), new_parent(new_parent), child(child)
     { }
 
     /**
@@ -37,7 +40,9 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
      * starting the same child thread.
      */
     friend bool operator==(StartEvent const& a, StartEvent const& b) {
-        return a.parent == b.parent && a.child == b.child;
+        return a.parent == b.parent &&
+               a.new_parent == b.new_parent &&
+               a.child == b.child;
     }
 
     D2_API friend std::ostream& operator<<(std::ostream&, StartEvent const&);
