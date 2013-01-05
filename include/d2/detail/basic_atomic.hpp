@@ -24,7 +24,7 @@ class basic_atomic : public boost::noncopyable {
     basic_mutex mutable lock_;
 
 public:
-    explicit basic_atomic(T const& val)
+    basic_atomic(T const& val)
         : val_(val)
     { }
 
