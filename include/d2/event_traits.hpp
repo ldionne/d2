@@ -8,9 +8,12 @@
 
 #include <boost/exception/detail/is_output_streamable.hpp>
 #include <boost/mpl/and.hpp>
+#include <boost/mpl/back.hpp>
 #include <boost/mpl/bool.hpp>
+#include <boost/mpl/front.hpp>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/mpl/vector.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
 
@@ -48,12 +51,24 @@ struct process_scope { };
 struct thread_scope { };
 
 /**
+ * MPL sequence containing all the scopes that are currently available, from
+ * the coarsest scope to the finest scope. This can be useful for
+ * metaprogramming purposes.
+ */
+typedef boost::mpl::vector<
+            global_scope,
+            machine_scope,
+            process_scope,
+            thread_scope
+        > available_scopes;
+
+/**
  * Events within this scope must be logged at the least granular level
  * available (towards `global_scope`).
  *
  * @see `finest_scope`
  */
-struct coarsest_scope : global_scope { };
+typedef boost::mpl::front<available_scopes>::type coarsest_scope;
 
 /**
  * Events within this scope must be logged at the most granular level
@@ -61,7 +76,7 @@ struct coarsest_scope : global_scope { };
  *
  * @see `coarsest_scope`
  */
-struct finest_scope : thread_scope { };
+typedef boost::mpl::back<available_scopes>::type finest_scope;
 
 
 /**
