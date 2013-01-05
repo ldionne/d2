@@ -48,10 +48,10 @@ struct is_default
  * event scope, yields a type that shall be used as a container of sinks
  * associated to that scope.
  *
- * Additionally, the `Policy` must have a static function named `get_sink'
- * that can be called with the sink container associated to a scope, an event
- * and the scope in question. The function must return an object that can be
- * used as an output stream for the event in question.
+ * Additionally, the `Policy` must have a method named `get_sink' that can be
+ * called with the sink container associated to a scope, an event and the
+ * scope in question. The function must return an object that can be used as
+ * an output stream for the event in question.
  *
  * The list of event scopes supported by the `EventDispatcher` is specified
  * via 3 possible ways:
@@ -67,6 +67,8 @@ struct is_default
  *
  * It is an error if both the `Policy` specifies a list of event scopes and
  * the `EventDispatcher` is instantiated with a list of event scopes.
+ *
+ * One instance of the `Policy` is instantiated per `EventDispatcher`.
  */
 template <typename Policy, typename Scopes_ = use_default>
 class EventDispatcher : boost::noncopyable {
@@ -129,6 +131,7 @@ _AND_WERE_ALSO_SPECIFIED_INSIDE_THE_POLICY, (Policy, Scopes_));
     typedef typename boost::fusion::result_of::as_map<Zipped>::type SinkMap;
 
     SinkMap sinks_;
+    Policy policy_;
 
     // Return the type associated to a scope. This should be some kind of
     // sink container, but it could be anything really.
@@ -146,7 +149,7 @@ public:
     typename boost::enable_if<is_event<Event>,
     EventDispatcher&>::type dispatch(Event const& event) {
         typedef typename event_scope<Event>::type Scope;
-        Policy::get_sink(get<Scope>(), event, Scope()) << event;
+        policy_.get_sink(get<Scope>(), event, Scope()) << event;
         return *this;
     }
 };

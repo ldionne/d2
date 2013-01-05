@@ -20,8 +20,7 @@ struct TestSinkContainerTypePolicy {
 
     // Will only work if sink containers have the right type.
     template <typename Event, typename Scope>
-    static DummyOstream& get_sink(typename apply<Scope>::type, Event const&,
-                                                               Scope) {
+    DummyOstream& get_sink(typename apply<Scope>::type, Event const&, Scope) {
         return dummy_ostream;
     }
 };
