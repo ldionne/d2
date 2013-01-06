@@ -7,10 +7,10 @@
 
 #include <d2/detail/config.hpp>
 
+#include <algorithm>
 #include <boost/operators.hpp>
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
 #include <iosfwd>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -35,7 +35,12 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
     }
 
     D2_API friend std::istream& operator>>(std::istream&, StackFrame&);
-    D2_API friend std::ostream& operator<<(std::ostream&, StackFrame const&);
+
+    template <typename Ostream>
+    friend Ostream& operator<<(Ostream& os, StackFrame const& self) {
+        os << self.ip << '$' << self.function << '$' << self.module << '$';
+        return os;
+    }
 };
 
 struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
@@ -48,8 +53,16 @@ struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
         return a.call_stack == b.call_stack;
     }
 
-    D2_API friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
     D2_API friend std::istream& operator>>(std::istream&, LockDebugInfo&);
+
+    template <typename Ostream>
+    friend Ostream& operator<<(Ostream& os, LockDebugInfo const& self) {
+        os << '[';
+        std::copy(self.call_stack.begin(), self.call_stack.end(),
+                    std::ostream_iterator<StackFrame>(os));
+        os << ']';
+        return os;
+    }
 };
 
 } // end namespace detail

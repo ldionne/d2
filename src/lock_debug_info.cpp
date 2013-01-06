@@ -7,22 +7,11 @@
 #include <d2/detail/lock_debug_info.hpp>
 
 #include <boost/assert.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/spirit/include/karma.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/qi_match.hpp>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
 #include <iterator>
 #include <string>
 
-
-BOOST_FUSION_ADAPT_STRUCT(
-    d2::detail::StackFrame,
-    (void const*, ip)
-    (std::string, function)
-    (std::string, module)
-)
 
 namespace d2 {
 namespace detail {
@@ -58,60 +47,34 @@ void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
                     "were copied to this->call_stack");
 }
 
-D2_API extern std::ostream& operator<<(std::ostream& os,
-                                       StackFrame const& self) {
-    using namespace boost::spirit::karma;
-
-    os << format(
-
-            hex             // ip
-        <<  '$'
-        <<  +~char_('$')    // function
-        <<  '$'
-        <<  +~char_('\n')   // module
-        <<  '\n'
-
-        , self);
-
-    return os;
-}
-
 D2_API extern std::istream& operator>>(std::istream& is, StackFrame& self) {
-    using namespace boost::spirit::qi;
+    is >> const_cast<void*&>(self.ip);
+    is.get(); // dollar
 
-    stream_parser<char, void*> voidp;
-    is >> match(
+    char c;
+    // reasonable minimum of 70 characters with mangled names
+    self.function.reserve(70);
+    while (is && (c = is.get()) != '$')
+        self.function.push_back(c);
 
-            as<void*>()[voidp]  // ip
-        >>  '$'
-        >>  +~char_('$')        // function
-        >>  '$'
-        >>  +~char_('\n')       // module
-        >>  '\n'
-
-        , self);
+    // reasonable minimum of 70 characters for filenames
+    self.module.reserve(70);
+    while (is && (c = is.get()) != '$')
+        self.module.push_back(c);
 
     return is;
 }
 
-D2_API extern std::ostream& operator<<(std::ostream& os,
-                                       LockDebugInfo const& self) {
-    using namespace boost::spirit::karma;
-
-    os << format('[' << *stream << ']', self.call_stack);
-
-    return os;
-}
-
 D2_API extern std::istream& operator>>(std::istream& is,
                                        LockDebugInfo& self) {
-    using namespace boost::spirit::qi;
-
-    stream_parser<char, StackFrame> stack_frame;
-    // Note: The lexeme[] directive is useless because there is no skipper
-    //       anyways, but it is required because we can't apply the kleene
-    //       star to a stream_parser directly (probably a bug).
-    is >> match('[' >> *lexeme[stack_frame] >> ']', self.call_stack);
+    is.get(); // bracket
+    while (is && is.peek() != ']') {
+        StackFrame frame;
+        is >> frame;
+        self.call_stack.push_back(frame);
+    }
+    if (is)
+        is.get(); // bracket
 
     return is;
 }

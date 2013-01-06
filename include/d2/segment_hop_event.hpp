@@ -5,7 +5,6 @@
 #ifndef D2_SEGMENT_HOP_EVENT_HPP
 #define D2_SEGMENT_HOP_EVENT_HPP
 
-#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
 #include <d2/thread.hpp>
@@ -47,9 +46,18 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
         return self.thread;
     }
 
-    D2_API friend
-    std::ostream& operator<<(std::ostream&, SegmentHopEvent const&);
-    D2_API friend std::istream& operator>>(std::istream&, SegmentHopEvent&);
+    template <typename Ostream>
+    friend Ostream& operator<<(Ostream& os, SegmentHopEvent const& self) {
+        os << self.thread << '>' << self.segment << '>';
+        return os;
+    }
+
+    template <typename Istream>
+    friend Istream& operator>>(Istream& is, SegmentHopEvent& self) {
+        char gt;
+        is >> self.thread >> gt >> self.segment >> gt;
+        return is;
+    }
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;
