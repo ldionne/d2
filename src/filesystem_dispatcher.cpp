@@ -11,10 +11,11 @@
 #include <boost/filesystem.hpp>
 
 
+namespace fs = boost::filesystem;
+
 namespace d2 {
 
-void FilesystemDispatcher::set_root(boost::filesystem::path const& path) {
-    namespace fs = boost::filesystem;
+void FilesystemDispatcher::set_root(fs::path const& path) {
     BOOST_ASSERT_MSG(!fs::exists(path) ||
                     (fs::is_directory(path) && fs::is_empty(path)),
         "the path specified to set_root already exists and is "

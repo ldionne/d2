@@ -30,7 +30,6 @@ namespace d2 {
  */
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
                                                 Segment> SegmentationGraph;
-typedef boost::graph_traits<SegmentationGraph>::vertex_descriptor Segment;
 
 /**
  * Label present on the edges of a lock graph.

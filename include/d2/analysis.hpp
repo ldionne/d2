@@ -17,6 +17,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
+#include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/unordered_map.hpp>
@@ -184,8 +185,15 @@ class CycleVisitor {
      * Return whether segment `u` happens before segment `v` according to
      * the segmentation graph.
      */
-    bool happens_before(Segment u, Segment v) const {
-        return boost::graph::is_reachable(u, v, sg_);
+    bool happens_before(Segment u_, Segment v_) const {
+        typedef typename boost::graph_traits<
+                       SegmentationGraph>::vertex_descriptor VertexDescriptor;
+        boost::optional<VertexDescriptor> u = find_vertex(u_, sg_),
+                                          v = find_vertex(v_, sg_);
+        BOOST_ASSERT_MSG(u && v,
+            "trying to find the ordering of two segments of which at least "
+            "one has no associated vertex in the segmentation graph.");
+        return boost::graph::is_reachable(*u, *v, sg_);
     }
 
 public:

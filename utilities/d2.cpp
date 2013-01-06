@@ -4,7 +4,6 @@
  */
 
 #include <d2/analysis.hpp>
-#include <d2/detail/config.hpp>
 #include <d2/graph_construction.hpp>
 
 #include <boost/assert.hpp>
@@ -187,10 +186,11 @@ int main(int argc, char const* argv[]) {
 
     po::options_description hidden;
     hidden.add_options()
-        ("input-file", po::value<std::string>(), "input file to process")
+        ("repo-path", po::value<std::string>()->required(),
+            "path of the repository to examine")
     ;
     po::positional_options_description positionals;
-    positionals.add("input-file", 0);
+    positionals.add("repo-path", 0);
 
     po::options_description analysis("Analysis options");
 
@@ -226,19 +226,8 @@ int main(int argc, char const* argv[]) {
         }
     }
 
-    // Open the input/output streams to the specified files or their
-    // defaults if unspecified.
-    std::ifstream input_ifs;
-    if (args.count("input-file")) {
-        std::string input_file = args["input-file"].as<std::string>();
-        input_ifs.open(input_file.c_str());
-        if (!input_ifs) {
-            std::cerr << "Unable to open input file \"" << input_file << '"';
-            return EXIT_FAILURE;
-        }
-    }
-    std::istream& input = args.count("input-file") ? input_ifs : std::cin;
-
+    // Open the output stream to whatever passed on the cli or to stdout
+    // if unspecified.
     std::ofstream output_ofs;
     if (args.count("output-file")) {
         std::string output_file = args["output-file"].as<std::string>();
@@ -254,7 +243,8 @@ int main(int argc, char const* argv[]) {
     // the options we received on the command line.
     d2::SegmentationGraph sg;
     d2::LockGraph lg;
-    d2::build_graphs(d2::load_events(input), lg, sg);
+    std::string repo_path = args["repo-path"].as<std::string>();
+    d2::build_graphs(repo_path, lg, sg);
 
     // Main switch dispatching to the right action to perform.
     if (args.count("analyze") || (!args.count("dot") && !args.count("stats"))) {

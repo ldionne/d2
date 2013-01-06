@@ -25,6 +25,8 @@ namespace d2 {
  * Class dispatching thread and process level events to a filesystem.
  * Process wide events are all saved in one file, and thread level events
  * are saved in a different file for each thread.
+ *
+ * This class is meant to be used concurrently by several threads.
  */
 class D2_API FilesystemDispatcher {
     typedef boost::filesystem::ofstream Ofstream;
@@ -71,7 +73,7 @@ public:
             "trying to dispatch an event in a dispatcher not assigned "
             "to a repository");
         process_sinks_lock_.lock();
-            process_sinks_ << event << '\n';
+            process_sinks_ << event;
         process_sinks_lock_.unlock();
     }
 
@@ -90,7 +92,7 @@ public:
                 sink.open(path_for(thread));
                 BOOST_ASSERT_MSG(sink, "unable to open a thread's sink");
             }
-            sink << event << '\n';
+            sink << event;
         }
         thread_sinks_lock_.unlock();
     }
