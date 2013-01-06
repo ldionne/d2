@@ -3,12 +3,17 @@ cmake_minimum_required(VERSION 2.8)
 project(d2)
 enable_testing()
 
-# Macro copying files after a given target has been built.
-macro(d2_post_build_copy target destination) # files...
-    foreach(file ${ARGN})
-        add_custom_command(
-            TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-            ${file} ${destination})
+# Macro adding link dependencies to a target and copying these dependencies
+# to the target's output directory when done. This is to make sure shared
+# libraries are always found.
+macro(d2_target_link_libraries target) # libaries...
+    foreach(library ${ARGN})
+        target_link_libraries(${target} ${library})
+        if(EXISTS ${library})
+            add_custom_command(
+                TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+                ${library} $<TARGET_FILE_DIR:${target}>)
+        endif()
     endforeach()
 endmacro()
 
@@ -56,7 +61,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_library(d2log SHARED ${d2log_sources})
 add_definitions(-DD2_DYN_LINK)
-target_link_libraries(d2log dbg ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+d2_target_link_libraries(d2log dbg ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 
 
 # Add the d2 command line utility.
@@ -66,8 +71,7 @@ elseif(NOT ${Boost_PROGRAM_OPTIONS_FOUND})
     message("Missing Boost.ProgramOptions library: d2 command line utility will be unavailable.")
 else()
     add_executable(d2 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/d2.cpp)
-    target_link_libraries(d2 d2log ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
-    d2_post_build_copy(d2 ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+    d2_target_link_libraries(d2 d2log ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 endif()
 
 

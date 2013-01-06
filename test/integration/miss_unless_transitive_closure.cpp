@@ -1,8 +1,6 @@
 
 #include "mock.hpp"
-#include <d2/logging.hpp>
 
-#include <ostream>
 
 // This deadlock is missed if the "transitive closure" is not computed while
 // building the graph because the B lock makes the A->B->C->A cycle have
@@ -10,10 +8,8 @@
 // closure of the `is held while locking' relation is computed during the
 // building of the lock graph, the found cycle is A->C->A instead, which is
 // valid.
-int main() {
-    d2::OstreamEventSink<std::ostream> sink(std::cout);
-    d2::set_event_sink(&sink);
-    d2::enable_event_logging();
+int main(int argc, char const* argv[]) {
+    mock::begin_integration_test(argc, argv, __FILE__);
 
     mock::mutex A, B, C;
 
@@ -39,5 +35,5 @@ int main() {
     t1.join();
     t0.join();
 
-    d2::disable_event_logging();
+    mock::end_integration_test();
 }

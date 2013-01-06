@@ -3,16 +3,22 @@
  * for testing purposes.
  */
 
+#define D2_SOURCE
 #include "mock.hpp"
 #include <d2/detail/basic_atomic.hpp>
+#include <d2/detail/config.hpp>
 #include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/move/move.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
+#include <iostream>
+#include <string>
 
 
 namespace boost {
@@ -22,6 +28,35 @@ namespace boost {
 }
 
 namespace mock {
+
+namespace {
+std::string create_tmp_directory(std::string const& path_to_test_source) {
+    namespace fs = boost::filesystem;
+    fs::path tmp = fs::temp_directory_path();
+    fs::create_directory(tmp /= "d2_integration_tests_for_deadlock_analysis");
+    tmp /= fs::path(path_to_test_source).stem();
+
+    unsigned int i = 0;
+    while (fs::exists(tmp))
+        tmp.replace_extension(boost::lexical_cast<std::string>(i++));
+    fs::create_directory(tmp);
+
+    return tmp.string();
+}
+} // end anonymous namespace
+
+D2_API extern void begin_integration_test(int argc, char const* argv[],
+                                          std::string const& test_source) {
+    std::string log_repo(argc > 1 ? argv[1] :
+                                    create_tmp_directory(test_source));
+    std::cout << "logging repository: " << log_repo << std::endl;
+    d2::set_log_repository(log_repo);
+    d2::enable_event_logging();
+}
+
+D2_API extern void end_integration_test() {
+    d2::disable_event_logging();
+}
 
 namespace detail {
 class thread_functor_wrapper {

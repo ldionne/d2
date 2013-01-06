@@ -1,11 +1,8 @@
 
 #include "mock.hpp"
-#include <d2/logging.hpp>
-
-#include <ostream>
 
 
-int main() {
+int main(int argc, char const* argv[]) {
     mock::mutex A, B;
 
     auto f = [&] {
@@ -33,14 +30,12 @@ int main() {
 
     mock::thread t0(g), t1(h);
 
-    d2::OstreamEventSink<std::ostream> sink(std::cout);
-    d2::set_event_sink(&sink);
-    d2::enable_event_logging();
+    mock::begin_integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();
     t1.join();
     t0.join();
 
-    d2::disable_event_logging();
+    mock::end_integration_test();
 }

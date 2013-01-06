@@ -1,17 +1,13 @@
 
 #include "mock.hpp"
-#include <d2/logging.hpp>
 
 #include <cstddef>
-#include <ostream>
 
 
 static std::size_t const REPETITIONS = 100;
 
-int main() {
-    d2::OstreamEventSink<std::ostream> sink(std::cout);
-    d2::set_event_sink(&sink);
-    d2::enable_event_logging();
+int main(int argc, char const* argv[]) {
+    mock::begin_integration_test(argc, argv, __FILE__);
 
     mock::mutex A, B;
 
@@ -39,5 +35,5 @@ int main() {
     t1.join();
     t0.join();
 
-    d2::disable_event_logging();
+    mock::end_integration_test();
 }
