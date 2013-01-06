@@ -3,17 +3,15 @@
  */
 
 #include <d2/filesystem_dispatcher.hpp>
+#include "test_base.hpp"
 
-#include <boost/filesystem.hpp>
-#include <gtest/gtest.h>
-
-
-namespace fs = boost::filesystem;
 
 namespace {
 class FilesystemDispatcherTest : public ::testing::Test {
     void SetUp() {
-        root = fs::unique_path();
+        root = fs::temp_directory_path();
+        root /= fs::unique_path();
+        std::cout << "test directory is: " << root << std::endl;
         fs::create_directory(root);
     }
 

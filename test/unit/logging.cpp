@@ -21,55 +21,6 @@
 using namespace d2;
 using namespace boost::assign;
 
-TEST(event_io, generate_lock_debug_info_with_call_stack) {
-    typedef std::back_insert_iterator<std::string> Iterator;
-
-    d2::detail::LockDebugInfo info;
-    info.call_stack += d2::detail::StackFrame(0x0, "function1", "file1"),
-                       d2::detail::StackFrame(0x0, "function2", "file2");
-
-    std::string result;
-    Iterator out(result);
-    d2::detail::lock_debug_info_generator<Iterator> generator;
-    ASSERT_TRUE(boost::spirit::karma::generate(out, generator, info));
-    ASSERT_EQ("[[0 function1%%file1\n0 function2%%file2\n]]", result);
-}
-
-TEST(event_io, parse_lock_debug_info_with_call_stack) {
-    d2::detail::LockDebugInfo expected;
-    expected.call_stack += d2::detail::StackFrame(0x0, "function1", "file1"),
-                           d2::detail::StackFrame(0x0, "function2", "file2");
-    std::string input = "[[0 function1%%file1\n0 function2%%file2\n]]";
-    std::string::const_iterator first(boost::begin(input)),
-                                last(boost::end(input));
-    d2::detail::lock_debug_info_parser<std::string::const_iterator> parser;
-
-    d2::detail::LockDebugInfo info;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, info));
-    ASSERT_TRUE(first == last);
-
-    if (expected != info)
-        std::cout << "Expected \"" << expected
-                  << "\" but got \"" << info << "\"\n";
-    ASSERT_TRUE(expected == info);
-}
-
-TEST(event_io, parse_acquire_event) {
-    std::string input = "123 acquires 456";
-    std::string::const_iterator first(boost::begin(input)),
-                                last(boost::end(input));
-    d2::detail::event_parser<std::string::const_iterator> parser;
-
-    Event e;
-    ASSERT_TRUE(boost::spirit::qi::parse(first, last, parser, e));
-    if (first != last)
-        std::cout << "Left to parse:\"" << std::string(first, last) << "\"\n";
-    ASSERT_TRUE(first == last);
-
-    ASSERT_TRUE(
-        AcquireEvent(SyncObject((unsigned)456), Thread((unsigned)123)) ==
-        boost::get<AcquireEvent>(e));
-}
 
 TEST(event_io, parse_mixed_events) {
     std::string input = "12 acquires 34\n"

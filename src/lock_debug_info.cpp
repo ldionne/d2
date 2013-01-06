@@ -98,7 +98,7 @@ D2_API extern std::ostream& operator<<(std::ostream& os,
                                        LockDebugInfo const& self) {
     using namespace boost::spirit::karma;
 
-    os << format("[[" << *stream << "]]", self.call_stack);
+    os << format('[' << *stream << ']', self.call_stack);
 
     return os;
 }
@@ -111,7 +111,7 @@ D2_API extern std::istream& operator>>(std::istream& is,
     // Note: The lexeme[] directive is useless because there is no skipper
     //       anyways, but it is required because we can't apply the kleene
     //       star to a stream_parser directly (probably a bug).
-    is >> match("[[" >> *lexeme[stack_frame] >> "]]", self.call_stack);
+    is >> match('[' >> *lexeme[stack_frame] >> ']', self.call_stack);
 
     return is;
 }

@@ -16,7 +16,7 @@ namespace d2 {
  * manner inside a program.
  */
 struct Segment : boost::totally_ordered<Segment,
-                 boost::additive<Segment,
+                 boost::additive<Segment, std::size_t,
                  boost::unit_steppable<Segment> > > {
 
     inline Segment() : value_(0) { }
@@ -33,13 +33,13 @@ struct Segment : boost::totally_ordered<Segment,
         return a.value_ > b.value_;
     }
 
-    friend Segment& operator+=(Segment& a, Segment const& b) {
-        a.value_ += b.value_;
+    friend Segment& operator+=(Segment& a, std::size_t amount) {
+        a.value_ += amount;
         return a;
     }
 
-    friend Segment& operator-=(Segment& a, Segment const& b) {
-        a.value_ -= b.value_;
+    friend Segment& operator-=(Segment& a, std::size_t amount) {
+        a.value_ -= amount;
         return a;
     }
 

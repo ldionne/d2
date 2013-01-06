@@ -21,7 +21,12 @@ else()
     endmacro()
     d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY}
                                                  ${Boost_SYSTEM_LIBRARY})
+    d2_add_gtest_unit_test(acquire_event)
+    d2_add_gtest_unit_test(join_event)
     d2_add_gtest_unit_test(lock_debug_info)
+    d2_add_gtest_unit_test(release_event)
+    d2_add_gtest_unit_test(segment_hop_event)
+    d2_add_gtest_unit_test(start_event)
 endif()
 
 

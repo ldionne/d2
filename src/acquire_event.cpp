@@ -38,7 +38,7 @@ std::istream& operator>>(std::istream& is, AcquireEvent& self) {
     stream_parser<char, SyncObject> lock;
     stream_parser<char, detail::LockDebugInfo> info;
     is >> match(
-            skip(blank)[lexeme[thread] >> "acquires" >> lock >> "at" >> info]
+            skip(blank)[thread >> lit("acquires") >> lock >> "at" >> info]
         , self);
     return is;
 }

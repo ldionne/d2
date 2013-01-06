@@ -34,7 +34,7 @@ std::istream& operator>>(std::istream& is, ReleaseEvent& self) {
 
     stream_parser<char, Thread> thread;
     stream_parser<char, SyncObject> lock;
-    is >> match(skip(blank)[lexeme[thread] >> "releases" >> lock], self);
+    is >> match(skip(blank)[thread >> lit("releases") >> lock], self);
     return is;
 }
 

@@ -24,9 +24,8 @@ namespace d2 {
 
 D2_API extern
 std::ostream& operator<<(std::ostream& os, JoinEvent const& self) {
-    os << "join (" << self.parent << ", "
-                   << self.new_parent << ", "
-                   << self.child << ')';
+    os << "join ("
+       << self.parent << ", " << self.new_parent << ", " << self.child << ')';
     return os;
 }
 

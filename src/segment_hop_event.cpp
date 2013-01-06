@@ -24,7 +24,7 @@ namespace d2 {
 
 D2_API extern
 std::ostream& operator<<(std::ostream& os, SegmentHopEvent const& self) {
-    os << "hop thread " << self.thread << " to " << self.segment;
+    os << "thread " << self.thread << " hops to " << self.segment;
     return os;
 }
 
@@ -36,7 +36,7 @@ std::istream& operator>>(std::istream& is, SegmentHopEvent& self) {
     stream_parser<char, Thread> thread;
     is >> match(
             skip(blank)[
-                lit("hop thread") >> thread >> "to" >> segment
+                lit("thread") >> thread >> "hops to" >> segment
             ]
         , self);
     return is;
