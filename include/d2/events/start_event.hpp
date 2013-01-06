@@ -1,9 +1,9 @@
 /**
- * This file defines the `StartEvent` class.
+ * This file defines the `StartEvent` event.
  */
 
-#ifndef D2_START_EVENT_HPP
-#define D2_START_EVENT_HPP
+#ifndef D2_EVENTS_START_EVENT_HPP
+#define D2_EVENTS_START_EVENT_HPP
 
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
@@ -65,4 +65,4 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
 
 } // end namespace d2
 
-#endif // !D2_START_EVENT_HPP
+#endif // !D2_EVENTS_START_EVENT_HPP

@@ -5,13 +5,9 @@
 #ifndef D2_GRAPH_CONSTRUCTION_HPP
 #define D2_GRAPH_CONSTRUCTION_HPP
 
-#include <d2/acquire_event.hpp>
+#include <d2/events.hpp>
 #include <d2/filesystem_loader.hpp>
 #include <d2/graphs.hpp>
-#include <d2/join_event.hpp>
-#include <d2/release_event.hpp>
-#include <d2/segment_hop_event.hpp>
-#include <d2/start_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 

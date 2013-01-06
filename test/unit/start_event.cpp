@@ -2,8 +2,8 @@
  * This file contains unit tests for the `StartEvent` event.
  */
 
+#include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>
-#include <d2/start_event.hpp>
 #include "test_base.hpp"
 
 

@@ -2,7 +2,7 @@
  * This file contains unit tests for the `JoinEvent` event.
  */
 
-#include <d2/join_event.hpp>
+#include <d2/events/join_event.hpp>
 #include <d2/segment.hpp>
 #include "test_base.hpp"
 

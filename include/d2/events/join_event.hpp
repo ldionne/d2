@@ -1,9 +1,9 @@
 /**
- * This file defines the `JoinEvent` class.
+ * This file defines the `JoinEvent` event.
  */
 
-#ifndef D2_JOIN_EVENT_HPP
-#define D2_JOIN_EVENT_HPP
+#ifndef D2_EVENTS_JOIN_EVENT_HPP
+#define D2_EVENTS_JOIN_EVENT_HPP
 
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
@@ -65,4 +65,4 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
 
 } // end namespace d2
 
-#endif // !D2_JOIN_EVENT_HPP
+#endif // !D2_EVENTS_JOIN_EVENT_HPP

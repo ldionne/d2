@@ -2,8 +2,8 @@
  * This file contains unit tests for the `SegmentHopEvent` event.
  */
 
+#include <d2/events/segment_hop_event.hpp>
 #include <d2/segment.hpp>
-#include <d2/segment_hop_event.hpp>
 #include <d2/thread.hpp>
 #include "test_base.hpp"
 

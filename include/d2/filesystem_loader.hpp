@@ -5,12 +5,8 @@
 #ifndef D2_FILESYSTEM_LOADER_HPP
 #define D2_FILESYSTEM_LOADER_HPP
 
-#include <d2/acquire_event.hpp>
 #include <d2/detail/config.hpp>
-#include <d2/join_event.hpp>
-#include <d2/release_event.hpp>
-#include <d2/segment_hop_event.hpp>
-#include <d2/start_event.hpp>
+#include <d2/events.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>

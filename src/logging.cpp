@@ -3,16 +3,12 @@
  */
 
 #define D2_SOURCE
-#include <d2/acquire_event.hpp>
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
+#include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
-#include <d2/join_event.hpp>
 #include <d2/logging.hpp>
-#include <d2/release_event.hpp>
-#include <d2/segment_hop_event.hpp>
-#include <d2/start_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 

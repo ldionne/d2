@@ -1,9 +1,9 @@
 /**
- * This file defines the `SegmentHopEvent` class.
+ * This file defines the `SegmentHopEvent` event.
  */
 
-#ifndef D2_SEGMENT_HOP_EVENT_HPP
-#define D2_SEGMENT_HOP_EVENT_HPP
+#ifndef D2_EVENTS_SEGMENT_HOP_EVENT_HPP
+#define D2_EVENTS_SEGMENT_HOP_EVENT_HPP
 
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
@@ -65,4 +65,4 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
 
 } // end namespace d2
 
-#endif // !D2_SEGMENT_HOP_EVENT_HPP
+#endif // !D2_EVENTS_SEGMENT_HOP_EVENT_HPP

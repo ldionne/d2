@@ -2,8 +2,8 @@
  * This file defines the `ReleaseEvent` class.
  */
 
-#ifndef D2_RELEASE_EVENT_HPP
-#define D2_RELEASE_EVENT_HPP
+#ifndef D2_EVENTS_RELEASE_EVENT_HPP
+#define D2_EVENTS_RELEASE_EVENT_HPP
 
 #include <d2/event_traits.hpp>
 #include <d2/sync_object.hpp>
@@ -64,4 +64,4 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
 
 } // end namespace d2
 
-#endif // !D2_RELEASE_EVENT_HPP
+#endif // !D2_EVENTS_RELEASE_EVENT_HPP

@@ -1,9 +1,9 @@
 /**
- * This file defines the `AcquireEvent` class.
+ * This file defines the `AcquireEvent` event.
  */
 
-#ifndef D2_ACQUIRE_EVENT_HPP
-#define D2_ACQUIRE_EVENT_HPP
+#ifndef D2_EVENTS_ACQUIRE_EVENT_HPP
+#define D2_EVENTS_ACQUIRE_EVENT_HPP
 
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/event_traits.hpp>
@@ -65,4 +65,4 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
 
 } // end namespace d2
 
-#endif // !D2_ACQUIRE_EVENT_HPP
+#endif // !D2_EVENTS_ACQUIRE_EVENT_HPP
