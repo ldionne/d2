@@ -206,7 +206,14 @@ int main(int argc, char const* argv[]) {
 
     po::variables_map args;
     po::command_line_parser parser(argc, argv);
-    po::store(parser.options(all).positional(positionals).run(), args);
+    try {
+        po::store(parser.options(all).positional(positionals).run(), args);
+        po::notify(args);
+    } catch(po::error const& e) {
+        std::cerr << e.what() << std::endl
+                  << allowed << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // Some options make us do something and exit right away. These cases
     // are handled here.
