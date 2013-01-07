@@ -11,9 +11,10 @@
 #include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/graph_construction.hpp>
-#include <d2/graphs.hpp>
+#include <d2/lock_graph.hpp>
 #include <d2/logging.hpp>
 #include <d2/segment.hpp>
+#include <d2/segmentation_graph.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 

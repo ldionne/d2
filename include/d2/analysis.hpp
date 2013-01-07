@@ -5,8 +5,9 @@
 #ifndef D2_ANALYSIS_HPP
 #define D2_ANALYSIS_HPP
 
-#include <d2/graphs.hpp>
+#include <d2/lock_graph.hpp>
 #include <d2/segment.hpp>
+#include <d2/segmentation_graph.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
@@ -16,7 +17,6 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graph_utility.hpp>
-#include <boost/graph/one_bit_color_map.hpp>
 #include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -24,24 +24,6 @@
 #include <deque>
 #include <set>
 #include <vector>
-
-
-namespace boost {
-namespace graph {
-    /**
-     * Return whether vertex `v` is reachable from vertex `u`.
-     * @note This is an extension to the existing `is_reachable`, which
-     *       requires passing a property map.
-     */
-    template <typename Graph>
-    bool is_reachable(typename graph_traits<Graph>::vertex_descriptor u,
-                      typename graph_traits<Graph>::vertex_descriptor v,
-                      Graph const& g) {
-        one_bit_color_map<> map(num_vertices(g));
-        return is_reachable(u, v, g, map);
-    }
-} // end namespace graph
-} // end namespace boost
 
 
 namespace d2 {
@@ -181,21 +163,6 @@ class CycleVisitor {
     SegmentationGraph const& sg_;
     Function& f_;
 
-    /**
-     * Return whether segment `u` happens before segment `v` according to
-     * the segmentation graph.
-     */
-    bool happens_before(Segment u_, Segment v_) const {
-        typedef typename boost::graph_traits<
-                       SegmentationGraph>::vertex_descriptor VertexDescriptor;
-        boost::optional<VertexDescriptor> u = find_vertex(u_, sg_),
-                                          v = find_vertex(v_, sg_);
-        BOOST_ASSERT_MSG(u && v,
-            "trying to find the ordering of two segments of which at least "
-            "one has no associated vertex in the segmentation graph.");
-        return boost::graph::is_reachable(*u, *v, sg_);
-    }
-
 public:
     CycleVisitor(SegmentationGraph const& sg, Function& f)
         : sg_(sg), f_(f)
@@ -231,7 +198,7 @@ public:
                     !unordered_intersects(labels[e1].g, labels[e2].g) &&
 
                     // The segments must not be ordered.
-                    !happens_before(labels[e1].s2, labels[e2].s1)
+                    !happens_before(labels[e1].s2, labels[e2].s1, sg_)
 
                 )) return;
             }
@@ -251,8 +218,6 @@ public:
  */
 template <typename LockGraph, typename SegmentationGraph, typename Function>
 void analyze(LockGraph const& lg, SegmentationGraph const& sg, Function f) {
-    BOOST_CONCEPT_ASSERT((LockGraphConcept<LockGraph>));
-
     detail::CycleVisitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
     detail::all_cycles_dumb(lg, vis);
 }
