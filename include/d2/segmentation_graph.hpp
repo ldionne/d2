@@ -20,7 +20,6 @@
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/named_graph.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
-#include <boost/graph/properties.hpp>
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/optional.hpp>
@@ -129,7 +128,7 @@ public:
 
         BOOST_CONCEPT_ASSERT((boost::InputIterator<Iterator>));
 
-        typedef typename boost::vertex_property<SegmentationGraph>::type
+        typedef typename boost::vertex_property_type<SegmentationGraph>::type
                                                                     Segment;
         typedef typename boost::iterator_reference<Iterator>::type Event;
 
@@ -171,8 +170,8 @@ public:
  */
 template <typename SegmentationGraph>
 bool happens_before(
-    typename boost::vertex_property<SegmentationGraph>::type const& u,
-    typename boost::vertex_property<SegmentationGraph>::type const& v,
+    typename boost::vertex_property_type<SegmentationGraph>::type const& u,
+    typename boost::vertex_property_type<SegmentationGraph>::type const& v,
     SegmentationGraph const& graph) {
     typedef typename boost::graph_traits<SegmentationGraph>::vertex_descriptor
                                                             VertexDescriptor;

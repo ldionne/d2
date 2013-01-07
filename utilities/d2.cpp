@@ -136,7 +136,8 @@ public:
     void operator()(EdgePath const& cycle, LockGraph const& graph) const {
         typedef typename boost::graph_traits<LockGraph>::edge_descriptor
                                                     LockGraphEdgeDescriptor;
-        typedef typename boost::edge_property<LockGraph>::type LockGraphEdge;
+        typedef typename boost::edge_property_type<LockGraph>::type
+                                                                LockGraphEdge;
         os_ << "----------------------------------------------------";
 
         BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
