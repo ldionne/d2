@@ -7,8 +7,8 @@ enable_testing()
 # to the target's output directory when done. This is to make sure shared
 # libraries are always found.
 macro(d2_target_link_libraries target) # libaries...
+    target_link_libraries(${target} ${ARGN})
     foreach(library ${ARGN})
-        target_link_libraries(${target} ${library})
         if(EXISTS ${library})
             add_custom_command(
                 TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
