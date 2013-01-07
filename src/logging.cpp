@@ -12,6 +12,7 @@
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
+#include <exception>
 #include <string>
 
 
@@ -100,7 +101,10 @@ D2_API extern void push_join(Thread const& parent, Thread const& child) {
 D2_API extern bool set_log_repository(std::string const& path) {
     try {
         detail::dispatcher.set_root(path);
-    } catch(...) {
+        // We really don't want to propagate exceptions across the API
+        // boundary. Users might not be using exceptions, or might not
+        // want to check the return status anyway (probable).
+    } catch(std::exception const&) {
         return false;
     }
     return true;
