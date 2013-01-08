@@ -28,6 +28,7 @@
 #include <boost/range/end.hpp>
 #include <boost/variant.hpp>
 #include <cstddef> // for NULL
+#include <typeinfo>
 
 
 namespace boost {
@@ -76,11 +77,10 @@ class build_segmentation_graph {
 
         template <typename Event>
         void operator()(Event const& event) {
-            if (!SilentlyIgnoreOtherEvents) {
-                UnexpectedEventException exc("encountered unexpected event");
-                exc.faulty_event = event;
-                throw exc;
-            }
+            if (!SilentlyIgnoreOtherEvents)
+                D2_THROW(UnexpectedEventException()
+                            << ExpectedType("StartEvent or JoinEvent")
+                            << ActualType(typeid(event).name()));
         }
 
         void operator()(StartEvent const& event) {
@@ -127,7 +127,6 @@ public:
 
         typedef typename boost::vertex_property_type<SegmentationGraph>::type
                                                                     Segment;
-        typedef typename boost::iterator_reference<Iterator>::type Event;
 
         if (first == last)
             return;
@@ -135,16 +134,13 @@ public:
         // The first event should be a StartEvent. We deduce the initial
         // segment from it. If the first event is not a StartEvent, we can't
         // continue because we really need to know the initial segment.
-        StartEvent const* initial_event = boost::get<StartEvent>(&*first);
-        if (initial_event == NULL) {
-            UnexpectedEventException exc("the first event is not a StartEvent");
-            // This can throw std::bad_alloc during the conversion and the
-            // assignment to hold_any. If we are out of memory, we don't care
-            // about our bad first event anyway, so we let it throw.
-            exc.faulty_event = detail::variant_to<
-                                            boost::spirit::hold_any>(*first);
-            throw exc;
-        }
+        typedef typename boost::iterator_reference<Iterator>::type Event;
+        Event first_event = *first;
+        StartEvent const* initial_event = boost::get<StartEvent>(&first_event);
+        if (initial_event == NULL)
+            D2_THROW(UnexpectedEventException()
+                        << ExpectedType("StartEvent")
+                        << ActualType(typeid(first_event).name()));
         add_vertex(initial_event->parent, graph);
 
         EventVisitor<SegmentationGraph, Segment> visitor(graph);

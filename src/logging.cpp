@@ -6,7 +6,11 @@
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
-#include <d2/events.hpp>
+#include <d2/events/acquire_event.hpp>
+#include <d2/events/join_event.hpp>
+#include <d2/events/release_event.hpp>
+#include <d2/events/segment_hop_event.hpp>
+#include <d2/events/start_event.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/logging.hpp>
 #include <d2/sync_object.hpp>

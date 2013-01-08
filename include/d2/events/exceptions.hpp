@@ -5,25 +5,35 @@
 #ifndef D2_EVENTS_EXCEPTIONS_HPP
 #define D2_EVENTS_EXCEPTIONS_HPP
 
-#include <boost/spirit/home/support/detail/hold_any.hpp>
-#include <stdexcept> // for std::runtime_error
+#include <boost/exception/all.hpp>
+#include <boost/throw_exception.hpp>
+#include <exception>
 
 
 namespace d2 {
 
 /**
+ * Base class for exceptions related to events. This should be subclassed
+ * to give more contextual information.
+ */
+struct EventException : virtual boost::exception, virtual std::exception { };
+
+namespace exception_tag {
+    struct expected_type;
+    struct actual_type;
+} // end namespace exception_tag
+
+typedef boost::error_info<exception_tag::expected_type, char const*>
+                                                                ExpectedType;
+
+typedef boost::error_info<exception_tag::actual_type, char const*> ActualType;
+
+/**
  * Exception thrown when an event of an unexpected dynamic type is encountered.
  */
-struct UnexpectedEventException : virtual std::runtime_error {
-    // Optional event that caused the exception.
-    boost::spirit::hold_any faulty_event;
+struct UnexpectedEventException : virtual EventException { };
 
-    explicit UnexpectedEventException(char const* what_arg)
-        : std::runtime_error(what_arg)
-    { }
-
-    ~UnexpectedEventException() throw() { }
-};
+#define D2_THROW(e) BOOST_THROW_EXCEPTION(e)
 
 } // end namespace d2
 

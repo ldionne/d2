@@ -34,6 +34,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/variant.hpp>
 #include <cstddef>
+#include <typeinfo>
 
 
 namespace d2 {
@@ -164,11 +165,10 @@ class build_lock_graph {
 
         template <typename Event>
         void operator()(Event const& event) {
-            if (!SilentlyIgnoreOtherEvents) {
-                UnexpectedEventException exc("encountered unexpected event");
-                exc.faulty_event = event;
-                throw exc;
-            }
+            if (!SilentlyIgnoreOtherEvents)
+                D2_THROW(UnexpectedEventException()
+            << ExpectedType("SegmentHopEvent, AcquireEvent or ReleaseEvent")
+            << ActualType(typeid(event).name()));
         }
 
         void operator()(SegmentHopEvent const& e) {
@@ -242,10 +242,9 @@ class build_lock_graph {
     struct DeduceMainThread : boost::static_visitor<Thread> {
         template <typename Event>
         Thread operator()(Event const& event) const {
-            UnexpectedEventException exc(
-                "the first event is not an AcquireEvent or a SegmentHopEvent");
-            exc.faulty_event = event;
-            throw exc;
+            D2_THROW(UnexpectedEventException()
+                        << ExpectedType("AcquireEvent or SegmentHopEvent")
+                        << ActualType(typeid(event).name()));
             return Thread(); // never reached.
         }
 
