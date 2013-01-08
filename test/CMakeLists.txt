@@ -6,28 +6,36 @@ macro(d2_add_unit_test name)
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
     add_dependencies(unit ${name}_exe)
 endmacro()
+
+macro(d2_add_unit_tests_with_deps name) # additional libraries...
+    set(missing FALSE)
+    foreach(dependency ${ARGN})
+        if((NOT EXISTS ${dependency}) AND (NOT ${missing}))
+            message("Missing dependency ${dependency}: ${name} will be unavailable.")
+            set(missing TRUE)
+        endif()
+    endforeach()
+    if(NOT ${missing})
+        d2_add_unit_test(${name})
+        d2_target_link_libraries(${name}_exe ${ARGN})
+    endif()
+endmacro()
+
+macro(d2_add_gtest_unit_test name) # additional dependencies...
+    d2_add_unit_tests_with_deps(${name} ${GTEST_BOTH_LIBRARIES} ${ARGN})
+endmacro()
+
+d2_add_gtest_unit_test(acquire_event)
+d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+d2_add_gtest_unit_test(join_event)
+d2_add_gtest_unit_test(lock_debug_info)
+d2_add_gtest_unit_test(release_event)
+d2_add_gtest_unit_test(segment_hop_event)
+d2_add_gtest_unit_test(segmentation_graph ${Boost_GRAPH_LIBRARY})
+d2_add_gtest_unit_test(start_event)
 d2_add_unit_test(concepts)
 d2_add_unit_test(event_dispatcher)
 d2_add_unit_test(event_traits)
-
-
-# Add unit tests requiring Google test.
-if(NOT ${GTEST_FOUND})
-    message("Missing Google test library: some unit tests will be unavailable.")
-else()
-    macro(d2_add_gtest_unit_test name) # additional dependencies...
-        d2_add_unit_test(${name})
-        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} ${ARGN})
-    endmacro()
-    d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY}
-                                                 ${Boost_SYSTEM_LIBRARY})
-    d2_add_gtest_unit_test(acquire_event)
-    d2_add_gtest_unit_test(join_event)
-    d2_add_gtest_unit_test(lock_debug_info)
-    d2_add_gtest_unit_test(release_event)
-    d2_add_gtest_unit_test(segment_hop_event)
-    d2_add_gtest_unit_test(start_event)
-endif()
 
 
 # Add mock library and integration tests.
