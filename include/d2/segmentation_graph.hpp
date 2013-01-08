@@ -6,6 +6,7 @@
 #ifndef D2_SEGMENTATION_GRAPH_HPP
 #define D2_SEGMENTATION_GRAPH_HPP
 
+#include <d2/detail/variant_to.hpp>
 #include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>
 #include <d2/events/start_event.hpp>
@@ -141,10 +142,11 @@ public:
         StartEvent const* initial_event = boost::get<StartEvent>(&*first);
         if (initial_event == NULL) {
             UnexpectedEventException exc("the first event is not a StartEvent");
-            // This can throw std::bad_alloc because of hold_any.
-            // If we are out of memory, we don't care about our bad first
-            // event anyway, so we let it throw.
-            exc.faulty_event = variant_to<AnyEvent>(*first);
+            // This can throw std::bad_alloc during the conversion and the
+            // assignment to hold_any. If we are out of memory, we don't care
+            // about our bad first event anyway, so we let it throw.
+            exc.faulty_event = detail::variant_to<
+                                            boost::spirit::hold_any>(*first);
             throw exc;
         }
         add_vertex(initial_event->parent, graph);
