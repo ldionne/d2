@@ -22,7 +22,7 @@ namespace {
         fs::path root;
 
         void SetUp() {
-            for (unsigned int i = 0; i < 1000; ++i) {
+            for (unsigned int i = 0; i < 100; ++i) {
                 threads.push_back(d2::Thread(i));
                 locks.push_back(d2::SyncObject(i));
                 segments.push_back(d2::Segment() + i);
@@ -64,7 +64,12 @@ TEST_F(RepositoryTest, get_all_keys) {
 
     Repository::key_view<d2::Thread>::type
         sources_sinks = repository.keys<d2::Thread>();
-    ASSERT_TRUE(threads == sources_sinks); // can't print it.
+
+    // We must do an unordered comparison.
+    boost::unordered_set<d2::Thread>
+                        expected(threads.begin(), threads.end()),
+                        actual(sources_sinks.begin(), sources_sinks.end());
+    ASSERT_TRUE(expected == actual);
 }
 
 TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {

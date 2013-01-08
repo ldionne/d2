@@ -23,6 +23,7 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
 #include <fstream>
+#include <ios>
 #include <string>
 #include <typeinfo>
 
@@ -119,7 +120,6 @@ class Repository {
     typedef typename boost::fusion::result_of::as_map<Zipped>::type Dict;
 
     Dict streams_;
-    boost::filesystem::path root_;
 
     // Return the map (instance variable) associated to a Key.
     template <typename Key>
@@ -200,6 +200,10 @@ public:
         return View(map_at<Key>()(streams_));
     }
 
+private:
+    boost::filesystem::path const root_;
+
+public:
     template <typename Source>
     explicit Repository(Source const& root) : root_(root) {
         namespace fs = boost::filesystem;
@@ -214,7 +218,7 @@ private:
         return path /= NamingPolicy()(key);
     }
 
-    // Return the stream associated to a Key.
+    // Return the stream associated to an instance of a Key.
     template <typename Key>
     struct stream_at {
         typedef typename map_at<Key>::type::mapped_type type;
@@ -231,23 +235,27 @@ private:
     };
 
     template <typename Stream, typename Key>
-    void open(Stream& stream, Key const& key) {
+    void open_new(Stream& stream, Key const& key) {
+        namespace fs = boost::filesystem;
         BOOST_ASSERT_MSG(!stream.is_open(),
             "opening a stream that is already open");
 
-        namespace fs = boost::filesystem;
         fs::path path = path_for(key);
-        if (fs::exists(path))
-            D2_THROW(StreamApertureException()
-                        << TargetFilename(path.c_str()));
-        else if (!fs::exists(root_))
+        if (!fs::exists(root_))
             fs::create_directories(root_);
-
-        stream.open(path.c_str());
-        if (!stream.is_open()) {
+        else if (fs::exists(path) && !fs::is_regular_file(path))
             D2_THROW(StreamApertureException()
                         << TargetFilename(path.c_str()));
-        }
+
+        // Try opening an existing file with the same name.
+        stream.open(path.c_str());
+        if (!stream.is_open())
+            // Create a new, empty file otherwise.
+            stream.open(path.c_str(), std::ios::in | std::ios::out |
+                                                            std::ios::trunc);
+        if (!stream)
+            D2_THROW(StreamApertureException()
+                        << TargetFilename(path.c_str()));
     }
 
 public:
@@ -256,7 +264,7 @@ public:
         typedef typename stream_at<Key>::type Stream;
         Stream& stream = stream_at<Key>()(streams_, key);
         if (!stream.is_open())
-            open(stream, key);
+            open_new(stream, key);
         return stream;
     }
 

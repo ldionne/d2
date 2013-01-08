@@ -12,8 +12,12 @@
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_match.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <map>
+#include <set>
 #include <sstream>
 #include <vector>
 
