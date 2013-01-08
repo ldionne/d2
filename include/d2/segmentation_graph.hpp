@@ -158,9 +158,10 @@ public:
 
 /**
  * Return whether segment `u` happens before segment `v` according to
- * a segmentation graph. If either `u` or `v` are not associated to any
- * vertex in the segmentation graph, then `u` does not happen before `v`,
- * i.e. it is not an error.
+ * a segmentation graph.
+ *
+ * If either `u` or `v` are not associated to any vertex in the segmentation
+ * graph, then `u` does not happen before `v`, i.e. it is not an error.
  */
 template <typename SegmentationGraph>
 bool happens_before(
@@ -171,7 +172,10 @@ bool happens_before(
                                                             VertexDescriptor;
     boost::optional<VertexDescriptor> u_ = find_vertex(u, graph),
                                       v_ = find_vertex(v, graph);
-    return u_ && v_ && boost::graph::is_reachable(*u_, *v_, graph);
+    return (u_ && v_) &&    // They are in the graph
+           (*u_ != *v_) &&  // They are not the same vertex
+                            // There is a path from u to v
+           boost::graph::is_reachable(*u_, *v_, graph);
 }
 
 } // end namespace d2
