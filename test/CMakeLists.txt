@@ -64,7 +64,7 @@ else()
     d2_target_link_libraries(mock d2log ${Boost_THREAD_LIBRARY}
                                         ${Boost_SYSTEM_LIBRARY}
                                         ${Boost_FILESYSTEM_LIBRARY})
-    if(${D2_WE_ARE_ON_CLANG} OR ${CMAKE_COMPILER_IS_GNUCXX})
+    if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
         set_target_properties(mock PROPERTIES COMPILE_FLAGS -std=c++11)
     endif()
 
@@ -75,7 +75,7 @@ else()
         d2_target_link_libraries(${name}_exe d2log mock)
         add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
         add_dependencies(integration ${name}_exe)
-        if(${D2_WE_ARE_ON_CLANG} OR ${CMAKE_COMPILER_IS_GNUCXX})
+        if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
             set_target_properties(${name}_exe PROPERTIES COMPILE_FLAGS -std=c++11)
         endif()
     endmacro()
