@@ -64,7 +64,7 @@ TEST_F(RepositoryTest, get_all_keys) {
 
     Repository::key_view<d2::Thread>::type
         sources_sinks = repository.keys<d2::Thread>();
-    //ASSERT_EQ(threads, sources_sinks);
+    ASSERT_TRUE(threads == sources_sinks); // can't print it.
 }
 
 TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {

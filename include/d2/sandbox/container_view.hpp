@@ -6,6 +6,7 @@
 #define D2_SANDBOX_CONTAINER_VIEW_HPP
 
 #include <d2/sandbox/basic_container.hpp>
+#include <d2/sandbox/supports_expression.hpp>
 
 #include <algorithm>
 #include <boost/iterator/transform_iterator.hpp>
@@ -14,6 +15,7 @@
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/operators.hpp>
 #include <boost/type_traits/remove_reference.hpp>
+#include <boost/utility/enable_if.hpp>
 
 
 namespace d2 {
@@ -109,8 +111,29 @@ struct container_view
         return self_[key];
     }
 
+private:
+    D2_DETAIL_SUPPORTS_EXPRESSION(can_compare_with,
+        *((Other*)0)->begin() == *((container_view*)0)->begin(),
+        typename Other);
+
+public:
     template <typename Other>
-    friend bool operator==(container_view const& self, Other const& other) {
+    friend typename boost::enable_if<can_compare_with<Other>,
+    bool>::type operator==(container_view const& self, Other const& other) {
+        return self.size() == other.size() &&
+               std::equal(self.begin(), self.end(), other.begin());
+    }
+
+    // Required to make operator== symmetric.
+    template <typename Other>
+    friend typename boost::enable_if<can_compare_with<Other>,
+    bool>::type operator==(Other const& other, container_view const& self) {
+        return self == other;
+    }
+
+    // Required to avoid ambiguity when comparing two views.
+    friend bool operator==(container_view const& self,
+                           container_view const& other) {
         return self.size() == other.size() &&
                std::equal(self.begin(), self.end(), other.begin());
     }
