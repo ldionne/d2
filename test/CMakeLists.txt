@@ -1,41 +1,54 @@
-# Add standalone unit tests.
+# Basic macro to add standalone unit tests.
 add_custom_target(unit)
-macro(d2_add_unit_test name)
+macro(d2_add_standalone_unit_test name)
     add_executable(${name}_exe ${CMAKE_CURRENT_SOURCE_DIR}/unit/${name}.cpp)
     d2_target_link_libraries(${name}_exe d2log)
     add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
     add_dependencies(unit ${name}_exe)
 endmacro()
 
-macro(d2_add_unit_tests_with_deps name) # additional libraries...
-    set(missing FALSE)
-    foreach(dependency ${ARGN})
-        if((NOT EXISTS ${dependency}) AND (NOT ${missing}))
-            message("Missing dependency ${dependency}: ${name} will be unavailable.")
-            set(missing TRUE)
+
+# Macro to add unit depending on boost components.
+macro(d2_add_unit_test name) # additional boost components...
+    foreach(component ${ARGN})
+        string(TOUPPER ${component} COMPONENT)
+        if(NOT ${Boost_${COMPONENT}_FOUND})
+            set(missing "${component}, ${missing}")
         endif()
     endforeach()
-    if(NOT ${missing})
-        d2_add_unit_test(${name})
-        d2_target_link_libraries(${name}_exe ${ARGN})
+
+    if(missing)
+        message("Missing dependencies ${missing}: ${name} will be unavailable.")
+    else()
+        d2_add_standalone_unit_test(${name})
+        foreach(component ${ARGN})
+            string(TOUPPER ${component} COMPONENT)
+            d2_target_link_libraries(${name}_exe ${Boost_${COMPONENT}_LIBRARY})
+        endforeach()
     endif()
 endmacro()
-
-macro(d2_add_gtest_unit_test name) # additional dependencies...
-    d2_add_unit_tests_with_deps(${name} ${GTEST_BOTH_LIBRARIES} ${ARGN})
-endmacro()
-
-d2_add_gtest_unit_test(acquire_event)
-d2_add_gtest_unit_test(filesystem_dispatcher ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
-d2_add_gtest_unit_test(join_event)
-d2_add_gtest_unit_test(lock_debug_info)
-d2_add_gtest_unit_test(release_event)
-d2_add_gtest_unit_test(segment_hop_event)
-d2_add_gtest_unit_test(segmentation_graph ${Boost_GRAPH_LIBRARY})
-d2_add_gtest_unit_test(start_event)
 d2_add_unit_test(concepts)
 d2_add_unit_test(event_dispatcher)
 d2_add_unit_test(event_traits)
+
+
+# Add unit tests requiring Google test.
+if(NOT ${GTEST_FOUND})
+    message("Missing Google test library: some unit tests will be unavailable.")
+else()
+    macro(d2_add_gtest_unit_test name) # additional boost components...
+        d2_add_unit_test(${name} ${ARGN})
+        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES})
+    endmacro()
+    d2_add_gtest_unit_test(acquire_event)
+    d2_add_gtest_unit_test(filesystem_dispatcher filesystem system)
+    d2_add_gtest_unit_test(join_event)
+    d2_add_gtest_unit_test(lock_debug_info)
+    d2_add_gtest_unit_test(release_event)
+    d2_add_gtest_unit_test(segment_hop_event)
+    d2_add_gtest_unit_test(segmentation_graph graph)
+    d2_add_gtest_unit_test(start_event)
+endif()
 
 
 # Add mock library and integration tests.
@@ -51,7 +64,7 @@ else()
     d2_target_link_libraries(mock d2log ${Boost_THREAD_LIBRARY}
                                         ${Boost_SYSTEM_LIBRARY}
                                         ${Boost_FILESYSTEM_LIBRARY})
-    if(NOT MSVC)
+    if(${D2_WE_ARE_ON_CLANG} OR ${CMAKE_COMPILER_IS_GNUCXX})
         set_target_properties(mock PROPERTIES COMPILE_FLAGS -std=c++11)
     endif()
 
@@ -62,7 +75,7 @@ else()
         d2_target_link_libraries(${name}_exe d2log mock)
         add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
         add_dependencies(integration ${name}_exe)
-        if(NOT MSVC)
+        if(${D2_WE_ARE_ON_CLANG} OR ${CMAKE_COMPILER_IS_GNUCXX})
             set_target_properties(${name}_exe PROPERTIES COMPILE_FLAGS -std=c++11)
         endif()
     endmacro()

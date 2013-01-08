@@ -18,13 +18,21 @@ macro(d2_target_link_libraries target) # libaries...
 endmacro()
 
 
-# Add some custom compiler flags.
+# Determine whether we are on clang.
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    set(D2_WE_ARE_ON_CLANG TRUE)
+else()
+    set(D2_WE_ARE_ON_CLANG FALSE)
+endif()
+
+
+# Add some custom compiler flags.
+if(${D2_WE_ARE_ON_CLANG})
     add_definitions(-stdlib=libc++)
     list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
 endif()
 
-if((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_COMPILER_IS_GNUCXX}))
+if(${D2_WE_ARE_ON_CLANG} OR ${CMAKE_COMPILER_IS_GNUCXX})
     add_definitions(-Wall -Wextra -pedantic -std=c++98)
 elseif(MSVC)
     add_definitions(-W4) # -Wall on MSVC yields 1000s of warnings
@@ -47,7 +55,7 @@ endif()
 # Try finding Boost libraries.
 find_package(Boost 1.53.0 REQUIRED filesystem # required to build d2log
                           OPTIONAL_COMPONENTS graph thread system program_options)
-if(${Boost_INCLUDE_DIR} STREQUAL "NOTFOUND")
+if(NOT Boost_INCLUDE_DIR)
     message(FATAL_ERROR "Boost include directory was not found. Stopping CMake generation.")
 else()
     include_directories(${Boost_INCLUDE_DIR})
