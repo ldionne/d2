@@ -94,7 +94,7 @@ TEST_F(SegmentationGraphTest, throws_on_unexpected_event_when_told_to) {
 
     // This won't ignore unexpected events.
     d2::build_segmentation_graph<false> build;
-    ASSERT_THROW(build(events, graph), d2::UnexpectedEventException);
+    ASSERT_THROW(build(events, graph), d2::EventTypeException);
 }
 
 TEST_F(SegmentationGraphTest, has_strong_guarantee_when_first_event_is_not_a_start_event) {
@@ -107,7 +107,7 @@ TEST_F(SegmentationGraphTest, has_strong_guarantee_when_first_event_is_not_a_sta
 
     // It should throw because the first event is not a StartEvent as expected.
     d2::build_segmentation_graph<> build;
-    ASSERT_THROW(build(events, graph), d2::UnexpectedEventException);
+    ASSERT_THROW(build(events, graph), d2::EventTypeException);
 
     // It should leave the graph untouched.
     ASSERT_EQ(0, num_vertices(graph));

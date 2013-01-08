@@ -81,6 +81,32 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
                                         SyncObject, LockGraphLabel> LockGraph;
 
 /**
+ * Exception thrown when a lock is released and we were not expecting it.
+ */
+struct UnexpectedReleaseException : virtual EventException { };
+
+/**
+ * Exception thrown when an event comes from an unexpected thread.
+ */
+struct EventThreadException : virtual EventException { };
+
+namespace exception_tag {
+    struct expected_thread;
+    struct actual_thread;
+
+    struct releasing_thread;
+    struct released_lock;
+}
+
+typedef boost::error_info<exception_tag::expected_thread, Thread>
+                                                            ExpectedThread;
+typedef boost::error_info<exception_tag::actual_thread, Thread> ActualThread;
+typedef boost::error_info<exception_tag::releasing_thread, Thread>
+                                                            ReleasingThread;
+typedef boost::error_info<exception_tag::released_lock, SyncObject>
+                                                                ReleasedLock;
+
+/**
  * Function object used to build the lock graph from a range of events.
  * The events should be `SegmentHopEvent`s, `AcquireEvent`s, and
  * `ReleaseEvent`s exclusively. Depending on the `SilentlyIgnoreOtherEvents`
@@ -166,20 +192,24 @@ class build_lock_graph {
         template <typename Event>
         void operator()(Event const& event) {
             if (!SilentlyIgnoreOtherEvents)
-                D2_THROW(UnexpectedEventException()
+                D2_THROW(EventTypeException()
             << ExpectedType("SegmentHopEvent, AcquireEvent or ReleaseEvent")
             << ActualType(typeid(event).name()));
         }
 
         void operator()(SegmentHopEvent const& e) {
-            BOOST_ASSERT_MSG(e.thread == this_thread,
-                                "processing an event from the wrong thread");
+            if (e.thread != this_thread)
+                D2_THROW(EventThreadException()
+                            << ExpectedThread(this_thread)
+                            << ActualThread(e.thread));
             current_segment = e.segment;
         }
 
         void operator()(AcquireEvent const& e) {
-            BOOST_ASSERT_MSG(e.thread == this_thread,
-                                "processing an event from the wrong thread");
+            if (e.thread != this_thread)
+                D2_THROW(EventThreadException()
+                            << ExpectedThread(this_thread)
+                            << ActualThread(e.thread));
             Thread t(e.thread);
             Segment s2(current_segment);
             SyncObject l2(e.lock);
@@ -221,28 +251,37 @@ class build_lock_graph {
         }
 
         void operator()(ReleaseEvent const& e) {
-            BOOST_ASSERT_MSG(e.thread == this_thread,
-                                "processing an event from the wrong thread");
+            if (e.thread != this_thread)
+                D2_THROW(EventThreadException()
+                            << ExpectedThread(this_thread)
+                            << ActualThread(e.thread));
+
             Thread t(e.thread);
             SyncObject l(e.lock);
-
-            BOOST_ASSERT_MSG(boost::algorithm::any_of(
-                             boost::begin(held_locks), boost::end(held_locks),
-                        &boost::lambda::_1->*&CurrentlyHeldLock::lock == l),
-                            "thread releasing a lock that it is not holding");
 
             //Release the lock; remove all locks equal to it from the context.
             typename HeldLocks::const_iterator it(boost::begin(held_locks)),
                                                last(boost::end(held_locks));
-            while (it != last)
-                it->lock == l ? (void)held_locks.erase(it++) : (void)++it;
+            bool l_is_owned_by_this_thread = false;
+            while (it != last) {
+                if (it->lock == l) {
+                    held_locks.erase(it++);
+                    l_is_owned_by_this_thread = true;
+                }
+                else
+                    ++it;
+            }
+            if (!l_is_owned_by_this_thread)
+                D2_THROW(UnexpectedReleaseException()
+                            << ReleasingThread(this_thread)
+                            << ReleasedLock(l));
         }
     };
 
     struct DeduceMainThread : boost::static_visitor<Thread> {
         template <typename Event>
         Thread operator()(Event const& event) const {
-            D2_THROW(UnexpectedEventException()
+            D2_THROW(EventTypeException()
                         << ExpectedType("AcquireEvent or SegmentHopEvent")
                         << ActualType(typeid(event).name()));
             return Thread(); // never reached.

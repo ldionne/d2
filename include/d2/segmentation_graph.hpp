@@ -78,7 +78,7 @@ class build_segmentation_graph {
         template <typename Event>
         void operator()(Event const& event) {
             if (!SilentlyIgnoreOtherEvents)
-                D2_THROW(UnexpectedEventException()
+                D2_THROW(EventTypeException()
                             << ExpectedType("StartEvent or JoinEvent")
                             << ActualType(typeid(event).name()));
         }
@@ -138,7 +138,7 @@ public:
         Event first_event = *first;
         StartEvent const* initial_event = boost::get<StartEvent>(&first_event);
         if (initial_event == NULL)
-            D2_THROW(UnexpectedEventException()
+            D2_THROW(EventTypeException()
                         << ExpectedType("StartEvent")
                         << ActualType(typeid(first_event).name()));
         add_vertex(initial_event->parent, graph);
