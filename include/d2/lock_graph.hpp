@@ -83,12 +83,20 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
 /**
  * Exception thrown when a lock is released and we were not expecting it.
  */
-struct UnexpectedReleaseException : virtual EventException { };
+struct UnexpectedReleaseException : virtual EventException {
+    virtual char const* what() const throw() {
+        return "d2::UnexpectedReleaseException";
+    }
+};
 
 /**
  * Exception thrown when an event comes from an unexpected thread.
  */
-struct EventThreadException : virtual EventException { };
+struct EventThreadException : virtual EventException {
+    virtual char const* what() const throw() {
+        return "d2::EventThreadException";
+    }
+};
 
 namespace exception_tag {
     struct expected_thread;

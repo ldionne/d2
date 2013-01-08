@@ -5,13 +5,17 @@
 #ifndef D2_REPOSITORY_HPP
 #define D2_REPOSITORY_HPP
 
+#include <d2/detail/exceptions.hpp>
 #include <d2/sandbox/container_view.hpp>
 
+#include <boost/assert.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/fusion/include/all.hpp>
 #include <boost/fusion/include/as_map.hpp>
 #include <boost/fusion/include/at_key.hpp>
 #include <boost/fusion/include/mpl.hpp>
 #include <boost/fusion/include/pair.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/mpl/apply.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/transform.hpp>
@@ -19,10 +23,49 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
 #include <fstream>
+#include <string>
+#include <typeinfo>
 
 
 namespace d2 {
 
+/**
+ * Base class for exceptions related to the `Repository` class.
+ */
+struct RepositoryException : virtual Exception {
+    virtual char const* what() const throw() {
+        return "d2::RepositoryException";
+    }
+};
+
+/**
+ * Exception thrown when a `Repository` is created with an invalid path.
+ */
+struct InvalidRepositoryPathException : virtual RepositoryException {
+    virtual char const* what() const throw() {
+        return "d2::InvalidRepositoryPathException";
+    }
+};
+
+/**
+ * Exception thrown when a `Repository` is unable to open a new stream.
+ */
+struct StreamApertureException : virtual RepositoryException {
+    virtual char const* what() const throw() {
+        return "d2::StreamApertureException";
+    }
+};
+
+namespace exception_tag {
+    struct target_filename;
+}
+typedef boost::error_info<exception_tag::target_filename, char const*>
+                                                            TargetFilename;
+
+/**
+ * Default mapping policy using `boost::unordered_map`s to map key
+ * instances to streams.
+ */
 struct boost_unordered_maps_only {
     template <typename Key, typename Value>
     struct apply {
@@ -30,8 +73,25 @@ struct boost_unordered_maps_only {
     };
 };
 
+/**
+ * Default naming policy using the typeid and `boost::lexical_cast` to
+ * derive a name for a stream associated to a key.
+ */
+struct use_typeid_and_boost_lexical_cast {
+    typedef std::string result_type;
+
+    template <typename T>
+    result_type operator()(T const& t) const {
+        return typeid(T).name() + boost::lexical_cast<std::string>(t);
+    }
+};
+
+/**
+ * Class representing a repository into which stuff can be stored.
+ */
 template <typename Keys,
-          typename Mapping = boost_unordered_maps_only>
+          typename NamingPolicy = use_typeid_and_boost_lexical_cast,
+          typename MappingPolicy = boost_unordered_maps_only>
 class Repository {
     // A policy for deciding input only, output only
     // or input/output would be nice.
@@ -39,13 +99,13 @@ class Repository {
     typedef std::ofstream Ostream;
     typedef std::fstream IOStream;
 
-    // Associate a Key to its map type using the Mapping policy and the
+    // Associate a Key to its map type using the MappingPolicy and the
     // default stream type.
     struct AssociateToMap {
         template <typename Key>
         struct apply {
-            typedef typename boost::mpl::apply<Mapping, Key, IOStream>::type
-                                                                        Value;
+            typedef typename boost::mpl::apply<
+                        MappingPolicy, Key, IOStream>::type Value;
             typedef boost::fusion::pair<Key, Value> type;
         };
     };
@@ -54,11 +114,12 @@ class Repository {
     // to create the map below.
     typedef typename boost::mpl::transform<Keys, AssociateToMap>::type Zipped;
 
-    // Create a map from Keys to types determined by our Mapping policy.
+    // Create a map from Keys to types determined by the MappingPolicy.
     // This fusion map acts like our instance variables.
     typedef typename boost::fusion::result_of::as_map<Zipped>::type Dict;
 
     Dict streams_;
+    boost::filesystem::path root_;
 
     // Return the map (instance variable) associated to a Key.
     template <typename Key>
@@ -88,11 +149,6 @@ class Repository {
     };
 
 public:
-    template <typename Source>
-    explicit Repository(Source const& root) {
-
-    }
-
     template <typename Key>
     struct key_view
         : make_view<Key, sandbox::key_view>
@@ -144,9 +200,64 @@ public:
         return View(map_at<Key>()(streams_));
     }
 
+    template <typename Source>
+    explicit Repository(Source const& root) : root_(root) {
+        namespace fs = boost::filesystem;
+        if (fs::exists(root_) && !fs::is_directory(root_))
+            D2_THROW(InvalidRepositoryPathException());
+    }
+
+private:
     template <typename Key>
-    typename map_at<Key>::type::mapped_type& operator[](Key const& key) {
-        return map_at<Key>()(streams_)[key];
+    boost::filesystem::path path_for(Key const& key) const {
+        boost::filesystem::path path(root_);
+        return path /= NamingPolicy()(key);
+    }
+
+    // Return the stream associated to a Key.
+    template <typename Key>
+    struct stream_at {
+        typedef typename map_at<Key>::type::mapped_type type;
+
+        type& operator()(Dict& dict, Key const& key) const {
+            return map_at<Key>()(dict)[key];
+        }
+
+        typedef typename map_at<Key>::const_type::mapped_type const_type;
+
+        const_type& operator()(Dict const& dict, Key const& key) const {
+            return map_at<Key>()(dict)[key];
+        }
+    };
+
+    template <typename Stream, typename Key>
+    void open(Stream& stream, Key const& key) {
+        BOOST_ASSERT_MSG(!stream.is_open(),
+            "opening a stream that is already open");
+
+        namespace fs = boost::filesystem;
+        fs::path path = path_for(key);
+        if (fs::exists(path))
+            D2_THROW(StreamApertureException()
+                        << TargetFilename(path.c_str()));
+        else if (!fs::exists(root_))
+            fs::create_directories(root_);
+
+        stream.open(path.c_str());
+        if (!stream.is_open()) {
+            D2_THROW(StreamApertureException()
+                        << TargetFilename(path.c_str()));
+        }
+    }
+
+public:
+    template <typename Key>
+    typename stream_at<Key>::type& operator[](Key const& key) {
+        typedef typename stream_at<Key>::type Stream;
+        Stream& stream = stream_at<Key>()(streams_, key);
+        if (!stream.is_open())
+            open(stream, key);
+        return stream;
     }
 
 private:

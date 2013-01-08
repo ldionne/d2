@@ -5,27 +5,30 @@
 #ifndef D2_EVENTS_EXCEPTIONS_HPP
 #define D2_EVENTS_EXCEPTIONS_HPP
 
+#include <d2/detail/exceptions.hpp>
 #include <d2/thread.hpp>
-
-#include <boost/exception/all.hpp>
-#include <boost/throw_exception.hpp>
-#include <exception>
 
 
 namespace d2 {
-
-#define D2_THROW(e) BOOST_THROW_EXCEPTION(e)
 
 /**
  * Base class for exceptions related to events. This should be subclassed
  * to give more contextual information.
  */
-struct EventException : virtual boost::exception, virtual std::exception { };
+struct EventException : virtual Exception {
+    virtual char const* what() const throw() {
+        return "d2::EventException";
+    }
+};
 
 /**
  * Exception thrown when an event of an unexpected dynamic type is encountered.
  */
-struct EventTypeException : virtual EventException { };
+struct EventTypeException : virtual EventException {
+    virtual char const* what() const throw() {
+        return "d2::EventTypeException";
+    }
+};
 
 namespace exception_tag {
     struct expected_type;
