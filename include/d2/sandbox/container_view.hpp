@@ -6,16 +6,17 @@
 #define D2_SANDBOX_CONTAINER_VIEW_HPP
 
 #include <d2/sandbox/basic_container.hpp>
-#include <d2/sandbox/supports_expression.hpp>
 
 #include <algorithm>
+#include <boost/iterator/iterator_traits.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/operators.hpp>
 #include <boost/type_traits/remove_reference.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <iosfwd>
+#include <iterator>
 
 
 namespace d2 {
@@ -34,13 +35,13 @@ struct is_probably_a_map
 { };
 
 template <typename Container, typename IsMap>
-struct provide_map_typedefs {
+struct map_typedefs {
 protected:
     typedef typename Container::reference mapped_or_value_type;
 };
 
 template <typename Container>
-struct provide_map_typedefs<Container, boost::mpl::true_> {
+struct map_typedefs<Container, boost::mpl::true_> {
     typedef typename Container::mapped_type mapped_type;
     typedef typename Container::key_type key_type;
 
@@ -49,8 +50,8 @@ protected:
 };
 
 template <typename Container>
-struct provide_container_typedefs
-    : provide_map_typedefs<
+struct container_typedefs
+    : map_typedefs<
         Container,
         typename is_probably_a_map<Container>::type
     >
@@ -70,30 +71,35 @@ struct provide_container_typedefs
 
 template <typename Container, typename Accessor>
 struct container_view
-    : detail::provide_container_typedefs<Container>,
+    : detail::container_typedefs<Container>,
       boost::equality_comparable<container_view<Container, Accessor> >,
       basic_container<
         container_view<Container, Accessor>,
         boost::transform_iterator<
             Accessor,
-            typename detail::provide_container_typedefs<Container>::iterator
+            typename detail::container_typedefs<Container>::iterator
         >,
         boost::transform_iterator<
             Accessor,
-            typename detail::provide_container_typedefs<Container>::
-                                                                const_iterator
+            typename detail::container_typedefs<Container>::const_iterator
         >
     >
 {
     typedef boost::transform_iterator<
-        Accessor,
-        typename detail::provide_container_typedefs<Container>::iterator
-    > iterator;
+                Accessor,
+                typename detail::container_typedefs<Container>::iterator
+            > iterator;
 
     typedef boost::transform_iterator<
-        Accessor,
-        typename detail::provide_container_typedefs<Container>::const_iterator
-    > const_iterator;
+                Accessor,
+                typename detail::container_typedefs<Container>::const_iterator
+            > const_iterator;
+
+    typedef typename boost::iterator_value<iterator>::type value_type;
+    typedef value_type reference;
+    typedef value_type const_reference;
+    typedef void pointer;
+    typedef void const_pointer;
 
     explicit container_view(Container& container) : self_(container) { }
 
@@ -111,31 +117,14 @@ struct container_view
         return self_[key];
     }
 
-private:
-    D2_DETAIL_SUPPORTS_EXPRESSION(can_compare_with,
-        *((Other*)0)->begin() == *((container_view*)0)->begin(),
-        typename Other);
-
-public:
-    template <typename Other>
-    friend typename boost::enable_if<can_compare_with<Other>,
-    bool>::type operator==(container_view const& self, Other const& other) {
-        return self.size() == other.size() &&
-               std::equal(self.begin(), self.end(), other.begin());
-    }
-
-    // Required to make operator== symmetric.
-    template <typename Other>
-    friend typename boost::enable_if<can_compare_with<Other>,
-    bool>::type operator==(Other const& other, container_view const& self) {
-        return self == other;
-    }
-
-    // Required to avoid ambiguity when comparing two views.
-    friend bool operator==(container_view const& self,
-                           container_view const& other) {
-        return self.size() == other.size() &&
-               std::equal(self.begin(), self.end(), other.begin());
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+               container_view const& self) {
+        typedef std::ostream_iterator<typename container_view::value_type>
+                                                            OstreamIterator;
+        std::copy(self.begin(), self.end(), OstreamIterator(os, ", "));
+        return os;
     }
 
 private:
