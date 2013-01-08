@@ -88,9 +88,9 @@ class build_segmentation_graph {
             Segment child_segment = event.child;
             Segment new_parent_segment = event.new_parent;
 
-            // Segments:      parent    n+1    n+2
-            // Parent thread:   o________o
-            // Child thread:     \______________o
+            // Segments:      parent     new_parent  child
+            // Parent thread:   o____________o
+            // Child thread:     \____________________o
             add_vertex(new_parent_segment, graph);
             add_vertex(child_segment, graph);
             add_edge(parent_segment, new_parent_segment, graph);
@@ -102,13 +102,9 @@ class build_segmentation_graph {
             Segment child_segment = event.child;
             Segment new_parent_segment = event.new_parent;
 
-            // Note: Below, the (parent, child, n) segments are not
-            //       necessarily ordered that way. `Any thread` can refer
-            //       to any thread, including `parent` or `child`.
-            // Segments:      parent    child    n    n+1
+            // Segments:      parent    child       new_parent
             // Parent thread:   o______________________o
             // Child thread:              o___________/
-            // Any thread:                       o
             add_vertex(new_parent_segment, graph);
             add_edge(parent_segment, new_parent_segment, graph);
             add_edge(child_segment, new_parent_segment, graph);
