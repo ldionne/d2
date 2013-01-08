@@ -251,8 +251,9 @@ private:
         stream.open(path.c_str());
         if (!stream.is_open())
             // Create a new, empty file otherwise.
-            stream.open(path.c_str(), std::ios::in | std::ios::out |
-                                                            std::ios::trunc);
+            stream.open(path.c_str(), std::ios_base::in |
+                                      std::ios_base::out |
+                                      std::ios_base::trunc);
         if (!stream)
             D2_THROW(StreamApertureException()
                         << TargetFilename(path.c_str()));

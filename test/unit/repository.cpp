@@ -51,6 +51,7 @@ TEST_F(RepositoryTest, save_and_load_into_one_thread) {
     EXPECT_FALSE(repository.empty());
 
     d2::AcquireEvent loaded;
+    repository[threads[0]].seekg(0); // rewind
     repository[threads[0]] >> loaded;
     ASSERT_EQ(saved, loaded);
 }
@@ -84,6 +85,7 @@ TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {
 
     for (unsigned int i = 0; i < threads.size(); ++i) {
         unsigned int loaded;
+        sources_sinks[threads[i]].seekg(0); // rewind
         sources_sinks[threads[i]] >> loaded;
         ASSERT_EQ(i, loaded);
     }
