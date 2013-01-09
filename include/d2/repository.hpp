@@ -22,6 +22,8 @@
 #include <boost/mpl/transform.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost/phoenix/operator.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
@@ -422,52 +424,17 @@ private:
         return stream;
     }
 
-    struct do_nothing {
-        typedef void result_type;
-        template <typename Stream>
-        result_type operator()(Stream const&) const {
-            // Nothing.
-        }
-    };
-
-    template <typename T>
-    struct stream_output {
-        T& value_;
-
-        explicit stream_output(T& t) : value_(t) { }
-
-        typedef void result_type;
-        template <typename Stream>
-        result_type operator()(Stream& stream) const {
-            stream << value_;
-        }
-    };
-
-    template <typename T>
-    struct stream_input {
-        T& value_;
-
-        explicit stream_input(T& t) : value_(t) { }
-
-        typedef void result_type;
-        template <typename Stream>
-        result_type operator()(Stream& stream) const {
-            stream >> value_;
-        }
-    };
-
 public:
     /**
      * Return the stream associated to an instance of a category.
      *
      * @warning Any access to the returned stream must be synchronized by
      *          the caller as needed.
-     * @todo Use phoenix to replace `do_nothing`.
      */
     template <typename Category>
     typename bundle_of<Category>::type::stream_type&
     operator[](Category const& category) {
-        return fetch_stream_and_do(category, do_nothing());
+        return fetch_stream_and_do(category, boost::phoenix::nothing);
     }
 
     /**
@@ -477,7 +444,8 @@ public:
      */
     template <typename Category, typename Data>
     void write(Category const& category, Data const& data) {
-        fetch_stream_and_do(category, stream_output<Data const>(data));
+        using boost::phoenix::arg_names::arg1;
+        fetch_stream_and_do(category, arg1 << data);
     }
 
     /**
@@ -487,7 +455,8 @@ public:
      */
     template <typename Category, typename Data>
     void read(Category const& category, Data& data) {
-        fetch_stream_and_do(category, stream_input<Data>(data));
+        using boost::phoenix::arg_names::arg1;
+        fetch_stream_and_do(category, arg1 >> boost::phoenix::ref(data));
     }
 
 private:

@@ -188,3 +188,19 @@ TEST_F(RepositoryTest, throws_on_invalid_repo_path) {
         ThreadRepository repository(root);
     }, d2::InvalidRepositoryPathException);
 }
+
+TEST_F(RepositoryTest, use_read_and_write_to_manipulate_streams) {
+    ThreadRepository repository(root);
+    ASSERT_TRUE(repository.empty());
+
+    for (unsigned int i = 0; i < threads.size(); ++i)
+        repository.write(threads[i], i);
+    ASSERT_FALSE(repository.empty());
+
+    for (unsigned int i = 0; i < threads.size(); ++i) {
+        unsigned int loaded;
+        repository[threads[i]].seekg(0); // rewind
+        repository.read(threads[i], loaded);
+        ASSERT_EQ(i, loaded);
+    }
+}
