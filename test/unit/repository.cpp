@@ -12,8 +12,38 @@
 
 
 namespace {
-    typedef boost::mpl::vector<d2::Thread> TestPolicy;
-    typedef d2::Repository<TestPolicy> Repository;
+    struct UnaryKey {
+        template <typename Ostream>
+        friend Ostream& operator<<(Ostream& os, UnaryKey const&) {
+            return os << "UnaryKey", os;
+        }
+
+        template <typename Istream>
+        friend Istream& operator>>(Istream& is, UnaryKey&) {
+            std::string name;
+            is >> name;
+            BOOST_ASSERT(name == "UnaryKey");
+            return is;
+        }
+    };
+
+    struct MixedMappingPolicy {
+        template <typename Category, typename Stream>
+        struct apply
+            : boost::mpl::apply<d2::boost_unordered_map, Category, Stream>
+        { };
+
+        template <typename Stream>
+        struct apply<UnaryKey, Stream>
+            : boost::mpl::apply<d2::unary_map, UnaryKey, Stream>
+        { };
+    };
+
+    typedef boost::mpl::vector<d2::Thread> ThreadKeys;
+    typedef boost::mpl::vector<d2::Thread, UnaryKey> MixedKeys;
+
+    typedef d2::Repository<ThreadKeys> ThreadRepository;
+    typedef d2::Repository<MixedKeys, MixedMappingPolicy> MixedRepository;
 
     struct RepositoryTest : ::testing::Test {
         std::vector<d2::Thread> threads;
@@ -40,12 +70,12 @@ namespace {
 } // end anonymous namespace
 
 TEST_F(RepositoryTest, should_be_empty_at_the_beginning) {
-    Repository repository(root);
+    ThreadRepository repository(root);
     EXPECT_TRUE(repository.empty());
 }
 
 TEST_F(RepositoryTest, save_and_load_into_one_thread) {
-    Repository repository(root);
+    ThreadRepository repository(root);
     d2::AcquireEvent saved(locks[10], threads[0]);
     repository[threads[0]] << saved;
     EXPECT_FALSE(repository.empty());
@@ -57,30 +87,30 @@ TEST_F(RepositoryTest, save_and_load_into_one_thread) {
 }
 
 TEST_F(RepositoryTest, get_all_keys) {
-    Repository repository(root);
+    ThreadRepository repository(root);
 
     // Save a dummy value to open the handles.
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    Repository::key_view<d2::Thread>::type
-        sources_sinks = repository.keys<d2::Thread>();
+    ThreadRepository::key_view<d2::Thread>::type
+        repo_threads = repository.keys<d2::Thread>();
 
     // We must do an unordered comparison.
     boost::unordered_set<d2::Thread>
                         expected(threads.begin(), threads.end()),
-                        actual(sources_sinks.begin(), sources_sinks.end());
+                        actual(repo_threads.begin(), repo_threads.end());
     ASSERT_TRUE(expected == actual);
 }
 
 TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {
-    Repository repository(root);
+    ThreadRepository repository(root);
 
     // Save a dummy value to open the handles.
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    Repository::item_view<d2::Thread>::type
+    ThreadRepository::item_view<d2::Thread>::type
         sources_sinks = repository.items<d2::Thread>();
 
     for (unsigned int i = 0; i < threads.size(); ++i) {
@@ -92,20 +122,20 @@ TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {
 }
 
 TEST_F(RepositoryTest, get_all_streams_only) {
-    Repository repository(root);
+    ThreadRepository repository(root);
 
     // Save a dummy value to open the handles.
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    Repository::value_view<d2::Thread>::type
+    ThreadRepository::value_view<d2::Thread>::type
         sources_sinks = repository.values<d2::Thread>();
     ASSERT_EQ(sources_sinks.size(), threads.size());
 }
 
 TEST_F(RepositoryTest, reload_previous_repository) {
     {
-        Repository first(root);
+        ThreadRepository first(root);
         ASSERT_TRUE(first.empty());
         // Save a dummy value to create streams.
         for (unsigned int i = 0; i < threads.size(); ++i)
@@ -113,7 +143,7 @@ TEST_F(RepositoryTest, reload_previous_repository) {
         ASSERT_FALSE(first.empty());
     }
     {
-        Repository second(root);
+        ThreadRepository second(root);
         ASSERT_FALSE(second.empty());
         for (unsigned int i = 0; i < threads.size(); ++i) {
             unsigned int saved;
@@ -123,51 +153,20 @@ TEST_F(RepositoryTest, reload_previous_repository) {
     }
 }
 
-
-struct UnaryCategory {
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, UnaryCategory const&) {
-        return os << "UnaryCategory", os;
-    }
-
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, UnaryCategory&) {
-        std::string name;
-        is >> name;
-        BOOST_ASSERT(name == "UnaryCategory");
-        return is;
-    }
-};
-
-struct HybridMappingPolicy {
-    template <typename Category, typename Stream>
-    struct apply
-        : boost::mpl::apply<d2::boost_unordered_map, Category, Stream>
-    { };
-
-    template <typename Stream>
-    struct apply<UnaryCategory, Stream>
-        : boost::mpl::apply<d2::unary_map, UnaryCategory, Stream>
-    { };
-};
-
 TEST_F(RepositoryTest, reload_previous_repository_multiple_categories) {
-    typedef boost::mpl::vector<d2::Thread, UnaryCategory> Categories;
-    typedef d2::Repository<Categories, HybridMappingPolicy> Repository;
-
     {
-        Repository first(root);
+        MixedRepository first(root);
         ASSERT_TRUE(first.empty());
         for (unsigned int i = 0; i < threads.size(); ++i)
             first[threads[i]] << i;
 
-        UnaryCategory special_stream;
+        UnaryKey special_stream;
         first[special_stream] << (unsigned int)88888;
 
         ASSERT_FALSE(first.empty());
     }
     {
-        Repository second(root);
+        MixedRepository second(root);
         ASSERT_FALSE(second.empty());
         for (unsigned int i = 0; i < threads.size(); ++i) {
             unsigned int saved;
@@ -175,7 +174,7 @@ TEST_F(RepositoryTest, reload_previous_repository_multiple_categories) {
             ASSERT_EQ(i, saved);
         }
 
-        UnaryCategory special_stream;
+        UnaryKey special_stream;
         unsigned int special;
         second[special_stream] >> special;
         ASSERT_EQ(88888, special);
@@ -186,6 +185,6 @@ TEST_F(RepositoryTest, throws_on_invalid_repo_path) {
     // Create a file and then try to create a repository at that path.
     std::ofstream ofs(root.c_str());
     ASSERT_THROW({
-        Repository repository(root);
+        ThreadRepository repository(root);
     }, d2::InvalidRepositoryPathException);
 }

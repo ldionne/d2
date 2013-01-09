@@ -26,7 +26,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <fstream>
-#include <ios>
 #include <string>
 #include <typeinfo>
 
@@ -67,40 +66,55 @@ typedef boost::error_info<exception_tag::concerned_path, char const*>
                                                                 ConcernedPath;
 
 /**
- * Default mapping policy using `boost::unordered_map`s to map category
- * instances to streams.
+ * Default mapping policy using `boost::unordered_map`s to map keys to values.
  */
 struct boost_unordered_map {
-    template <typename Category, typename Stream>
+    template <typename Key, typename Value>
     struct apply {
-        typedef boost::unordered_map<Category, Stream> type;
+        typedef boost::unordered_map<Key, Value> type;
     };
 };
 
 /**
- * Mapping policy using no map at all. All instances in the same category are
- * mapped to the same stream.
+ * Mapping policy using no map at all. All instances of the same key type are
+ * mapped to the same value.
  *
- * @note Several methods can't be used with any category using this mapping.
- *       Specifically, `items`, `values` and `keys` won't work.
+ * @note Several methods of `Repository` can't be used with this pseudo-map.
+ *       Specifically, `items`, `values` and `keys` won't work because
+ *       this pseudo-map can't behave like a range.
  */
 struct unary_map {
-    template <typename Category, typename Stream>
+    template <typename Key, typename Value>
     struct apply {
         struct type {
-            typedef Stream mapped_type;
-            typedef Category key_type;
+            typedef Value mapped_type;
+            typedef Key key_type;
 
             mapped_type& operator[](key_type const&) {
-                return stream_ ? *stream_ : *(stream_ = boost::in_place());
+                return value_ ? *value_ : *(value_ = boost::in_place());
             }
 
             bool empty() const {
-                return !stream_;
+                return !value_;
             }
 
         private:
-            boost::optional<mapped_type> stream_;
+            boost::optional<mapped_type> value_;
+        };
+    };
+};
+
+/**
+ * Default locking policy providing no synchronization at all.
+ */
+struct no_synchronization {
+    template <typename Category, typename Stream>
+    struct apply {
+        struct type {
+            void lock_category(Category const&) { }
+            void unlock_category(Category const&) { }
+            void lock_stream(Stream const&) { }
+            void unlock_stream(Stream const&) { }
         };
     };
 };
@@ -108,67 +122,89 @@ struct unary_map {
 /**
  * Class representing a repository into which stuff can be stored.
  */
-template <typename Categories_,
-          typename MappingPolicy = boost_unordered_map>
+template <typename Categories,
+          typename MappingPolicy = boost_unordered_map,
+          typename LockingPolicy = no_synchronization>
 class Repository {
-    // A policy for deciding input only, output only
-    // or input/output would be nice.
-    typedef std::ifstream Istream;
-    typedef std::ofstream Ostream;
-    typedef std::fstream IOStream;
 
-    // Associate a category to its map type using the MappingPolicy and the
-    // default stream type.
-    struct AssociateToMap {
+    template <typename Category>
+    struct Bundle {
+        // The category to which this bundle is associated.
+        typedef Category category_type;
+
+        // The actual type of the streams owned by this bundle.
+        // Note: A policy for deciding input only, output only
+        //       or input/output would be nice.
+        typedef std::fstream stream_type;
+
+        // The associative container associated to this bundle.
+        typedef typename boost::mpl::apply<
+                            MappingPolicy, category_type, stream_type
+                        >::type map_type;
+
+        // The object synchronizing accesses to this bundle.
+        typedef typename boost::mpl::apply<
+                            LockingPolicy, category_type, stream_type
+                        >::type locker_type;
+
+        map_type map;
+        locker_type locker;
+    };
+
+    // Associate a Category to its Bundle into a fusion pair.
+    struct create_category_bundle {
         template <typename Category>
         struct apply {
-            typedef typename boost::mpl::apply<
-                                MappingPolicy, Category, IOStream
-                    >::type AssociativeContainer;
-            typedef boost::fusion::pair<Category, AssociativeContainer> type;
+            typedef boost::fusion::pair<Category, Bundle<Category> > type;
         };
     };
 
-    // Zip the Categories_ with their associated map. This is necessary
-    // to create the Categories below.
-    typedef typename boost::mpl::transform<Categories_, AssociateToMap>::type
-                                                                    Zipped;
+    // Create a sequence of (Category, Bundle) pairs from which we'll be able
+    // to create the fusion map below.
+    typedef typename boost::mpl::transform<
+                Categories, create_category_bundle
+            >::type Zipped;
 
-    // Create a map from Categories_ to types determined by the MappingPolicy.
-    // This fusion map acts like our instance variables, statically mapping
-    // types (a.k.a categories) to associative containers of the type
-    // [instance of a category -> stream].
-    typedef typename boost::fusion::result_of::as_map<Zipped>::type Categories;
+    // Create a compile-time map from categories (types used as a tag) to
+    // their associated bundle.
+    typedef typename boost::fusion::result_of::as_map<Zipped>::type BundleMap;
 
-    Categories categories_;
+    // Note: Don't try to use this map. Use the accessor below instead!
+    BundleMap bundle_map_;
 
-    // Return the associative container associated to a Category.
+    // Return the bundle associated to a Category in the compile-time map.
     template <typename Category>
-    struct streams_of {
+    struct bundle_of {
         typedef typename boost::remove_reference<
-            typename boost::fusion::result_of::at_key<
-                        Categories, Category>::type
-        >::type type;
+                    typename boost::fusion::result_of::at_key<
+                        BundleMap, Category
+                    >::type
+                >::type type;
 
-        type& operator()(Categories& category) const {
-            return boost::fusion::at_key<Category>(category);
+        typedef typename boost::remove_reference<
+                    typename boost::fusion::result_of::at_key<
+                        BundleMap const, Category
+                    >::type
+                >::type const_type;
+
+        template <typename Repo>
+        type& operator()(Repo& repo) const {
+            return boost::fusion::at_key<Category>(repo.bundle_map_);
         }
 
-        typedef typename boost::remove_reference<
-            typename boost::fusion::result_of::at_key<
-                                            Categories const, Category>::type
-        >::type const_type;
-
-        const_type& operator()(Categories const& category) const {
-            return boost::fusion::at_key<Category>(category);
+        template <typename Repo>
+        const_type& operator()(Repo const& repo) const {
+            return boost::fusion::at_key<Category>(repo.bundle_map_);
         }
     };
 
     template <typename Category, template <typename Container> class View>
     struct make_view {
-        typedef typename View<typename streams_of<Category>::type>::type type;
-        typedef typename View<typename streams_of<Category>::const_type>::type
-                                                                const_type;
+        typedef typename bundle_of<Category>::type Bundle;
+        typedef typename bundle_of<Category>::const_type ConstBundle;
+
+        typedef typename View<typename Bundle::map_type>::type type;
+        typedef typename View<typename ConstBundle::map_type>::type const_type;
     };
 
 public:
@@ -190,37 +226,37 @@ public:
     template <typename Category>
     typename item_view<Category>::type items() {
         typedef typename item_view<Category>::type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
     template <typename Category>
     typename item_view<Category>::const_type items() const {
         typedef typename item_view<Category>::const_type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
     template <typename Category>
     typename value_view<Category>::type values() {
         typedef typename value_view<Category>::type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
     template <typename Category>
     typename value_view<Category>::const_type values() const {
         typedef typename value_view<Category>::const_type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
     template <typename Category>
     typename key_view<Category>::type keys() {
         typedef typename key_view<Category>::type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
     template <typename Category>
     typename key_view<Category>::const_type keys() const {
         typedef typename key_view<Category>::const_type View;
-        return View(streams_of<Category>()(categories_));
+        return View(bundle_of<Category>()(*this).map);
     }
 
 private:
@@ -239,13 +275,15 @@ private:
 
         typedef void result_type;
 
-        template <typename CategoryPair>
-        result_type operator()(CategoryPair& category) const {
+        template <typename CategoryBundlePair>
+        result_type operator()(CategoryBundlePair const&) const {
             namespace fs = boost::filesystem;
-            typedef typename CategoryPair::first_type Category;
-            typedef typename CategoryPair::second_type Streams;
+            typedef typename CategoryBundlePair::first_type Category;
+            typedef typename bundle_of<Category>::type Bundle;
+            typedef typename Bundle::map_type AssociativeContainer;
 
-            Streams& streams = category.second;
+            Bundle& bundle = bundle_of<Category>()(*this_);
+            AssociativeContainer& streams = bundle.map;
             BOOST_ASSERT_MSG(streams.empty(),
                 "Opening a category that already has some open streams.");
 
@@ -302,7 +340,7 @@ public:
                         << ConcernedPath(root_.c_str()));
         fs::create_directories(root_);
 
-        boost::fusion::for_each(categories_, open_category(this));
+        boost::fusion::for_each(bundle_map_, open_category(this));
     }
 
 private:
@@ -312,8 +350,15 @@ private:
                                 boost::lexical_cast<std::string>(category);
     }
 
+    /**
+     * Open a stream in the given category for the first time.
+     *
+     * @warning This method does not synchronize its access to `stream`.
+     *          It is the caller's responsibility to make sure `stream`
+     *          can be modified safely.
+     */
     template <typename Stream, typename Category>
-    void open_stream(Stream& stream, Category const& category) {
+    void open_stream(Stream& stream, Category const& category) const {
         namespace fs = boost::filesystem;
         BOOST_ASSERT_MSG(!stream.is_open(),
             "Opening a stream that is already open.");
@@ -335,37 +380,140 @@ private:
                         << ConcernedPath(path.c_str()));
     }
 
-public:
     /**
-     * Return the stream associated to an instance of a category.
+     * Fetch a stream into its category, perform some action on it and then
+     * return a reference to it. Accesses to shared structures is synchronized
+     * using the locking policy. See below for details.
      */
-    template <typename Category>
-    typename streams_of<Category>::type::mapped_type&
-    operator[](Category const& category) {
-        typedef typename streams_of<Category>::type::mapped_type Stream;
-        Stream& stream = streams_of<Category>()(categories_)[category];
+    template <typename Category, typename F>
+    typename bundle_of<Category>::type::stream_type&
+    fetch_stream_and_do(Category const& category, F const& f) {
+        typedef typename bundle_of<Category>::type Bundle;
+        typedef typename Bundle::locker_type Locker;
+        typedef typename Bundle::map_type AssociativeContainer;
+        typedef typename Bundle::stream_type Stream;
+
+        Bundle& bundle = bundle_of<Category>()(*this);
+
+        Locker& locker = bundle.locker;
+        AssociativeContainer& streams = bundle.map;
+
+        // Use the locker to synchronize the map lookup at the category
+        // level. The whole category is locked, so it is not possible for
+        // another thread to access the associative map at the same time.
+        locker.lock_category(category);
+        Stream& stream = streams[category];
+        locker.unlock_category(category);
+
+        // Use the locker to synchronize the aperture of the stream at the
+        // stream level. Only this stream is locked, so it is not possible for
+        // another thread to access this stream at the same time, but it is
+        // perfectly possible (and okay) if other threads access other streams
+        // in the same category (or in other categories).
+        locker.lock_stream(stream);
         if (!stream.is_open())
             open_stream(stream, category);
+        // Perform some action on the stream while it's synchronized.
+        f(stream);
+        locker.unlock_stream(stream);
+
+        // Any usage of the stream beyond this point must be synchronized by
+        // the caller as needed.
         return stream;
     }
 
-private:
-    struct category_is_empty {
-        typedef bool result_type;
+    struct do_nothing {
+        typedef void result_type;
+        template <typename Stream>
+        result_type operator()(Stream const&) const {
+            // Nothing.
+        }
+    };
 
-        template <typename CategoryPair>
-        result_type operator()(CategoryPair const& category) const {
-            return category.second.empty();
+    template <typename T>
+    struct stream_output {
+        T& value_;
+
+        explicit stream_output(T& t) : value_(t) { }
+
+        typedef void result_type;
+        template <typename Stream>
+        result_type operator()(Stream& stream) const {
+            stream << value_;
+        }
+    };
+
+    template <typename T>
+    struct stream_input {
+        T& value_;
+
+        explicit stream_input(T& t) : value_(t) { }
+
+        typedef void result_type;
+        template <typename Stream>
+        result_type operator()(Stream& stream) const {
+            stream >> value_;
         }
     };
 
 public:
     /**
-     * Return whether there are any open streams open in any category in
+     * Return the stream associated to an instance of a category.
+     *
+     * @warning Any access to the returned stream must be synchronized by
+     *          the caller as needed.
+     * @todo Use phoenix to replace `do_nothing`.
+     */
+    template <typename Category>
+    typename bundle_of<Category>::type::stream_type&
+    operator[](Category const& category) {
+        return fetch_stream_and_do(category, do_nothing());
+    }
+
+    /**
+     * Write `data` to the output stream associated to `category`.
+     * This is equivalent to `repository[category] << data`, except
+     * the output operation is synchronized internally in an optimal way.
+     */
+    template <typename Category, typename Data>
+    void write(Category const& category, Data const& data) {
+        fetch_stream_and_do(category, stream_output<Data const>(data));
+    }
+
+    /**
+     * Read into `data` from the input stream associated to `category`.
+     * This is equivalent to `repository[category] >> data`, except the
+     * input operation is synchronized internally in an optimal way.
+     */
+    template <typename Category, typename Data>
+    void read(Category const& category, Data& data) {
+        fetch_stream_and_do(category, stream_input<Data>(data));
+    }
+
+private:
+    struct category_is_empty {
+        Repository const* this_;
+
+        explicit category_is_empty(Repository const* this_) : this_(this_) { }
+
+        typedef bool result_type;
+
+        template <typename CategoryBundlePair>
+        result_type operator()(CategoryBundlePair const&) const {
+            typedef typename CategoryBundlePair::first_type Category;
+            return bundle_of<Category>()(*this_).map.empty();
+        }
+    };
+
+public:
+    /**
+     * Return whether there are any open open streams in any category of
      * the repository.
+     *
+     * @warning Synchronization is the responsibility of the caller.
      */
     bool empty() const {
-        return boost::fusion::all(categories_, category_is_empty());
+        return boost::fusion::all(bundle_map_, category_is_empty(this));
     }
 };
 
