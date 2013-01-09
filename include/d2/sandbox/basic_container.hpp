@@ -94,6 +94,9 @@ public:
         return basic_container_core_access::const_iterator_end(d.derived());
     }
 
+protected:
+    typedef basic_container basic_container_;
+
 };
 
 } // end namespace sandbox

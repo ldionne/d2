@@ -26,6 +26,7 @@
 #include <boost/phoenix/operator.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/utility/result_of.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <fstream>
 #include <string>
@@ -113,10 +114,26 @@ struct no_synchronization {
     template <typename Category, typename Stream>
     struct apply {
         struct type {
-            void lock_category(Category const&) { }
-            void unlock_category(Category const&) { }
-            void lock_stream(Stream const&) { }
-            void unlock_stream(Stream const&) { }
+            void lock() { }
+            void unlock() { }
+        };
+    };
+};
+
+/**
+ * Locking policy providing synchronization by using some provided
+ * synchronization object.
+ */
+template <typename Mutex>
+struct synchronize_with {
+    template <typename Category, typename Stream>
+    struct apply {
+        struct type {
+            void lock() { mutex_.lock(); }
+            void unlock() { mutex_.unlock(); }
+
+        private:
+            Mutex mutex_;
         };
     };
 };
@@ -126,7 +143,8 @@ struct no_synchronization {
  */
 template <typename Categories,
           typename MappingPolicy = boost_unordered_map,
-          typename LockingPolicy = no_synchronization>
+          typename CategoryLockingPolicy = no_synchronization,
+          typename StreamLockingPolicy = no_synchronization>
 class Repository {
 
     template <typename Category>
@@ -135,22 +153,37 @@ class Repository {
         typedef Category category_type;
 
         // The actual type of the streams owned by this bundle.
-        // Note: A policy for deciding input only, output only
+        // Note: A policy for choosing input only, output only
         //       or input/output would be nice.
         typedef std::fstream stream_type;
 
-        // The associative container associated to this bundle.
-        typedef typename boost::mpl::apply<
-                            MappingPolicy, category_type, stream_type
-                        >::type map_type;
-
         // The object synchronizing accesses to this bundle.
         typedef typename boost::mpl::apply<
-                            LockingPolicy, category_type, stream_type
-                        >::type locker_type;
+                            CategoryLockingPolicy, category_type, stream_type
+                        >::type category_locker_type;
+
+        // The object synchronizing accesses to every stream of this bundle.
+        // Note: Each stream has a copy of the stream_locker_type to achieve
+        //       possibly _very_ granular locking.
+        typedef typename boost::mpl::apply<
+                            StreamLockingPolicy, category_type, stream_type
+                        >::type stream_locker_type;
+
+        // The type of the objects stored in the associative container.
+        struct mapped_type {
+            stream_locker_type stream_locker;
+            stream_type stream;
+
+            typedef Bundle bundle_type;
+        };
+
+        // The associative container associated to this bundle.
+        typedef typename boost::mpl::apply<
+                            MappingPolicy, category_type, mapped_type
+                        >::type map_type;
 
         map_type map;
-        locker_type locker;
+        category_locker_type category_locker;
     };
 
     // Associate a Category to its Bundle into a fusion pair.
@@ -200,42 +233,48 @@ class Repository {
         }
     };
 
-    template <typename Category, template <typename Container> class View>
-    struct make_view {
+    // Accessor for the .stream member that is not yet fully bound.
+    template <typename MappedType>
+    struct stream_accessor_helper
+        : sandbox::member_accessor<
+            typename MappedType::bundle_type::stream_type MappedType::*,
+            &MappedType::stream
+        >
+    { };
+
+    // Accessor for the .stream member.
+    template <typename NextAccessor = sandbox::identity_accessor>
+    struct stream_accessor
+        : sandbox::rebind_accessor<
+            stream_accessor_helper, NextAccessor
+        >
+    { };
+
+    template <typename Category, typename Accessor>
+    class make_view {
         typedef typename bundle_of<Category>::type Bundle;
         typedef typename bundle_of<Category>::const_type ConstBundle;
 
-        typedef typename View<typename Bundle::map_type>::type type;
-        typedef typename View<typename ConstBundle::map_type>::type const_type;
+    public:
+        typedef sandbox::container_view<
+                    typename Bundle::map_type, Accessor
+                > type;
+
+        typedef sandbox::container_view<
+                    typename ConstBundle::map_type, Accessor
+                > const_type;
     };
 
 public:
     template <typename Category>
     struct key_view
-        : make_view<Category, sandbox::key_view>
+        : make_view<Category, sandbox::first_accessor<> >
     { };
 
     template <typename Category>
     struct value_view
-        : make_view<Category, sandbox::value_view>
+        : make_view<Category, sandbox::second_accessor<stream_accessor<> > >
     { };
-
-    template <typename Category>
-    struct item_view
-        : make_view<Category, sandbox::item_view>
-    { };
-
-    template <typename Category>
-    typename item_view<Category>::type items() {
-        typedef typename item_view<Category>::type View;
-        return View(bundle_of<Category>()(*this).map);
-    }
-
-    template <typename Category>
-    typename item_view<Category>::const_type items() const {
-        typedef typename item_view<Category>::const_type View;
-        return View(bundle_of<Category>()(*this).map);
-    }
 
     template <typename Category>
     typename value_view<Category>::type values() {
@@ -310,10 +349,10 @@ private:
                     // using a category instance back to it.
                     Category const& category = boost::lexical_cast<Category>(
                                                     file.filename().string());
-                    BOOST_ASSERT_MSG(!streams[category].is_open(),
+                    BOOST_ASSERT_MSG(!streams[category].stream.is_open(),
                         "While opening a category, opening a stream that "
                         "we already know of.");
-                    this_->open_stream(streams[category], category);
+                    this_->open_stream(streams[category].stream, category);
                 }
             }
 
@@ -359,8 +398,9 @@ private:
      *          It is the caller's responsibility to make sure `stream`
      *          can be modified safely.
      */
-    template <typename Stream, typename Category>
-    void open_stream(Stream& stream, Category const& category) const {
+    template <typename Category>
+    void open_stream(typename bundle_of<Category>::type::stream_type& stream,
+                     Category const& category) const {
         namespace fs = boost::filesystem;
         BOOST_ASSERT_MSG(!stream.is_open(),
             "Opening a stream that is already open.");
@@ -383,63 +423,43 @@ private:
     }
 
     /**
-     * Simple helper class that will call the `lock_category` method of an
-     * object on construction and call its `unlock_category` method on
-     * destruction.
+     * Simple helper class that will call the `lock` method of an object
+     * on construction and call its `unlock` method on destruction.
      *
      * This _very_ important to make sure the locks are released if an
      * exception is thrown.
      */
-    template <typename Locker, typename Category>
-    struct ScopedCategoryLocker {
-        Locker& locker_;
-        Category const& category_;
+    template <typename Lock>
+    struct ScopedLock {
+        Lock& lock_;
 
-        ScopedCategoryLocker(Locker& locker, Category const& category)
-                                    : locker_(locker), category_(category) {
-            locker_.lock_category(category_);
+        explicit ScopedLock(Lock& lock) : lock_(lock) {
+            lock_.lock();
         }
 
-        ~ScopedCategoryLocker() {
-            locker_.unlock_category(category_);
-        }
-    };
-
-    /**
-     * @see `ScopedCategoryLocker`. This is the same, but for the
-     *      `lock_stream` and `unlock_stream` methods.
-     */
-    template <typename Locker, typename Stream>
-    struct ScopedStreamLocker {
-        Locker& locker_;
-        Stream& stream_;
-
-        ScopedStreamLocker(Locker& locker, Stream& stream)
-                                    : locker_(locker), stream_(stream) {
-            locker_.lock_stream(stream_);
-        }
-
-        ~ScopedStreamLocker() {
-            locker_.unlock_stream(stream_);
+        ~ScopedLock() {
+            lock_.unlock();
         }
     };
 
     /**
      * Fetch a stream into its category, perform some action on it and then
      * return a reference to it. Accesses to shared structures is synchronized
-     * using the locking policy. See below for details.
+     * using the different locking policies. See below for details.
      */
     template <typename Category, typename F>
     typename bundle_of<Category>::type::stream_type&
     fetch_stream_and_do(Category const& category, F const& f) {
         typedef typename bundle_of<Category>::type Bundle;
-        typedef typename Bundle::locker_type Locker;
+        typedef typename Bundle::category_locker_type CategoryLocker;
         typedef typename Bundle::map_type AssociativeContainer;
+
+        typedef typename Bundle::mapped_type StreamBundle;
+        typedef typename Bundle::stream_locker_type StreamLocker;
         typedef typename Bundle::stream_type Stream;
 
         Bundle& bundle = bundle_of<Category>()(*this);
-
-        Locker& locker = bundle.locker;
+        CategoryLocker& category_locker = bundle.category_locker;
         AssociativeContainer& streams = bundle.map;
 
         // Use the locker to synchronize the map lookup at the category
@@ -447,12 +467,13 @@ private:
         // another thread to access the associative map at the same time.
         // Note: The usage of a pointer here is required because we can't
         //       initialize the reference inside the scope of the scoped lock.
-        Stream* stream_ptr;
+        StreamBundle* stream_bundle_ptr;
         {
-            ScopedCategoryLocker<Locker, Category> lock(locker, category);
-            stream_ptr = &streams[category];
+            ScopedLock<CategoryLocker> lock(category_locker);
+            stream_bundle_ptr = &streams[category];
         }
-        Stream& stream = *stream_ptr;
+        StreamLocker& stream_locker = stream_bundle_ptr->stream_locker;
+        Stream& stream = stream_bundle_ptr->stream;
 
         // Use the locker to synchronize the aperture of the stream at the
         // stream level. Only this stream is locked, so it is not possible for
@@ -460,7 +481,7 @@ private:
         // perfectly possible (and okay) if other threads access other streams
         // in the same category (or in other categories).
         {
-            ScopedStreamLocker<Locker, Stream> lock(locker, stream);
+            ScopedLock<StreamLocker> lock(stream_locker);
             if (!stream.is_open())
                 open_stream(stream, category);
             // Perform some action on the stream while it's synchronized.
@@ -506,8 +527,7 @@ public:
      */
     template <typename Category, typename Data>
     void write(Category const& category, Data const& data) {
-        using boost::phoenix::arg_names::arg1;
-        perform(category, arg1 << data);
+        perform(category, boost::phoenix::arg_names::arg1 << data);
     }
 
     /**
@@ -517,8 +537,8 @@ public:
      */
     template <typename Category, typename Data>
     void read(Category const& category, Data& data) {
-        using boost::phoenix::arg_names::arg1;
-        perform(category, arg1 >> boost::phoenix::ref(data));
+        perform(category,
+                boost::phoenix::arg_names::arg1 >> boost::phoenix::ref(data));
     }
 
 private:

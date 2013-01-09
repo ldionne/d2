@@ -103,24 +103,6 @@ TEST_F(RepositoryTest, get_all_keys) {
     ASSERT_TRUE(expected == actual);
 }
 
-TEST_F(RepositoryTest, map_threads_to_sources_and_sinks) {
-    ThreadRepository repository(root);
-
-    // Save a dummy value to open the handles.
-    for (unsigned int i = 0; i < threads.size(); ++i)
-        repository[threads[i]] << i;
-
-    ThreadRepository::item_view<d2::Thread>::type
-        sources_sinks = repository.items<d2::Thread>();
-
-    for (unsigned int i = 0; i < threads.size(); ++i) {
-        unsigned int loaded;
-        sources_sinks[threads[i]].seekg(0); // rewind
-        sources_sinks[threads[i]] >> loaded;
-        ASSERT_EQ(i, loaded);
-    }
-}
-
 TEST_F(RepositoryTest, get_all_streams_only) {
     ThreadRepository repository(root);
 
