@@ -383,6 +383,48 @@ private:
     }
 
     /**
+     * Simple helper class that will call the `lock_category` method of an
+     * object on construction and call its `unlock_category` method on
+     * destruction.
+     *
+     * This _very_ important to make sure the locks are released if an
+     * exception is thrown.
+     */
+    template <typename Locker, typename Category>
+    struct ScopedCategoryLocker {
+        Locker& locker_;
+        Category const& category_;
+
+        ScopedCategoryLocker(Locker& locker, Category const& category)
+                                    : locker_(locker), category_(category) {
+            locker_.lock_category(category_);
+        }
+
+        ~ScopedCategoryLocker() {
+            locker_.unlock_category(category_);
+        }
+    };
+
+    /**
+     * @see `ScopedCategoryLocker`. This is the same, but for the
+     *      `lock_stream` and `unlock_stream` methods.
+     */
+    template <typename Locker, typename Stream>
+    struct ScopedStreamLocker {
+        Locker& locker_;
+        Stream& stream_;
+
+        ScopedStreamLocker(Locker& locker, Stream& stream)
+                                    : locker_(locker), stream_(stream) {
+            locker_.lock_stream(stream_);
+        }
+
+        ~ScopedStreamLocker() {
+            locker_.unlock_stream(stream_);
+        }
+    };
+
+    /**
      * Fetch a stream into its category, perform some action on it and then
      * return a reference to it. Accesses to shared structures is synchronized
      * using the locking policy. See below for details.
@@ -403,21 +445,27 @@ private:
         // Use the locker to synchronize the map lookup at the category
         // level. The whole category is locked, so it is not possible for
         // another thread to access the associative map at the same time.
-        locker.lock_category(category);
-        Stream& stream = streams[category];
-        locker.unlock_category(category);
+        // Note: The usage of a pointer here is required because we can't
+        //       initialize the reference inside the scope of the scoped lock.
+        Stream* stream_ptr;
+        {
+            ScopedCategoryLocker<Locker, Category> lock(locker, category);
+            stream_ptr = &streams[category];
+        }
+        Stream& stream = *stream_ptr;
 
         // Use the locker to synchronize the aperture of the stream at the
         // stream level. Only this stream is locked, so it is not possible for
         // another thread to access this stream at the same time, but it is
         // perfectly possible (and okay) if other threads access other streams
         // in the same category (or in other categories).
-        locker.lock_stream(stream);
-        if (!stream.is_open())
-            open_stream(stream, category);
-        // Perform some action on the stream while it's synchronized.
-        f(stream);
-        locker.unlock_stream(stream);
+        {
+            ScopedStreamLocker<Locker, Stream> lock(locker, stream);
+            if (!stream.is_open())
+                open_stream(stream, category);
+            // Perform some action on the stream while it's synchronized.
+            f(stream);
+        }
 
         // Any usage of the stream beyond this point must be synchronized by
         // the caller as needed.
@@ -425,6 +473,20 @@ private:
     }
 
 public:
+    /**
+     * Fetch the stream associated to `category` and execute `f` on it,
+     * synchronizing optimally access to the stream.
+     *
+     * @note When `f` is called, the stream on which it is called
+     *       (and only that) is locked from other threads. The other streams
+     *       in the repository are _NOT_ locked.
+     * @note If `f` throws, the stream will be unlocked.
+     */
+    template <typename Category, typename UnaryFunction>
+    void perform(Category const& category, UnaryFunction const& f) {
+        fetch_stream_and_do(category, f);
+    }
+
     /**
      * Return the stream associated to an instance of a category.
      *
@@ -445,7 +507,7 @@ public:
     template <typename Category, typename Data>
     void write(Category const& category, Data const& data) {
         using boost::phoenix::arg_names::arg1;
-        fetch_stream_and_do(category, arg1 << data);
+        perform(category, arg1 << data);
     }
 
     /**
@@ -456,7 +518,7 @@ public:
     template <typename Category, typename Data>
     void read(Category const& category, Data& data) {
         using boost::phoenix::arg_names::arg1;
-        fetch_stream_and_do(category, arg1 >> boost::phoenix::ref(data));
+        perform(category, arg1 >> boost::phoenix::ref(data));
     }
 
 private:
