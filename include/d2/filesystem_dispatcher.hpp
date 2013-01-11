@@ -7,84 +7,41 @@
 
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/repository.hpp>
+#include <d2/event_repository.hpp>
 #include <d2/thread.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
-#include <boost/move/move.hpp>
-#include <boost/mpl/apply.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <string>
 
 
 namespace d2 {
 
-namespace repository_setup {
-struct ProcessWideTag {
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, ProcessWideTag const&)
-    { return os << "process_wide", os; }
-
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, ProcessWideTag&) {
-        std::string string;
-        return is >> string, is;
-    }
-};
-
-static ProcessWideTag const process_wide = { };
-
-typedef boost::mpl::vector<Thread, ProcessWideTag> EventKeys;
-
-// Mapping policy for the repository: what is logged where.
-struct MappingPolicy {
-    template <typename Key, typename Stream> struct apply;
-
-    // Each thread has its own sink. The mapping from Thread to sink uses
-    // boost::unordered_map.
-    template <typename Stream>
-    struct apply<Thread, Stream>
-        : boost::mpl::apply<boost_unordered_map, Thread, Stream>
-    { };
-
-    // There is another sink; it uses no map at all. It will contain
-    // the process-wide events.
-    template <typename Stream>
-    struct apply<ProcessWideTag, Stream>
-        : boost::mpl::apply<unary_map, ProcessWideTag, Stream>
-    { };
-};
-
-// We lock the access to each stream using a basic_mutex.
-//  Locking the process-wide stream is necessary because several
-//  threads may need to write to it at the same time.
-//  Locking the per-thread streams is also necessary, because threads may
-//  emit cross-thread events, i.e. events that go from a thread to
-//  another thread's stream (this is currently the case for SegmentHopEvents).
-typedef synchronize_with<detail::basic_mutex> StreamLockingPolicy;
-
-// Lock the mapping from thread to stream (and the dummy mapping to the
-// process-wide stream) using a basic_mutex.
-typedef synchronize_with<detail::basic_mutex> PerKeyLockingPolicy;
-
-// Instantiate the Repository type.
-typedef Repository<
-            EventKeys, MappingPolicy, PerKeyLockingPolicy, StreamLockingPolicy
-        > EventRepository;
-} // end namespace repository_setup
-
 /**
- * Class dispatching thread and process level events to a filesystem.
- * Process wide events are all saved in one file, and thread level events
- * are saved in a different file for each thread.
+ * Class dispatching thread and process level events to a repository.
  *
  * This class is meant to be used concurrently by several threads.
  */
 class FilesystemDispatcher {
-    typedef repository_setup::EventRepository Repository;
+    // Lock the mapping from thread to stream (and the dummy mapping to the
+    // process-wide stream) using a basic_mutex.
+    typedef synchronize_with<detail::basic_mutex> EventCategoryLockingPolicy;
+
+    // We lock the access to each stream using a basic_mutex.
+    //
+    // Locking the process-wide stream is necessary because several
+    // threads may need to write to it at the same time.
+    //
+    // Locking the per-thread streams is also necessary, because threads may
+    // emit cross-thread events, i.e. events that go from a thread to another
+    // thread's stream (this is currently the case for SegmentHopEvents).
+    typedef synchronize_with<detail::basic_mutex> StreamLockingPolicy;
+
+    typedef EventRepository<
+                EventCategoryLockingPolicy, StreamLockingPolicy
+            > Repository;
+
     struct RepoDeleter {
         void operator()(Repository* repo) const { delete repo; }
     };
@@ -156,7 +113,7 @@ public:
     void>::type dispatch(Event const& event) {
         boost::shared_ptr<Repository> repository = get_repository();
         if (repository)
-            repository->write(repository_setup::process_wide, event);
+            repository->write(Repository::process_wide, event);
     }
 
     template <typename Event>
