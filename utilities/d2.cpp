@@ -260,7 +260,24 @@ int main(int argc, char const* argv[]) {
     // the options we received on the command line.
     d2::SegmentationGraph sg;
     d2::LockGraph lg;
-    d2::build_graphs(repository, lg, sg);
+    try {
+        d2::build_graphs(repository, lg, sg);
+    } catch (d2::EventTypeException const& e) {
+        using boost::get_error_info;
+        char const* const* actual_type = get_error_info<d2::ActualType>(e);
+        char const* const* expected_type = get_error_info<d2::ExpectedType>(e);
+
+        char const* unavailable = "\"unavailable\"";
+        if (!actual_type) actual_type = &unavailable;
+        if (!expected_type) expected_type = &unavailable;
+
+        std::cerr << "Error while building the graphs:\n"
+                     "    encountered an event of type " << *actual_type
+                  << " while expecting an event of type " << *expected_type
+                  << "." << std::endl;
+
+        return EXIT_FAILURE;
+    }
 
     // Main switch dispatching to the right action to perform.
     if (args.count("analyze") || (!args.count("dot") && !args.count("stats"))) {
