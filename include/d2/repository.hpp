@@ -85,6 +85,9 @@ struct boost_unordered_map {
  * @note Several methods of `Repository` can't be used with this pseudo-map.
  *       Specifically, `items`, `values` and `keys` won't work because
  *       this pseudo-map can't behave like a range.
+ * @todo Have a locking policy for a lock during the whole
+ *       `fetch_stream_and_do` operation. This would allow the user to use
+ *       only 1 lock to synchronize the whole operation.
  */
 struct unary_map {
     template <typename Key, typename Value>
