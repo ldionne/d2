@@ -82,8 +82,7 @@ thread::thread(boost::function<void()> const& f)
 { }
 
 thread::thread(BOOST_RV_REF(thread) other) : f_(boost::move(other.f_)) {
-    actual_.reset(other.actual_.get());
-    other.actual_.reset();
+    swap(actual_, other.actual_);
 }
 
 void swap(thread& a, thread& b) {
