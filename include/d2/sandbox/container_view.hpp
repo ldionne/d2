@@ -170,13 +170,13 @@ struct rebind_accessor {
     template <typename T>
     typename result<rebind_accessor(T&)>::type
     operator()(T& object) const {
-        return Unbound<T>()(object);
+        return NextAccessor()(Unbound<T>()(object));
     }
 
     template <typename T>
     typename result<rebind_accessor(T const&)>::type
     operator()(T const& object) const {
-        return Unbound<T>()(object);
+        return NextAccessor()(Unbound<T>()(object));
     }
 };
 

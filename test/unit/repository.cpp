@@ -115,6 +115,19 @@ TEST_F(RepositoryTest, get_all_streams_only) {
     ASSERT_EQ(sources_sinks.size(), threads.size());
 }
 
+// Compile time test.
+TEST_F(RepositoryTest, get_non_const_reference_on_stream_from_view) {
+    if (0) {
+        ThreadRepository repository(root);
+        ThreadRepository::value_view<d2::Thread>::type
+            sources_sinks = repository.values<d2::Thread>();
+
+        // Try to acquire a non-const reference to one of the streams
+        std::istream& is = *sources_sinks.begin();
+        (void)is;
+    }
+}
+
 TEST_F(RepositoryTest, reload_previous_repository) {
     {
         ThreadRepository first(root);

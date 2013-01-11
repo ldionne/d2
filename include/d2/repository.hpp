@@ -137,7 +137,9 @@ struct synchronize_with {
 };
 
 /**
- * Class representing a repository into which stuff can be stored.
+ * Class representing a repository into which data can be stored.
+ *
+ * @todo Fix documentation for this class.
  */
 template <typename Categories,
           typename MappingPolicy = boost_unordered_map,
@@ -565,6 +567,12 @@ public:
     bool empty() const {
         return boost::fusion::all(bundle_map_, category_is_empty(this));
     }
+
+protected:
+    /**
+     * Typedef so subclasses have a short way of referring to this class.
+     */
+    typedef Repository Repository_;
 };
 
 } // end namespace d2
