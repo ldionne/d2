@@ -6,47 +6,66 @@
 #ifndef D2_GRAPH_CONSTRUCTION_HPP
 #define D2_GRAPH_CONSTRUCTION_HPP
 
-#include <d2/filesystem_loader.hpp>
+#include <d2/event_repository.hpp>
+#include <d2/event_traits.hpp>
+#include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
 #include <d2/segmentation_graph.hpp>
+#include <d2/thread.hpp>
 
-#include <string>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
+#include <boost/variant.hpp>
+#include <vector>
 
 
 namespace d2 {
-namespace detail {
-
-// This is required because bind facilities can't take their arguments by
-// non-const reference, so we can't build the graph by using them.
-template <typename LockGraph>
-struct PartialLockGraphBuilder {
-    LockGraph& graph;
-
-    explicit PartialLockGraphBuilder(LockGraph& graph)
-        : graph(graph)
-    { }
-
-    typedef void result_type;
-
-    template <typename Range>
-    result_type operator()(Range const& range) const {
-        build_lock_graph<>()(range, graph);
-    }
-};
-
-} // end namespace detail
 
 /**
- * Build the lock graph and the segmentation graph from the events at the
- * specified `path`.
+ * Build the lock graph and the segmentation graph from the events inside the
+ * specified `repository`.
  */
-template <typename LockGraph, typename SegmentationGraph>
-void build_graphs(std::string const& path, LockGraph& lock_graph,
-                                           SegmentationGraph& seg_graph) {
-    FilesystemLoader loader(path);
-    build_segmentation_graph<>()(loader.process_events(), seg_graph);
+template <typename Policy1, typename Policy2,
+          typename LockGraph, typename SegmentationGraph>
+void build_graphs(EventRepository<Policy1, Policy2>& repository,
+                  LockGraph& lock_graph,
+                  SegmentationGraph& seg_graph) {
+    namespace qi = boost::spirit::qi;
+    typedef boost::variant<StartEvent, JoinEvent> SegmentationEvent;
+    typedef EventRepository<Policy1, Policy2> EventRepo;
 
-    loader.for_each(detail::PartialLockGraphBuilder<LockGraph>(lock_graph));
+    qi::stream_parser<char, AcquireEvent> acquire;
+    qi::stream_parser<char, ReleaseEvent> release;
+    qi::stream_parser<char, StartEvent> start;
+    qi::stream_parser<char, JoinEvent> join;
+    qi::stream_parser<char, SegmentHopEvent> hop;
+
+    std::istream& segmentation_source = repository[EventRepo::process_wide];
+    std::vector<SegmentationEvent> seg_events;
+    segmentation_source >> qi::match(
+            *(qi::lexeme[start] | join)
+        , seg_events);
+
+    build_segmentation_graph<>()(seg_events, seg_graph);
+
+    typedef typename EventRepo::template value_view<Thread>::type
+                                                                ThreadSources;
+    ThreadSources thread_sources = repository.template values<Thread>();
+    typename ThreadSources::iterator first(thread_sources.begin()),
+                                     last(thread_sources.end());
+    for (; first != last; ++first) {
+        std::istream& source = *first;
+
+        typedef boost::variant<AcquireEvent, ReleaseEvent, SegmentHopEvent>
+                                                                ThreadEvent;
+        std::vector<ThreadEvent> thread_events;
+
+        source >> qi::match(
+                *(qi::lexeme[acquire] | release | hop)
+            , thread_events);
+
+        build_lock_graph<>()(thread_events, lock_graph);
+    }
 }
 
 } // end namespace d2

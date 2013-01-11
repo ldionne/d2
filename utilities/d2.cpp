@@ -4,6 +4,7 @@
  */
 
 #include <d2/analysis.hpp>
+#include <d2/event_repository.hpp>
 #include <d2/graph_construction.hpp>
 
 #include <boost/assert.hpp>
@@ -187,8 +188,7 @@ int main(int argc, char const* argv[]) {
 
     po::options_description hidden;
     hidden.add_options()
-        ("repo-path", po::value<std::string>()->required(),
-            "path of the repository to examine")
+        ("repo-path", po::value<std::string>(), "path of the repository to examine")
     ;
     po::positional_options_description positionals;
     positionals.add("repo-path", 1);
@@ -234,8 +234,17 @@ int main(int argc, char const* argv[]) {
         }
     }
 
-    // Open the output stream to whatever passed on the cli or to stdout
-    // if unspecified.
+    // Open the repository on which we must operate.
+    if (!args.count("repo-path")) {
+        std::cerr << "missing the path of a repository on which to operate "
+                     "from the command line" << std::endl
+                  << allowed << std::endl;
+        return EXIT_FAILURE;
+    }
+    d2::EventRepository<> repository(args["repo-path"].as<std::string>());
+
+    // Open the output stream to whatever passed on the command line or to
+    // stdout if unspecified.
     std::ofstream output_ofs;
     if (args.count("output-file")) {
         std::string output_file = args["output-file"].as<std::string>();
@@ -251,8 +260,7 @@ int main(int argc, char const* argv[]) {
     // the options we received on the command line.
     d2::SegmentationGraph sg;
     d2::LockGraph lg;
-    std::string repo_path = args["repo-path"].as<std::string>();
-    d2::build_graphs(repo_path, lg, sg);
+    d2::build_graphs(repository, lg, sg);
 
     // Main switch dispatching to the right action to perform.
     if (args.count("analyze") || (!args.count("dot") && !args.count("stats"))) {

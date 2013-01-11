@@ -7,6 +7,7 @@
 
 #include <d2/analysis.hpp>
 #include <d2/concepts.hpp>
+#include <d2/event_repository.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
