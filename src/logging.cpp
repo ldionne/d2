@@ -15,7 +15,6 @@
 #include <d2/events/start_event.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/logging.hpp>
-#include <d2/repository.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
@@ -26,71 +25,6 @@
 namespace d2 {
 
 namespace detail {
-namespace repository_setup {
-struct SegmentationTag {
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, SegmentationTag const&)
-    { return os << "segmentation", os; }
-
-    template <typename Istream>
-    friend Istream& operator<<(Istream& is, SegmentationTag&) {
-        std::string string;
-        return is >> string, is;
-    }
-};
-
-typedef boost::mpl::vector<Thread, SegmentationTag> Keys;
-
-// Mapping policy for the repository: what is logged where.
-struct MappingPolicy {
-    template <typename Key, typename Stream> struct apply;
-
-    // Each thread has its own sink. The mapping from Thread to sink uses
-    // boost::unordered_map.
-    template <typename Stream>
-    struct apply<Thread, Stream>
-        : boost::mpl::apply<boost_unordered_map, Thread, Stream>
-    { };
-
-    // There is another sink; it uses no map at all. It will contain
-    // the events concerning segmentation.
-    template <typename Stream>
-    struct apply<SegmentationTag, Stream>
-        : boost::mpl::apply<unary_map, SegmentationTag, Stream>
-    { };
-};
-
-// Locking policy controlling the locks used on each stream.
-struct StreamLockingPolicy {
-    template <typename Key, typename Stream> struct apply;
-
-    // Don't synchronize per-stream access to threads, because only one thread
-    // at a time is going to write in it anyway.
-    template <typename Stream>
-    struct apply<Thread, Stream>
-        : boost::mpl::apply<no_synchronization, Thread, Stream>
-    { };
-
-    // Use a basic_mutex to lock the stream in which we'll be logging
-    // the segmentation related events.
-    template <typename Stream>
-    struct apply<SegmentationTag, Stream>
-        : boost::mpl::apply<
-            synchronize_with<basic_mutex>, SegmentationTag, Stream
-        >
-    { };
-};
-
-// Lock the mapping from thread to stream (and the dummy mapping to the
-// segmentation stream) using a basic_mutex.
-typedef synchronize_with<basic_mutex> GlobalLockingPolicy;
-
-// Instantiate the Repository type.
-typedef Repository<
-            Keys, MappingPolicy, GlobalLockingPolicy, StreamLockingPolicy
-        > EventRepository;
-} // end namespace repository_setup
-
 static FilesystemDispatcher dispatcher;
 
 D2_API extern void push_acquire(SyncObject const& s, Thread const& t,
@@ -171,15 +105,7 @@ D2_API extern void push_join(Thread const& parent, Thread const& child) {
 } // end namespace detail
 
 D2_API extern bool set_log_repository(std::string const& path) {
-    try {
-        detail::dispatcher.set_root(path);
-        // We really don't want to propagate exceptions across the API
-        // boundary. Users might not be using exceptions, or might not
-        // want to check the return status anyway (probable).
-    } catch(std::exception const&) {
-        return false;
-    }
-    return true;
+    return detail::dispatcher.set_repository(path);
 }
 
 namespace {
