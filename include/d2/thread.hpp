@@ -11,6 +11,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <cstddef>
+#include <iosfwd>
 
 
 namespace d2 {
@@ -49,16 +50,14 @@ public:
     /**
      * Save a `Thread` to an output stream.
      */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, Thread const& t) {
+    friend std::ostream& operator<<(std::ostream& os, Thread const& t) {
         return os << t.id_, os;
     }
 
     /**
      * Load a `Thread` from an input stream.
      */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, Thread& t) {
+    friend std::istream& operator>>(std::istream& is, Thread& t) {
         return is >> t.id_, is;
     }
 

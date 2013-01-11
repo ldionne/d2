@@ -11,6 +11,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <cstddef>
+#include <iosfwd>
 
 
 namespace d2 {
@@ -50,16 +51,14 @@ public:
     /**
      * Save a `SyncObject` to an output stream.
      */
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, SyncObject const& s) {
+    friend std::ostream& operator<<(std::ostream& os, SyncObject const& s) {
         return os << s.id_, os;
     }
 
     /**
      * Load a `SyncObject` from an input stream.
      */
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, SyncObject& s) {
+    friend std::istream& operator>>(std::istream& is, SyncObject& s) {
         return is >> s.id_, is;
     }
 
