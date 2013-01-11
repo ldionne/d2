@@ -49,14 +49,15 @@ struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
 
     void init_call_stack(unsigned int ignore = 0);
 
-    friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b) {
+    D2_API friend bool operator==(LockDebugInfo const& a,
+                                  LockDebugInfo const&b) {
         return a.call_stack == b.call_stack;
     }
 
     D2_API friend std::istream& operator>>(std::istream&, LockDebugInfo&);
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, LockDebugInfo const& self) {
+    D2_API friend std::ostream& operator<<(std::ostream& os,
+                                           LockDebugInfo const& self) {
         os << '[';
         std::copy(self.call_stack.begin(), self.call_stack.end(),
                     std::ostream_iterator<StackFrame>(os));
