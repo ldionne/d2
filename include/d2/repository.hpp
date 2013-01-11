@@ -28,6 +28,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/result_of.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
+#include <cerrno>
 #include <fstream>
 #include <string>
 #include <typeinfo>
@@ -61,12 +62,6 @@ struct StreamApertureException : virtual RepositoryException {
         return "d2::StreamApertureException";
     }
 };
-
-namespace exception_tag {
-    struct concerned_path;
-}
-typedef boost::error_info<exception_tag::concerned_path, char const*>
-                                                                ConcernedPath;
 
 /**
  * Default mapping policy using `boost::unordered_map`s to map keys to values.
@@ -381,7 +376,7 @@ public:
         namespace fs = boost::filesystem;
         if (fs::exists(root_) && !fs::is_directory(root_))
             D2_THROW(InvalidRepositoryPathException()
-                        << ConcernedPath(root_.c_str()));
+                        << boost::errinfo_file_name(root_.c_str()));
         fs::create_directories(root_);
 
         boost::fusion::for_each(bundle_map_, open_category(this));
@@ -411,7 +406,7 @@ private:
         fs::path path = path_for(category);
         if (fs::exists(path) && !fs::is_regular_file(path))
             D2_THROW(StreamApertureException()
-                        << ConcernedPath(path.c_str()));
+                        << boost::errinfo_file_name(path.c_str()));
 
         // Try opening an existing file with the same name.
         stream.open(path.c_str(), std::ios_base::in | std::ios_base::out);
@@ -422,7 +417,8 @@ private:
                                       std::ios_base::trunc);
         if (!stream)
             D2_THROW(StreamApertureException()
-                        << ConcernedPath(path.c_str()));
+                        << boost::errinfo_errno(errno)
+                        << boost::errinfo_file_name(path.c_str()));
     }
 
     /**
