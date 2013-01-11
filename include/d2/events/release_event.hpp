@@ -45,14 +45,17 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
         return self.thread;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, ReleaseEvent const& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+               ReleaseEvent const& self) {
         os << self.thread << '-' << self.lock << '-';
         return os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, ReleaseEvent& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_istream<CharT, Traits>&
+    operator>>(std::basic_istream<CharT, Traits>& is, ReleaseEvent& self) {
         char minus;
         is >> self.thread >> minus >> self.lock >> minus;
         return is;

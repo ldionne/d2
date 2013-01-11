@@ -44,15 +44,18 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
                a.child == b.child;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, StartEvent const& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+               StartEvent const& self) {
         os << self.parent << '~' << self.new_parent << '~' << self.child
                                                                     << '~';
         return os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, StartEvent& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_istream<CharT, Traits>&
+    operator>>(std::basic_istream<CharT, Traits>& is, StartEvent& self) {
         char tilde;
         is >> self.parent >> tilde >> self.new_parent >> tilde >> self.child
                                                                     >> tilde;

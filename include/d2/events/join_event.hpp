@@ -44,15 +44,17 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
                a.child == b.child;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, JoinEvent const& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os, JoinEvent const& self) {
         os << self.parent << '^' << self.new_parent << '^' << self.child
                                                                     << '^';
         return os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, JoinEvent& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_istream<CharT, Traits>&
+    operator>>(std::basic_istream<CharT, Traits>& is, JoinEvent& self) {
         char caret;
         is >> self.parent >> caret >> self.new_parent >> caret >> self.child
                                                                     >> caret;

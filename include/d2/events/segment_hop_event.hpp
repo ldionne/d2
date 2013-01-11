@@ -46,14 +46,17 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
         return self.thread;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, SegmentHopEvent const& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+               SegmentHopEvent const& self) {
         os << self.thread << '>' << self.segment << '>';
         return os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, SegmentHopEvent& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_istream<CharT, Traits>&
+    operator>>(std::basic_istream<CharT, Traits>& is, SegmentHopEvent& self) {
         char gt;
         is >> self.thread >> gt >> self.segment >> gt;
         return is;

@@ -11,6 +11,7 @@
 #include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
+#include <iosfwd>
 
 
 namespace d2 {
@@ -46,14 +47,17 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
         return self.thread;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, AcquireEvent const& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+               AcquireEvent const& self) {
         os << self.thread << '+' << self.lock << '+' << self.info;
         return os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, AcquireEvent& self) {
+    template <typename CharT, typename Traits>
+    friend std::basic_istream<CharT, Traits>&
+    operator>>(std::basic_istream<CharT, Traits>& is, AcquireEvent& self) {
         char plus;
         is >> self.thread >> plus >> self.lock >> plus >> self.info;
         return is;
