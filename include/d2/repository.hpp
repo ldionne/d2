@@ -30,6 +30,7 @@
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <cerrno>
 #include <fstream>
+#include <ios>
 #include <string>
 #include <typeinfo>
 
@@ -137,6 +138,62 @@ struct synchronize_with {
 };
 
 /**
+ * Default stream type policy using `std::fstream`.
+ */
+struct use_fstream {
+    template <typename Category>
+    struct apply {
+        typedef std::fstream type;
+    };
+};
+
+namespace detail {
+/**
+ * Helper class wrapping an archive type and a stream type to create an
+ * archive that automatically manages a stream. The standard stream interface
+ * supported by `BoundArchive` is just enough to be used by the `Repository`
+ * class.
+ */
+template <typename Archive, typename Stream>
+struct BoundArchive : Archive {
+    BoundArchive() : Archive(stream_) { }
+
+    template <typename Source>
+    void open(Source const& filename, std::ios_base::openmode mode) {
+        stream_.open(filename, mode);
+    }
+
+    bool is_open() const {
+        return stream_.is_open();
+    }
+
+    operator bool() const {
+        return static_cast<bool>(stream_);
+    }
+
+    bool operator!() const {
+        return !stream_;
+    }
+
+private:
+    Stream stream_;
+};
+} // end namespace detail
+
+/**
+ * Stream type policy combining a `boost::archive` compatible type with
+ * a given standard stream. This allows to use archives instead of streams
+ * to log in the repository.
+ */
+template <typename Archive, typename Stream = std::fstream>
+struct use_archive {
+    template <typename Category>
+    struct apply {
+        typedef detail::BoundArchive<Archive, Stream> type;
+    };
+};
+
+/**
  * Class representing a repository into which data can be stored.
  *
  * The repository functions at 2 different levels. First, there is a
@@ -165,11 +222,15 @@ struct synchronize_with {
  *      will be kept for each stream in the runtime map. Instances of the
  *      type will be used as locks for accessing a single stream in the map,
  *      thus providing a more granular locking.
+ *  - StreamTypePolicy
+ *      Given a `Category` type, it must return a type that will be used as
+ *      a stream for the `Category`.
  */
 template <typename Categories,
           typename MappingPolicy = boost_unordered_map,
           typename CategoryLockingPolicy = no_synchronization,
-          typename StreamLockingPolicy = no_synchronization>
+          typename StreamLockingPolicy = no_synchronization,
+          typename StreamTypePolicy = use_fstream>
 class Repository {
 
     template <typename Category>
@@ -178,9 +239,9 @@ class Repository {
         typedef Category category_type;
 
         // The actual type of the streams owned by this bundle.
-        // Note: A policy for choosing input only, output only
-        //       or input/output would be nice.
-        typedef std::fstream stream_type;
+        typedef typename boost::mpl::apply<
+                    StreamTypePolicy, category_type
+                >::type stream_type;
 
         // The object synchronizing accesses to this bundle.
         typedef typename boost::mpl::apply<
