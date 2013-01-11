@@ -139,7 +139,32 @@ struct synchronize_with {
 /**
  * Class representing a repository into which data can be stored.
  *
- * @todo Fix documentation for this class.
+ * The repository functions at 2 different levels. First, there is a
+ * compile-time map associating C++ types to a policy-defined type.
+ *
+ * The C++ types used as keys in the compile-time map are called Categories.
+ *
+ * Second, the policy-defined type must behave like a conventional map from
+ * instances of the Category to some unspecified stream type given by the
+ * repository when applying the policy.
+ *
+ * Policies must be MPL-compatible metafunction classes with the following
+ * semantics:
+ *  - MappingPolicy
+ *      Given a `Category` type and a `Stream` type, it must return the type
+ *      of a conventional map from instances of `Category` to instances of
+ *      `Stream`. A lookup into this map will happen each time data is to be
+ *      stored into the repository.
+ *  - CategoryLockingPolicy
+ *      Given a `Category` type and a `Stream` type, it must return a type
+ *      that is `DefaultConstructible` and that has the `lock` and `unlock`
+ *      methods. An instance of the type will be kept for each `Category`,
+ *      and will be used for locking a whole `Category` when accessing it.
+ *  - StreamLockingPolicy
+ *      The same as `CategoryLockingPolicy`, but an instance of the type
+ *      will be kept for each stream in the runtime map. Instances of the
+ *      type will be used as locks for accessing a single stream in the map,
+ *      thus providing a more granular locking.
  */
 template <typename Categories,
           typename MappingPolicy = boost_unordered_map,
