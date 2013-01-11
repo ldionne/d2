@@ -10,6 +10,7 @@
 #include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
+#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
@@ -63,6 +64,13 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;
+
+private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & thread & lock;
+    }
 };
 
 } // end namespace d2

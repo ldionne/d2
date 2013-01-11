@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <boost/operators.hpp>
+#include <boost/serialization/access.hpp>
 #include <iosfwd>
 #include <iterator>
 #include <string>
@@ -41,6 +42,13 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
         os << self.ip << '$' << self.function << '$' << self.module << '$';
         return os;
     }
+
+private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & ip & function & module;
+    }
 };
 
 struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
@@ -63,6 +71,13 @@ struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
                     std::ostream_iterator<StackFrame>(os));
         os << ']';
         return os;
+    }
+
+private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & call_stack;
     }
 };
 

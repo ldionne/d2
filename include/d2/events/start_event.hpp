@@ -9,6 +9,7 @@
 #include <d2/segment.hpp>
 
 #include <boost/operators.hpp>
+#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
@@ -64,6 +65,13 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;
+
+private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & parent & new_parent & child;
+    }
 };
 
 } // end namespace d2
