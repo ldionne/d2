@@ -286,7 +286,7 @@ class build_lock_graph {
         }
     };
 
-    struct DeduceMainThread : boost::static_visitor<Thread> {
+    struct DeduceThisThread : boost::static_visitor<Thread> {
         template <typename Event>
         Thread operator()(Event const& event) const {
             D2_THROW(EventTypeException()
@@ -329,7 +329,7 @@ public:
         // The only case where the first event is not a SegmentHopEvent is
         // for the main thread, in which case it can be an AcquireEvent too.
         // We deduce the thread we're processing from the first event.
-        Thread this_thread = boost::apply_visitor(DeduceMainThread(), *first);
+        Thread this_thread = boost::apply_visitor(DeduceThisThread(), *first);
 
         EventVisitor<LockGraph> visitor(graph, held_locks, this_thread);
         for (; first != last; ++first)
