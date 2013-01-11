@@ -191,7 +191,7 @@ int main(int argc, char const* argv[]) {
             "path of the repository to examine")
     ;
     po::positional_options_description positionals;
-    positionals.add("repo-path", 0);
+    positionals.add("repo-path", 1);
 
     po::options_description analysis("Analysis options");
 
