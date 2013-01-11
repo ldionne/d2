@@ -58,26 +58,13 @@ struct MappingPolicy {
     { };
 };
 
-// Locking policy controlling the locks used on each stream.
-struct StreamLockingPolicy {
-    template <typename Key, typename Stream> struct apply;
-
-    // Don't synchronize per-stream access to threads because only one thread
-    // at a time is going to write in it anyway.
-    template <typename Stream>
-    struct apply<Thread, Stream>
-        : boost::mpl::apply<no_synchronization, Thread, Stream>
-    { };
-
-    // Use a basic_mutex to lock the stream in which we'll be logging
-    // the process-wide events.
-    template <typename Stream>
-    struct apply<ProcessWideTag, Stream>
-        : boost::mpl::apply<
-            synchronize_with<detail::basic_mutex>, ProcessWideTag, Stream
-        >
-    { };
-};
+// We lock the access to each stream using a basic_mutex.
+//  Locking the process-wide stream is necessary because several
+//  threads may need to write to it at the same time.
+//  Locking the per-thread streams is also necessary, because threads may
+//  emit cross-thread events, i.e. events that go from a thread to
+//  another thread's stream (this is currently the case for SegmentHopEvents).
+typedef synchronize_with<detail::basic_mutex> StreamLockingPolicy;
 
 // Lock the mapping from thread to stream (and the dummy mapping to the
 // process-wide stream) using a basic_mutex.
