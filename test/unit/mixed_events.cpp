@@ -40,19 +40,32 @@ namespace {
 TEST_F(MixedEventTest, save_and_load_mixed_events) {
     using namespace boost::assign;
     std::vector<Event> saved;
-    saved += d2::AcquireEvent(locks[0], threads[0]),
+    d2::AcquireEvent some_acquire(locks[84], threads[45]);
+    some_acquire.info.init_call_stack();
+    saved += d2::AcquireEvent(locks[3], threads[8]),
              d2::ReleaseEvent(locks[0], threads[0]),
              d2::StartEvent(segments[0], segments[1], segments[2]),
              d2::JoinEvent(segments[0], segments[1], segments[2]),
-             d2::SegmentHopEvent(threads[0], segments[0]);
+             d2::SegmentHopEvent(threads[0], segments[0]),
+             some_acquire,
+             some_acquire,
+             some_acquire;
 
     std::copy(saved.begin(), saved.end(),
         std::ostream_iterator<Event>(stream));
     EXPECT_TRUE(stream && "failed to save the mixed events");
 
     std::vector<Event> loaded;
-    stream >> qi::match(*(acquire | release | start | join | hop), loaded);
-    EXPECT_TRUE(stream && "failed to load the mixed events");
+    std::string string(stream.str());
+    std::string::iterator first(string.begin()), last(string.end());
+    bool success =
+        qi::parse(first, last,
+            *(acquire | release | start | join | hop)
+        , loaded);
+
+    EXPECT_TRUE(success) << "failed to load the mixed events";
+    EXPECT_TRUE(first == last) << "failed to load the mixed events";
+    std::cout << loaded;
 
     ASSERT_EQ(saved, loaded);
 }

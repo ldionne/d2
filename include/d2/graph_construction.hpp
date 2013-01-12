@@ -40,11 +40,11 @@ void build_graphs(EventRepository<Policy1, Policy2>& repository,
     qi::typed_stream<JoinEvent> join;
     qi::typed_stream<SegmentHopEvent> hop;
 
-    std::istream& segmentation_source = repository[EventRepo::process_wide];
     std::vector<SegmentationEvent> seg_events;
-    segmentation_source >> qi::match(
-            *(start | join)
-        , seg_events);
+    std::string seg_source(
+        (std::istream_iterator<char>(repository[EventRepo::process_wide])),
+        std::istream_iterator<char>());
+    qi::parse(seg_source.begin(), seg_source.end(), *(start | join), seg_events);
 
     build_segmentation_graph<>()(seg_events, seg_graph);
 
@@ -54,15 +54,15 @@ void build_graphs(EventRepository<Policy1, Policy2>& repository,
     typename ThreadSources::iterator first(thread_sources.begin()),
                                      last(thread_sources.end());
     for (; first != last; ++first) {
-        std::istream& source = *first;
-
         typedef boost::variant<AcquireEvent, ReleaseEvent, SegmentHopEvent>
                                                                 ThreadEvent;
         std::vector<ThreadEvent> thread_events;
+        std::string source((std::istream_iterator<char>(*first)),
+                           std::istream_iterator<char>());
 
-        source >> qi::match(
-                *(acquire | release | hop)
-            , thread_events);
+        qi::parse(source.begin(), source.end(),
+            *(acquire | release | hop)
+        , thread_events);
 
         build_lock_graph<>()(thread_events, lock_graph);
     }
