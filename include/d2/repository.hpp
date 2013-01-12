@@ -147,52 +147,6 @@ struct use_fstream {
     };
 };
 
-namespace detail {
-/**
- * Helper class wrapping an archive type and a stream type to create an
- * archive that automatically manages a stream. The standard stream interface
- * supported by `BoundArchive` is just enough to be used by the `Repository`
- * class.
- */
-template <typename Archive, typename Stream>
-struct BoundArchive : Archive {
-    BoundArchive() : Archive(stream_) { }
-
-    template <typename Source>
-    void open(Source const& filename, std::ios_base::openmode mode) {
-        stream_.open(filename, mode);
-    }
-
-    bool is_open() const {
-        return stream_.is_open();
-    }
-
-    operator bool() const {
-        return static_cast<bool>(stream_);
-    }
-
-    bool operator!() const {
-        return !stream_;
-    }
-
-private:
-    Stream stream_;
-};
-} // end namespace detail
-
-/**
- * Stream type policy combining a `boost::archive` compatible type with
- * a given standard stream. This allows to use archives instead of streams
- * to log in the repository.
- */
-template <typename Archive, typename Stream = std::fstream>
-struct use_archive {
-    template <typename Category>
-    struct apply {
-        typedef detail::BoundArchive<Archive, Stream> type;
-    };
-};
-
 /**
  * Class representing a repository into which data can be stored.
  *
