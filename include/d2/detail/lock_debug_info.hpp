@@ -7,11 +7,9 @@
 
 #include <d2/detail/config.hpp>
 
-#include <algorithm>
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
 #include <iosfwd>
-#include <iterator>
 #include <string>
 #include <vector>
 
@@ -37,8 +35,7 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
 
     D2_API friend std::istream& operator>>(std::istream&, StackFrame&);
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, StackFrame const& self) {
+    friend std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
         os << self.ip << '$' << self.function << '$' << self.module << '$';
         return os;
     }
@@ -57,21 +54,12 @@ struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
 
     void init_call_stack(unsigned int ignore = 0);
 
-    D2_API friend bool operator==(LockDebugInfo const& a,
-                                  LockDebugInfo const&b) {
+    friend bool operator==(LockDebugInfo const& a, LockDebugInfo const&b) {
         return a.call_stack == b.call_stack;
     }
 
     D2_API friend std::istream& operator>>(std::istream&, LockDebugInfo&);
-
-    D2_API friend std::ostream& operator<<(std::ostream& os,
-                                           LockDebugInfo const& self) {
-        os << '[';
-        std::copy(self.call_stack.begin(), self.call_stack.end(),
-                    std::ostream_iterator<StackFrame>(os));
-        os << ']';
-        return os;
-    }
+    D2_API friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
 
 private:
     friend class boost::serialization::access;

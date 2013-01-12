@@ -6,6 +6,7 @@
 #include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 
+#include <algorithm>
 #include <boost/assert.hpp>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
@@ -47,7 +48,7 @@ void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
                     "were copied to this->call_stack");
 }
 
-D2_API extern std::istream& operator>>(std::istream& is, StackFrame& self) {
+D2_API std::istream& operator>>(std::istream& is, StackFrame& self) {
     is >> const_cast<void*&>(self.ip);
     is.get(); // dollar
 
@@ -65,8 +66,15 @@ D2_API extern std::istream& operator>>(std::istream& is, StackFrame& self) {
     return is;
 }
 
-D2_API extern std::istream& operator>>(std::istream& is,
-                                       LockDebugInfo& self) {
+D2_API std::ostream& operator<<(std::ostream& os, LockDebugInfo const& self) {
+    os << '[';
+    std::copy(self.call_stack.begin(), self.call_stack.end(),
+                std::ostream_iterator<StackFrame>(os));
+    os << ']';
+    return os;
+}
+
+D2_API std::istream& operator>>(std::istream& is, LockDebugInfo& self) {
     is.get(); // bracket
     while (is && is.peek() != ']') {
         StackFrame frame;

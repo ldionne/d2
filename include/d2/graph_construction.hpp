@@ -34,16 +34,16 @@ void build_graphs(EventRepository<Policy1, Policy2>& repository,
     typedef boost::variant<StartEvent, JoinEvent> SegmentationEvent;
     typedef EventRepository<Policy1, Policy2> EventRepo;
 
-    qi::stream_parser<char, AcquireEvent> acquire;
-    qi::stream_parser<char, ReleaseEvent> release;
-    qi::stream_parser<char, StartEvent> start;
-    qi::stream_parser<char, JoinEvent> join;
-    qi::stream_parser<char, SegmentHopEvent> hop;
+    qi::typed_stream<AcquireEvent> acquire;
+    qi::typed_stream<ReleaseEvent> release;
+    qi::typed_stream<StartEvent> start;
+    qi::typed_stream<JoinEvent> join;
+    qi::typed_stream<SegmentHopEvent> hop;
 
     std::istream& segmentation_source = repository[EventRepo::process_wide];
     std::vector<SegmentationEvent> seg_events;
     segmentation_source >> qi::match(
-            *(qi::lexeme[start] | join)
+            *(start | join)
         , seg_events);
 
     build_segmentation_graph<>()(seg_events, seg_graph);
@@ -61,7 +61,7 @@ void build_graphs(EventRepository<Policy1, Policy2>& repository,
         std::vector<ThreadEvent> thread_events;
 
         source >> qi::match(
-                *(qi::lexeme[acquire] | release | hop)
+                *(acquire | release | hop)
             , thread_events);
 
         build_lock_graph<>()(thread_events, lock_graph);
