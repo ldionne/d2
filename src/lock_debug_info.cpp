@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <boost/assert.hpp>
+#include <cstddef>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
 #include <iterator>
@@ -48,41 +49,73 @@ void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
                     "were copied to this->call_stack");
 }
 
+namespace {
+template <typename String>
+struct DelimitedString {
+    String& data;
+
+    explicit DelimitedString(String& s) : data(s) { }
+
+    friend std::ostream& operator<<(std::ostream& os,
+                                    DelimitedString const& self) {
+        os << self.data.size() << '|' << self.data;
+        return os;
+    }
+
+    friend std::istream& operator>>(std::istream& is,
+                                    DelimitedString const& self) {
+        std::size_t length;
+        char sep = 'X';
+
+        if ((is >> length >> sep) && sep == '|' && length > 0) {
+            self.data.resize(length);
+            is.read(&self.data[0], length);
+        }
+        return is;
+    }
+};
+
+template <typename String>
+DelimitedString<String> delimit(String& s) {
+    return DelimitedString<String>(s);
+}
+} // end anonymous namespace
+
+D2_API std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
+    os << self.ip << ' '
+       << delimit(self.function)
+       << delimit(self.module);
+    return os;
+}
+
 D2_API std::istream& operator>>(std::istream& is, StackFrame& self) {
-    is >> const_cast<void*&>(self.ip);
-    is.get(); // dollar
-
-    char c;
-    // reasonable minimum of 70 characters with mangled names
-    self.function.reserve(70);
-    while (is && (c = is.get()) != '$')
-        self.function.push_back(c);
-
-    // reasonable minimum of 70 characters for filenames
-    self.module.reserve(70);
-    while (is && (c = is.get()) != '$')
-        self.module.push_back(c);
-
+    self = StackFrame();
+    is >> const_cast<void*&>(self.ip) >> std::ws
+       >> delimit(self.function)
+       >> delimit(self.module);
     return is;
 }
 
 D2_API std::ostream& operator<<(std::ostream& os, LockDebugInfo const& self) {
-    os << '[';
+    os << self.call_stack.size() << '~';
     std::copy(self.call_stack.begin(), self.call_stack.end(),
                 std::ostream_iterator<StackFrame>(os));
-    os << ']';
     return os;
 }
 
 D2_API std::istream& operator>>(std::istream& is, LockDebugInfo& self) {
-    is.get(); // bracket
-    while (is && is.peek() != ']') {
-        StackFrame frame;
-        is >> frame;
-        self.call_stack.push_back(frame);
+    std::size_t num_frames;
+    char sep = 'X';
+
+    self.call_stack.clear();
+    if ((is >> num_frames >> sep) && sep == '~' && num_frames > 0) {
+        self.call_stack.reserve(num_frames);
+        while (num_frames--) {
+            StackFrame frame;
+            is >> frame;
+            self.call_stack.push_back(frame);
+        }
     }
-    if (is)
-        is.get(); // bracket
 
     return is;
 }

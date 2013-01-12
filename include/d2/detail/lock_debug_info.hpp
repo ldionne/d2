@@ -34,11 +34,7 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
     }
 
     D2_API friend std::istream& operator>>(std::istream&, StackFrame&);
-
-    friend std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
-        os << self.ip << '$' << self.function << '$' << self.module << '$';
-        return os;
-    }
+    D2_API friend std::ostream& operator<<(std::ostream&, StackFrame const&);
 
 private:
     friend class boost::serialization::access;

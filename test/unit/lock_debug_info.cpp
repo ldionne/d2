@@ -37,12 +37,15 @@ TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_stack_frames) {
              d2::detail::StackFrame((void*)0x1, "fun1", "file1"),
              d2::detail::StackFrame((void*)0x2, "fun2", "file2");
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::detail::StackFrame>(stream));
     EXPECT_TRUE(stream && "failed to save the frames");
 
     std::vector<d2::detail::StackFrame> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the frames");
+    std::copy(std::istream_iterator<d2::detail::StackFrame>(stream),
+              std::istream_iterator<d2::detail::StackFrame>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the frames");
 
     ASSERT_EQ(saved, loaded);
 }
@@ -75,12 +78,15 @@ TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_a_single_info_with_call_sta
 
 TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_infos_without_call_stack) {
     std::vector<d2::detail::LockDebugInfo> saved(3);
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::detail::LockDebugInfo>(stream));
     EXPECT_TRUE(stream && "failed to save the lock debug infos");
 
     std::vector<d2::detail::LockDebugInfo> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the lock debug infos");
+    std::copy(std::istream_iterator<d2::detail::LockDebugInfo>(stream),
+              std::istream_iterator<d2::detail::LockDebugInfo>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the lock debug infos");
 
     ASSERT_EQ(saved, loaded);
 }
@@ -90,12 +96,15 @@ TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_infos_with_call_sta
     BOOST_FOREACH(d2::detail::LockDebugInfo& info, saved)
         info.init_call_stack();
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::detail::LockDebugInfo>(stream));
     EXPECT_TRUE(stream && "failed to save the lock debug infos");
 
     std::vector<d2::detail::LockDebugInfo> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the lock debug infos");
+    std::copy(std::istream_iterator<d2::detail::LockDebugInfo>(stream),
+              std::istream_iterator<d2::detail::LockDebugInfo>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the lock debug infos");
 
     ASSERT_EQ(saved, loaded);
 }
