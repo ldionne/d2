@@ -2,52 +2,33 @@
  * This file contains unit tests for the `ReleaseEvent` event.
  */
 
+#include "serialization_test.hpp"
 #include <d2/events/release_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
-#include "test_base.hpp"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/utility/value_init.hpp>
 
 
-namespace {
-    struct ReleaseEventTest : ::testing::Test {
-        std::stringstream stream;
-        d2::Thread thread;
-        d2::SyncObject lock;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            stream.unsetf(std::ios::skipws);
-        }
-    };
-} // end anonymous namespace
+struct ReleaseEventTest {
+    typedef ReleaseEvent value_type;
+    static boost::random::mt19937 gen;
 
-TEST_F(ReleaseEventTest, save_and_load_a_single_release_event) {
-    d2::ReleaseEvent saved(lock, thread);
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the release event");
+    static value_type get_random_object() {
+        // Lock and thread ids are in the range [0, 10000]
+        boost::random::uniform_int_distribution<unsigned> dist(0, 10000);
+        return value_type(SyncObject(dist(gen)), Thread(dist(gen)));
+    }
+};
 
-    d2::ReleaseEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the release event");
+boost::random::mt19937 ReleaseEventTest::gen = boost::initialized_value;
 
-    ASSERT_EQ(saved, loaded);
-}
+INSTANTIATE_TYPED_TEST_CASE_P(ReleaseEvent, SerializationTest, ReleaseEventTest);
 
-TEST_F(ReleaseEventTest, save_and_load_several_release_events) {
-    using namespace boost::assign;
-    std::vector<d2::ReleaseEvent> saved;
-    saved += d2::ReleaseEvent(lock, thread),
-             d2::ReleaseEvent(lock, thread),
-             d2::ReleaseEvent(lock, thread);
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::ReleaseEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the release events");
-
-    std::vector<d2::ReleaseEvent> loaded;
-    std::copy(std::istream_iterator<d2::ReleaseEvent>(stream),
-              std::istream_iterator<d2::ReleaseEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the release events");
-
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2

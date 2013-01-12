@@ -2,54 +2,34 @@
  * This file contains unit tests for the `SegmentHopEvent` event.
  */
 
+#include "serialization_test.hpp"
 #include <d2/events/segment_hop_event.hpp>
 #include <d2/segment.hpp>
 #include <d2/thread.hpp>
-#include "test_base.hpp"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/utility/value_init.hpp>
 
 
-namespace {
-    struct SegmentHopEventTest : ::testing::Test {
-        std::stringstream stream;
-        d2::Thread thread;
-        d2::Segment segment;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            thread = d2::Thread((unsigned)0xBADC0FFEE);
-            segment += 0xF00BA12;
-            stream.unsetf(std::ios::skipws);
-        }
-    };
-} // end anonymous namespace
+struct SegmentHopEventTest {
+    typedef SegmentHopEvent value_type;
+    static boost::random::mt19937 gen;
 
-TEST_F(SegmentHopEventTest, save_and_load_a_single_hop_event) {
-    d2::SegmentHopEvent saved(thread, segment);
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the hop event");
+    static value_type get_random_object() {
+        // Thread ids are in [0, 10000]
+        // Segment values are [initial segment, initial segment + 10000]
+        boost::random::uniform_int_distribution<unsigned> dist(0, 10000);
+        return value_type(Thread(dist(gen)), Segment() + dist(gen));
+    }
+};
 
-    d2::SegmentHopEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the hop event");
+boost::random::mt19937 SegmentHopEventTest::gen = boost::initialized_value;
 
-    ASSERT_EQ(saved, loaded);
-}
+INSTANTIATE_TYPED_TEST_CASE_P(SegmentHopEvent, SerializationTest, SegmentHopEventTest);
 
-TEST_F(SegmentHopEventTest, save_and_load_several_hop_events) {
-    using namespace boost::assign;
-    std::vector<d2::SegmentHopEvent> saved;
-    saved += d2::SegmentHopEvent(thread, segment),
-             d2::SegmentHopEvent(thread, segment),
-             d2::SegmentHopEvent(thread, segment);
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::SegmentHopEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the hop events");
-
-    std::vector<d2::SegmentHopEvent> loaded;
-    std::copy(std::istream_iterator<d2::SegmentHopEvent>(stream),
-              std::istream_iterator<d2::SegmentHopEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the hop events");
-
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2

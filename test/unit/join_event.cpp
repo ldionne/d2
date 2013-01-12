@@ -2,53 +2,34 @@
  * This file contains unit tests for the `JoinEvent` event.
  */
 
+#include "serialization_test.hpp"
 #include <d2/events/join_event.hpp>
 #include <d2/segment.hpp>
-#include "test_base.hpp"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/utility/value_init.hpp>
 
 
-namespace {
-    struct JoinEventTest : ::testing::Test {
-        std::stringstream stream;
-        d2::Segment a, b, c;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            stream.unsetf(std::ios::skipws);
-            a += 100;
-            b += 200;
-            c += 300;
-        }
-    };
-} // end anonymous namespace
+struct JoinEventTest {
+    typedef JoinEvent value_type;
+    static boost::random::mt19937 generator;
 
-TEST_F(JoinEventTest, save_and_load_a_single_join_event) {
-    d2::JoinEvent saved(a, b, c);
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the join event");
+    static value_type get_random_object() {
+        // Segment values are [initial segment, initial segment + 10000]
+        boost::random::uniform_int_distribution<> distribution(0, 10000);
+        return value_type(Segment() + distribution(generator),
+                          Segment() + distribution(generator),
+                          Segment() + distribution(generator));
+    }
+};
 
-    d2::JoinEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the join event");
+boost::random::mt19937 JoinEventTest::generator = boost::initialized_value;
 
-    ASSERT_EQ(saved, loaded);
-}
+INSTANTIATE_TYPED_TEST_CASE_P(JoinEvent, SerializationTest, JoinEventTest);
 
-TEST_F(JoinEventTest, save_and_load_several_join_events) {
-    using namespace boost::assign;
-    std::vector<d2::JoinEvent> saved;
-    saved += d2::JoinEvent(a, b, c),
-             d2::JoinEvent(a, b, c),
-             d2::JoinEvent(a, b, c);
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::JoinEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the join events");
-
-    std::vector<d2::JoinEvent> loaded;
-    std::copy(std::istream_iterator<d2::JoinEvent>(stream),
-              std::istream_iterator<d2::JoinEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the join events");
-
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2

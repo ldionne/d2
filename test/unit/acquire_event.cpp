@@ -2,89 +2,42 @@
  * This file contains unit tests for the `AcquireEvent` event.
  */
 
+#include "serialization_test.hpp"
 #include <d2/events/acquire_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
-#include "test_base.hpp"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/utility/value_init.hpp>
 
 
-namespace {
-    struct AcquireEventTest : ::testing::Test {
-        std::stringstream stream;
-        d2::Thread thread;
-        d2::SyncObject lock;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            lock = d2::SyncObject((unsigned)0xDEADBEEF);
-            thread = d2::Thread((unsigned)0XBADC0FFEE);
-            stream.unsetf(std::ios::skipws);
-        }
-    };
-} // end anonymous namespace
+struct AcquireEventWithoutInfoTest {
+    typedef AcquireEvent value_type;
+    static boost::random::mt19937 gen;
 
-TEST_F(AcquireEventTest, save_and_load_a_single_event_without_info) {
-    d2::AcquireEvent saved(lock, thread);
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the acquire event");
+    static value_type get_random_object() {
+        // Lock and thread ids are in the range [0, 10000]
+        boost::random::uniform_int_distribution<unsigned> dist(0, 10000);
+        return value_type(SyncObject(dist(gen)), Thread(dist(gen)));
+    }
+};
 
-    d2::AcquireEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the acquire event");
+boost::random::mt19937 AcquireEventWithoutInfoTest::gen = boost::initialized_value;
 
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(AcquireEventTest, save_and_load_a_single_event_with_info) {
-    d2::AcquireEvent saved(lock, thread);
-    saved.info.init_call_stack();
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the acquire event");
-
-    d2::AcquireEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the acquire event");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(AcquireEventTest, save_and_load_several_acquire_events_without_info) {
-    using namespace boost::assign;
-    std::vector<d2::AcquireEvent> saved;
-    saved += d2::AcquireEvent(lock, thread),
-             d2::AcquireEvent(lock, thread),
-             d2::AcquireEvent(lock, thread);
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::AcquireEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the acquire events");
-
-    std::vector<d2::AcquireEvent> loaded;
-    std::copy(std::istream_iterator<d2::AcquireEvent>(stream),
-              std::istream_iterator<d2::AcquireEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the acquire events");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(AcquireEventTest, save_and_load_several_acquire_events_with_info) {
-    using namespace boost::assign;
-    std::vector<d2::AcquireEvent> saved;
-    saved += d2::AcquireEvent(lock, thread),
-             d2::AcquireEvent(lock, thread),
-             d2::AcquireEvent(lock, thread);
-    BOOST_FOREACH(d2::AcquireEvent& event, saved)
+struct AcquireEventWithInfoTest : AcquireEventWithoutInfoTest {
+    static value_type get_random_object() {
+        value_type event = AcquireEventWithoutInfoTest::get_random_object();
         event.info.init_call_stack();
+        return event;
+    }
+};
 
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::AcquireEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the acquire events");
+INSTANTIATE_TYPED_TEST_CASE_P(AcquireEventWithInfo, SerializationTest, AcquireEventWithInfoTest);
+INSTANTIATE_TYPED_TEST_CASE_P(AcquireEventWithoutInfo, SerializationTest, AcquireEventWithoutInfoTest);
 
-    std::vector<d2::AcquireEvent> loaded;
-    std::copy(std::istream_iterator<d2::AcquireEvent>(stream),
-              std::istream_iterator<d2::AcquireEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the acquire events");
-
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2

@@ -2,53 +2,34 @@
  * This file contains unit tests for the `StartEvent` event.
  */
 
+#include "serialization_test.hpp"
 #include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>
-#include "test_base.hpp"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/utility/value_init.hpp>
 
 
-namespace {
-    struct StartEventTest : ::testing::Test {
-        std::stringstream stream;
-        d2::Segment a, b, c;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            stream.unsetf(std::ios::skipws);
-            a += 100;
-            b += 200;
-            c += 300;
-        }
-    };
-} // end anonymous namespace
+struct StartEventTest {
+    typedef StartEvent value_type;
+    static boost::random::mt19937 generator;
 
-TEST_F(StartEventTest, save_and_load_a_single_start_event) {
-    d2::StartEvent saved(a, b, c);
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the start event");
+    static value_type get_random_object() {
+        // Segment values are [initial segment, initial segment + 10000]
+        boost::random::uniform_int_distribution<> distribution(0, 10000);
+        return value_type(Segment() + distribution(generator),
+                          Segment() + distribution(generator),
+                          Segment() + distribution(generator));
+    }
+};
 
-    d2::StartEvent loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the start event");
+boost::random::mt19937 StartEventTest::generator = boost::initialized_value;
 
-    ASSERT_EQ(saved, loaded);
-}
+INSTANTIATE_TYPED_TEST_CASE_P(StartEvent, SerializationTest, StartEventTest);
 
-TEST_F(StartEventTest, save_and_load_several_start_events) {
-    using namespace boost::assign;
-    std::vector<d2::StartEvent> saved;
-    saved += d2::StartEvent(a, b, c),
-             d2::StartEvent(a, b, c),
-             d2::StartEvent(a, b, c);
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::StartEvent>(stream));
-    EXPECT_TRUE(stream && "failed to save the start events");
-
-    std::vector<d2::StartEvent> loaded;
-    std::copy(std::istream_iterator<d2::StartEvent>(stream),
-              std::istream_iterator<d2::StartEvent>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the start events");
-
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2

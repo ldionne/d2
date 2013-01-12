@@ -53,7 +53,7 @@ TEST_F(MixedEventTest, save_and_load_mixed_events) {
 
     std::copy(saved.begin(), saved.end(),
         std::ostream_iterator<Event>(stream));
-    EXPECT_TRUE(stream && "failed to save the mixed events");
+    EXPECT_TRUE(stream) << "failed to save the mixed events";
 
     std::vector<Event> loaded;
     std::string string(stream.str());
@@ -65,7 +65,6 @@ TEST_F(MixedEventTest, save_and_load_mixed_events) {
 
     EXPECT_TRUE(success) << "failed to load the mixed events";
     EXPECT_TRUE(first == last) << "failed to load the mixed events";
-    std::cout << loaded;
 
     ASSERT_EQ(saved, loaded);
 }

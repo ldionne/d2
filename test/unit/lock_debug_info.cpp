@@ -3,108 +3,41 @@
  * and the `StackFrame` classes.
  */
 
+#include "serialization_test.hpp"
 #include <d2/detail/lock_debug_info.hpp>
-#include "test_base.hpp"
 
 
-namespace {
-    struct StackFrameAndLockDebugInfoTest : ::testing::Test {
-        std::stringstream stream;
+namespace d2 {
+namespace test {
 
-        void SetUp() {
-            stream.unsetf(std::ios::skipws);
-        }
-    };
-} // end anonymous namespace
+struct StackFrameTest {
+    typedef detail::StackFrame value_type;
 
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_a_single_stack_frame) {
-    d2::detail::StackFrame saved((void*)0x0, "fun0", "file0");
+    static value_type get_random_object() {
+        return value_type((void*)0x0, "fun0", "file0");
+    }
+};
 
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the frame");
+struct LockDebugInfoWithoutCallStackTest {
+    typedef detail::LockDebugInfo value_type;
 
-    d2::detail::StackFrame loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the frame");
+    static value_type get_random_object() {
+        return value_type();
+    }
+};
 
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_stack_frames) {
-    using namespace boost::assign;
-    std::vector<d2::detail::StackFrame> saved;
-    saved += d2::detail::StackFrame((void*)0x0, "fun0", "file0"),
-             d2::detail::StackFrame((void*)0x1, "fun1", "file1"),
-             d2::detail::StackFrame((void*)0x2, "fun2", "file2");
-
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::detail::StackFrame>(stream));
-    EXPECT_TRUE(stream && "failed to save the frames");
-
-    std::vector<d2::detail::StackFrame> loaded;
-    std::copy(std::istream_iterator<d2::detail::StackFrame>(stream),
-              std::istream_iterator<d2::detail::StackFrame>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the frames");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_a_single_info_without_call_stack) {
-    d2::detail::LockDebugInfo saved;
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the lock debug info");
-
-    d2::detail::LockDebugInfo loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the lock debug info");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_a_single_info_with_call_stack) {
-    d2::detail::LockDebugInfo saved;
-    saved.init_call_stack();
-    stream << saved;
-    EXPECT_TRUE(stream && "failed to save the lock debug info");
-
-    d2::detail::LockDebugInfo loaded;
-    stream >> loaded;
-    EXPECT_TRUE(stream && "failed to load the lock debug info");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_infos_without_call_stack) {
-    std::vector<d2::detail::LockDebugInfo> saved(3);
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::detail::LockDebugInfo>(stream));
-    EXPECT_TRUE(stream && "failed to save the lock debug infos");
-
-    std::vector<d2::detail::LockDebugInfo> loaded;
-    std::copy(std::istream_iterator<d2::detail::LockDebugInfo>(stream),
-              std::istream_iterator<d2::detail::LockDebugInfo>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the lock debug infos");
-
-    ASSERT_EQ(saved, loaded);
-}
-
-TEST_F(StackFrameAndLockDebugInfoTest, save_and_load_several_infos_with_call_stack) {
-    std::vector<d2::detail::LockDebugInfo> saved(3);
-    BOOST_FOREACH(d2::detail::LockDebugInfo& info, saved)
+struct LockDebugInfoWithCallStackTest : LockDebugInfoWithoutCallStackTest {
+    static value_type get_random_object() {
+        value_type info = LockDebugInfoWithoutCallStackTest::get_random_object();
         info.init_call_stack();
+        return info;
+    }
+};
 
-    std::copy(saved.begin(), saved.end(),
-        std::ostream_iterator<d2::detail::LockDebugInfo>(stream));
-    EXPECT_TRUE(stream && "failed to save the lock debug infos");
 
-    std::vector<d2::detail::LockDebugInfo> loaded;
-    std::copy(std::istream_iterator<d2::detail::LockDebugInfo>(stream),
-              std::istream_iterator<d2::detail::LockDebugInfo>(),
-              std::back_inserter(loaded));
-    EXPECT_TRUE(stream.eof() && "failed to load the lock debug infos");
+INSTANTIATE_TYPED_TEST_CASE_P(StackFrame, SerializationTest, StackFrameTest);
+INSTANTIATE_TYPED_TEST_CASE_P(LockDebugInfoWithoutCallStack, SerializationTest, LockDebugInfoWithoutCallStackTest);
+INSTANTIATE_TYPED_TEST_CASE_P(LockDebugInfoWithCallStack, SerializationTest, LockDebugInfoWithCallStackTest);
 
-    ASSERT_EQ(saved, loaded);
-}
+} // end namespace test
+} // end namespace d2
