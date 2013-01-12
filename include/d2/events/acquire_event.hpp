@@ -12,6 +12,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -52,15 +54,17 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
     friend std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os,
                AcquireEvent const& self) {
-        os << self.thread << '+' << self.lock << '+' << self.info;
+        os << self.thread << '?' << self.lock << '?' << self.info;
         return os;
     }
 
     template <typename CharT, typename Traits>
     friend std::basic_istream<CharT, Traits>&
     operator>>(std::basic_istream<CharT, Traits>& is, AcquireEvent& self) {
-        char plus;
-        is >> self.thread >> plus >> self.lock >> plus >> self.info;
+        using namespace boost::spirit::qi;
+
+        is >> match(ulong_ >> '?' >> ulong_ >> '?', self.thread, self.lock)
+           >> self.info;
         return is;
     }
 

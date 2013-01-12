@@ -10,6 +10,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -30,8 +32,8 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
     inline JoinEvent() { }
 
     inline JoinEvent(Segment const& parent,
-                      Segment const& new_parent,
-                      Segment const& child)
+                     Segment const& new_parent,
+                     Segment const& child)
         : parent(parent), new_parent(new_parent), child(child)
     { }
 
@@ -56,9 +58,15 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
     template <typename CharT, typename Traits>
     friend std::basic_istream<CharT, Traits>&
     operator>>(std::basic_istream<CharT, Traits>& is, JoinEvent& self) {
-        char caret;
-        is >> self.parent >> caret >> self.new_parent >> caret >> self.child
-                                                                    >> caret;
+        using namespace boost::spirit::qi;
+
+        unsigned long parent, new_parent, child;
+        is >> match(ulong_ >> '^' >> ulong_ >> '^' >> ulong_ >> '^',
+                    parent, new_parent, child);
+        self = JoinEvent();
+        self.parent += parent;
+        self.new_parent += new_parent;
+        self.child += child;
         return is;
     }
 

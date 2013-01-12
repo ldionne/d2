@@ -40,12 +40,15 @@ TEST_F(StartEventTest, save_and_load_several_start_events) {
              d2::StartEvent(a, b, c),
              d2::StartEvent(a, b, c);
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::StartEvent>(stream));
     EXPECT_TRUE(stream && "failed to save the start events");
 
     std::vector<d2::StartEvent> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the start events");
+    std::copy(std::istream_iterator<d2::StartEvent>(stream),
+              std::istream_iterator<d2::StartEvent>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the start events");
 
     ASSERT_EQ(saved, loaded);
 }

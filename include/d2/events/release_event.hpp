@@ -11,6 +11,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -50,15 +52,16 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
     friend std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os,
                ReleaseEvent const& self) {
-        os << self.thread << '-' << self.lock << '-';
+        os << self.thread << ';' << self.lock << ';';
         return os;
     }
 
     template <typename CharT, typename Traits>
     friend std::basic_istream<CharT, Traits>&
     operator>>(std::basic_istream<CharT, Traits>& is, ReleaseEvent& self) {
-        char minus;
-        is >> self.thread >> minus >> self.lock >> minus;
+        using namespace boost::spirit::qi;
+
+        is >> match(ulong_ >> ';' >> ulong_ >> ';', self.thread, self.lock);
         return is;
     }
 

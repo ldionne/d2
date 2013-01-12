@@ -11,6 +11,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -58,8 +60,12 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
     template <typename CharT, typename Traits>
     friend std::basic_istream<CharT, Traits>&
     operator>>(std::basic_istream<CharT, Traits>& is, SegmentHopEvent& self) {
-        char gt;
-        is >> self.thread >> gt >> self.segment >> gt;
+        using namespace boost::spirit::qi;
+
+        unsigned long segment;
+        self = SegmentHopEvent();
+        is >> match(ulong_ >> '>' >> ulong_ >> '>', self.thread, segment);
+        self.segment += segment;
         return is;
     }
 

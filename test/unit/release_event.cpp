@@ -39,12 +39,15 @@ TEST_F(ReleaseEventTest, save_and_load_several_release_events) {
              d2::ReleaseEvent(lock, thread),
              d2::ReleaseEvent(lock, thread);
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::ReleaseEvent>(stream));
     EXPECT_TRUE(stream && "failed to save the release events");
 
     std::vector<d2::ReleaseEvent> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the release events");
+    std::copy(std::istream_iterator<d2::ReleaseEvent>(stream),
+              std::istream_iterator<d2::ReleaseEvent>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the release events");
 
     ASSERT_EQ(saved, loaded);
 }

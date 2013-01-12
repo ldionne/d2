@@ -41,12 +41,15 @@ TEST_F(SegmentHopEventTest, save_and_load_several_hop_events) {
              d2::SegmentHopEvent(thread, segment),
              d2::SegmentHopEvent(thread, segment);
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::SegmentHopEvent>(stream));
     EXPECT_TRUE(stream && "failed to save the hop events");
 
     std::vector<d2::SegmentHopEvent> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the hop events");
+    std::copy(std::istream_iterator<d2::SegmentHopEvent>(stream),
+              std::istream_iterator<d2::SegmentHopEvent>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the hop events");
 
     ASSERT_EQ(saved, loaded);
 }

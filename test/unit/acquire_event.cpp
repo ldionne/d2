@@ -54,12 +54,15 @@ TEST_F(AcquireEventTest, save_and_load_several_acquire_events_without_info) {
              d2::AcquireEvent(lock, thread),
              d2::AcquireEvent(lock, thread);
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::AcquireEvent>(stream));
     EXPECT_TRUE(stream && "failed to save the acquire events");
 
     std::vector<d2::AcquireEvent> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the acquire events");
+    std::copy(std::istream_iterator<d2::AcquireEvent>(stream),
+              std::istream_iterator<d2::AcquireEvent>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the acquire events");
 
     ASSERT_EQ(saved, loaded);
 }
@@ -73,12 +76,15 @@ TEST_F(AcquireEventTest, save_and_load_several_acquire_events_with_info) {
     BOOST_FOREACH(d2::AcquireEvent& event, saved)
         event.info.init_call_stack();
 
-    stream << karma::format(*karma::stream, saved);
+    std::copy(saved.begin(), saved.end(),
+        std::ostream_iterator<d2::AcquireEvent>(stream));
     EXPECT_TRUE(stream && "failed to save the acquire events");
 
     std::vector<d2::AcquireEvent> loaded;
-    stream >> qi::match(*qi::stream, loaded);
-    EXPECT_TRUE(stream && "failed to load the acquire events");
+    std::copy(std::istream_iterator<d2::AcquireEvent>(stream),
+              std::istream_iterator<d2::AcquireEvent>(),
+              std::back_inserter(loaded));
+    EXPECT_TRUE(stream.eof() && "failed to load the acquire events");
 
     ASSERT_EQ(saved, loaded);
 }

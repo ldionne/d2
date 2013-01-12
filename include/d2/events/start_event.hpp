@@ -10,6 +10,8 @@
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -57,9 +59,15 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
     template <typename CharT, typename Traits>
     friend std::basic_istream<CharT, Traits>&
     operator>>(std::basic_istream<CharT, Traits>& is, StartEvent& self) {
-        char tilde;
-        is >> self.parent >> tilde >> self.new_parent >> tilde >> self.child
-                                                                    >> tilde;
+        using namespace boost::spirit::qi;
+
+        unsigned long parent, new_parent, child;
+        is >> match(ulong_ >> '~' >> ulong_ >> '~' >> ulong_ >> '~',
+                    parent, new_parent, child);
+        self = StartEvent();
+        self.parent += parent;
+        self.new_parent += new_parent;
+        self.child += child;
         return is;
     }
 
