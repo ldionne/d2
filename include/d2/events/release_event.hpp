@@ -5,14 +5,13 @@
 #ifndef D2_EVENTS_RELEASE_EVENT_HPP
 #define D2_EVENTS_RELEASE_EVENT_HPP
 
+#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -48,22 +47,8 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
         return self.thread;
     }
 
-    template <typename CharT, typename Traits>
-    friend std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& os,
-               ReleaseEvent const& self) {
-        os << self.thread << ';' << self.lock << ';';
-        return os;
-    }
-
-    template <typename CharT, typename Traits>
-    friend std::basic_istream<CharT, Traits>&
-    operator>>(std::basic_istream<CharT, Traits>& is, ReleaseEvent& self) {
-        using namespace boost::spirit::qi;
-
-        is >> match(ulong_ >> ';' >> ulong_ >> ';', self.thread, self.lock);
-        return is;
-    }
+    D2_API friend std::ostream& operator<<(std::ostream&, ReleaseEvent const&);
+    D2_API friend std::istream& operator>>(std::istream&, ReleaseEvent&);
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;

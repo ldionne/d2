@@ -5,13 +5,12 @@
 #ifndef D2_EVENTS_START_EVENT_HPP
 #define D2_EVENTS_START_EVENT_HPP
 
+#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/qi_match.hpp>
 #include <iosfwd>
 
 
@@ -47,29 +46,8 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
                a.child == b.child;
     }
 
-    template <typename CharT, typename Traits>
-    friend std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& os,
-               StartEvent const& self) {
-        os << self.parent << '~' << self.new_parent << '~' << self.child
-                                                                    << '~';
-        return os;
-    }
-
-    template <typename CharT, typename Traits>
-    friend std::basic_istream<CharT, Traits>&
-    operator>>(std::basic_istream<CharT, Traits>& is, StartEvent& self) {
-        using namespace boost::spirit::qi;
-
-        unsigned long parent, new_parent, child;
-        is >> match(ulong_ >> '~' >> ulong_ >> '~' >> ulong_ >> '~',
-                    parent, new_parent, child);
-        self = StartEvent();
-        self.parent += parent;
-        self.new_parent += new_parent;
-        self.child += child;
-        return is;
-    }
+    D2_API friend std::istream& operator>>(std::istream&, StartEvent&);
+    D2_API friend std::ostream& operator<<(std::ostream&, StartEvent const&);
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;
