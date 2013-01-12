@@ -2,7 +2,7 @@
  * This file contains unit tests for the `ReleaseEvent` event.
  */
 
-#include "serialization_test.hpp"
+#include "../serialization_test.hpp"
 #include <d2/events/release_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>

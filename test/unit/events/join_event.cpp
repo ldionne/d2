@@ -1,9 +1,9 @@
 /**
- * This file contains unit tests for the `StartEvent` event.
+ * This file contains unit tests for the `JoinEvent` event.
  */
 
-#include "serialization_test.hpp"
-#include <d2/events/start_event.hpp>
+#include "../serialization_test.hpp"
+#include <d2/events/join_event.hpp>
 #include <d2/segment.hpp>
 
 #include <boost/random/mersenne_twister.hpp>
@@ -14,8 +14,8 @@
 namespace d2 {
 namespace test {
 
-struct StartEventTest {
-    typedef StartEvent value_type;
+struct JoinEventTest {
+    typedef JoinEvent value_type;
     static boost::random::mt19937 generator;
 
     static value_type get_random_object() {
@@ -27,9 +27,9 @@ struct StartEventTest {
     }
 };
 
-boost::random::mt19937 StartEventTest::generator = boost::initialized_value;
+boost::random::mt19937 JoinEventTest::generator = boost::initialized_value;
 
-INSTANTIATE_TYPED_TEST_CASE_P(StartEvent, SerializationTest, StartEventTest);
+INSTANTIATE_TYPED_TEST_CASE_P(JoinEvent, SerializationTest, JoinEventTest);
 
 } // end namespace test
 } // end namespace d2

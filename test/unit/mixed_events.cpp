@@ -1,52 +1,83 @@
 /**
- * This file contains unit tests for mixed event logging.
+ * This file contains unit tests for mixed event saving/loading.
  */
 
 #include <d2/events.hpp>
 #include <d2/segment.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
-#include "test_base.hpp"
+
+#include <algorithm>
+#include <boost/assign.hpp>
+#include <boost/mpl/vector.hpp>
+#include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/variant.hpp>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <vector>
 
 
-namespace {
-    struct MixedEventTest : ::testing::Test {
-        std::stringstream stream;
-        std::vector<d2::Thread> threads;
-        std::vector<d2::SyncObject> locks;
-        std::vector<d2::Segment> segments;
-        typedef boost::variant<
-                    d2::AcquireEvent, d2::ReleaseEvent,
-                    d2::StartEvent, d2::JoinEvent,
-                    d2::SegmentHopEvent
-                > Event;
+namespace karma = boost::spirit::karma;
+namespace qi = boost::spirit::qi;
 
-        qi::typed_stream<d2::AcquireEvent> acquire;
-        qi::typed_stream<d2::ReleaseEvent> release;
-        qi::typed_stream<d2::StartEvent> start;
-        qi::typed_stream<d2::JoinEvent> join;
-        qi::typed_stream<d2::SegmentHopEvent> hop;
+namespace std {
+    // We need that for ASSERT_EQ(vector, vector)
+    template <typename T, typename A>
+    ostream& operator<<(ostream& os, vector<T, A> const& v) {
+        os << karma::format('(' << karma::stream % ", " << ')', v);
+        return os;
+    }
+} // end namespace std
 
-        void SetUp() {
-            for (unsigned int i = 0; i < 100; ++i) {
-                threads.push_back(d2::Thread(i));
-                locks.push_back(d2::SyncObject(i));
-                segments.push_back(d2::Segment() + i);
-            }
+namespace d2 {
+namespace test {
+
+struct MixedEventTest : ::testing::Test {
+    typedef boost::mpl::vector<
+                AcquireEvent,
+                ReleaseEvent,
+                StartEvent,
+                JoinEvent,
+                SegmentHopEvent
+            > EventTypes;
+
+    typedef boost::make_variant_over<EventTypes>::type Event;
+
+    std::stringstream stream;
+    std::vector<Thread> threads;
+    std::vector<SyncObject> locks;
+    std::vector<Segment> segments;
+
+    qi::typed_stream<AcquireEvent> acquire;
+    qi::typed_stream<ReleaseEvent> release;
+    qi::typed_stream<StartEvent> start;
+    qi::typed_stream<JoinEvent> join;
+    qi::typed_stream<SegmentHopEvent> hop;
+
+    void SetUp() {
+        for (unsigned int i = 0; i < 1000; ++i) {
+            threads.push_back(Thread(i));
+            locks.push_back(SyncObject(i));
+            segments.push_back(Segment() + i);
         }
-    };
-} // end anonymous namespace
+    }
+};
+
 
 TEST_F(MixedEventTest, save_and_load_mixed_events) {
     using namespace boost::assign;
     std::vector<Event> saved;
-    d2::AcquireEvent some_acquire(locks[84], threads[45]);
+    AcquireEvent some_acquire(locks[84], threads[45]);
     some_acquire.info.init_call_stack();
-    saved += d2::AcquireEvent(locks[3], threads[8]),
-             d2::ReleaseEvent(locks[0], threads[0]),
-             d2::StartEvent(segments[0], segments[1], segments[2]),
-             d2::JoinEvent(segments[0], segments[1], segments[2]),
-             d2::SegmentHopEvent(threads[0], segments[0]),
+    saved += AcquireEvent(locks[3], threads[8]),
+             ReleaseEvent(locks[0], threads[0]),
+             StartEvent(segments[0], segments[1], segments[2]),
+             JoinEvent(segments[0], segments[1], segments[2]),
+             SegmentHopEvent(threads[0], segments[0]),
              some_acquire,
              some_acquire,
              some_acquire;
@@ -68,3 +99,6 @@ TEST_F(MixedEventTest, save_and_load_mixed_events) {
 
     ASSERT_EQ(saved, loaded);
 }
+
+} // end namespace test
+} // end namespace d2

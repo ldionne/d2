@@ -8,18 +8,35 @@
 #include <d2/segment.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
-#include "test_base.hpp"
+
+#include <boost/assert.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/mpl/apply.hpp>
+#include <boost/unordered_set.hpp>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <string>
+#include <vector>
 
 
-namespace {
+namespace fs = boost::filesystem;
+namespace mpl = boost::mpl;
+
+namespace d2 {
+namespace test {
+
+struct RepositoryTest : ::testing::Test {
+    std::vector<Thread> threads;
+    std::vector<SyncObject> locks;
+    std::vector<Segment> segments;
+    fs::path root;
+
     struct UnaryKey {
-        template <typename Ostream>
-        friend Ostream& operator<<(Ostream& os, UnaryKey const&) {
+        friend std::ostream& operator<<(std::ostream& os, UnaryKey const&) {
             return os << "UnaryKey", os;
         }
 
-        template <typename Istream>
-        friend Istream& operator>>(Istream& is, UnaryKey&) {
+        friend std::istream& operator>>(std::istream& is, UnaryKey&) {
             std::string name;
             is >> name;
             BOOST_ASSERT(name == "UnaryKey");
@@ -30,44 +47,37 @@ namespace {
     struct MixedMappingPolicy {
         template <typename Category, typename Stream>
         struct apply
-            : boost::mpl::apply<d2::boost_unordered_map, Category, Stream>
+            : mpl::apply<boost_unordered_map, Category, Stream>
         { };
 
         template <typename Stream>
         struct apply<UnaryKey, Stream>
-            : boost::mpl::apply<d2::unary_map, UnaryKey, Stream>
+            : mpl::apply<unary_map, UnaryKey, Stream>
         { };
     };
 
-    typedef boost::mpl::vector<d2::Thread> ThreadKeys;
-    typedef boost::mpl::vector<d2::Thread, UnaryKey> MixedKeys;
+    typedef mpl::vector<Thread> ThreadKeys;
+    typedef mpl::vector<Thread, UnaryKey> MixedKeys;
 
-    typedef d2::Repository<ThreadKeys> ThreadRepository;
-    typedef d2::Repository<MixedKeys, MixedMappingPolicy> MixedRepository;
+    typedef Repository<ThreadKeys> ThreadRepository;
+    typedef Repository<MixedKeys, MixedMappingPolicy> MixedRepository;
 
-    struct RepositoryTest : ::testing::Test {
-        std::vector<d2::Thread> threads;
-        std::vector<d2::SyncObject> locks;
-        std::vector<d2::Segment> segments;
-        fs::path root;
-
-        void SetUp() {
-            for (unsigned int i = 0; i < 100; ++i) {
-                threads.push_back(d2::Thread(i));
-                locks.push_back(d2::SyncObject(i));
-                segments.push_back(d2::Segment() + i);
-            }
-
-            root = fs::temp_directory_path();
-            root /= fs::unique_path();
-            std::cout << "test directory is: " << root << std::endl;
+    void SetUp() {
+        for (unsigned int i = 0; i < 100; ++i) {
+            threads.push_back(Thread(i));
+            locks.push_back(SyncObject(i));
+            segments.push_back(Segment() + i);
         }
 
-        void TearDown() {
-            fs::remove_all(root);
-        }
-    };
-} // end anonymous namespace
+        root = fs::temp_directory_path();
+        root /= fs::unique_path();
+        std::cout << "test directory is: " << root << std::endl;
+    }
+
+    void TearDown() {
+        fs::remove_all(root);
+    }
+};
 
 TEST_F(RepositoryTest, should_be_empty_at_the_beginning) {
     ThreadRepository repository(root);
@@ -76,11 +86,11 @@ TEST_F(RepositoryTest, should_be_empty_at_the_beginning) {
 
 TEST_F(RepositoryTest, save_and_load_into_one_thread) {
     ThreadRepository repository(root);
-    d2::AcquireEvent saved(locks[10], threads[0]);
+    AcquireEvent saved(locks[10], threads[0]);
     repository[threads[0]] << saved;
     EXPECT_FALSE(repository.empty());
 
-    d2::AcquireEvent loaded;
+    AcquireEvent loaded;
     repository[threads[0]].seekg(0); // rewind
     repository[threads[0]] >> loaded;
     ASSERT_EQ(saved, loaded);
@@ -93,11 +103,11 @@ TEST_F(RepositoryTest, get_all_keys) {
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    ThreadRepository::key_view<d2::Thread>::type
-        repo_threads = repository.keys<d2::Thread>();
+    ThreadRepository::key_view<Thread>::type
+        repo_threads = repository.keys<Thread>();
 
     // We must do an unordered comparison.
-    boost::unordered_set<d2::Thread>
+    boost::unordered_set<Thread>
                         expected(threads.begin(), threads.end()),
                         actual(repo_threads.begin(), repo_threads.end());
     ASSERT_TRUE(expected == actual);
@@ -110,17 +120,17 @@ TEST_F(RepositoryTest, get_all_streams_only) {
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    ThreadRepository::value_view<d2::Thread>::type
-        sources_sinks = repository.values<d2::Thread>();
+    ThreadRepository::value_view<Thread>::type
+        sources_sinks = repository.values<Thread>();
     ASSERT_EQ(sources_sinks.size(), threads.size());
 }
 
 // Compile time test.
 TEST_F(RepositoryTest, get_non_const_reference_on_stream_from_view) {
-    if (0) {
+    if (false) {
         ThreadRepository repository(root);
-        ThreadRepository::value_view<d2::Thread>::type
-            sources_sinks = repository.values<d2::Thread>();
+        ThreadRepository::value_view<Thread>::type
+            sources_sinks = repository.values<Thread>();
 
         // Try to acquire a non-const reference to one of the streams
         std::istream& is = *sources_sinks.begin();
@@ -181,7 +191,7 @@ TEST_F(RepositoryTest, throws_on_invalid_repo_path) {
     std::ofstream ofs(root.c_str());
     ASSERT_THROW({
         ThreadRepository repository(root);
-    }, d2::InvalidRepositoryPathException);
+    }, InvalidRepositoryPathException);
 }
 
 TEST_F(RepositoryTest, use_read_and_write_to_manipulate_streams) {
@@ -199,3 +209,6 @@ TEST_F(RepositoryTest, use_read_and_write_to_manipulate_streams) {
         ASSERT_EQ(i, loaded);
     }
 }
+
+} // end namespace test
+} // end namespace d2

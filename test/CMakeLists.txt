@@ -1,15 +1,5 @@
-# Basic macro to add standalone unit tests.
-add_custom_target(unit)
-macro(d2_add_standalone_unit_test name)
-    add_executable(${name}_exe ${CMAKE_CURRENT_SOURCE_DIR}/unit/${name}.cpp)
-    d2_target_link_libraries(${name}_exe d2log)
-    add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
-    add_dependencies(unit ${name}_exe)
-endmacro()
-
-
-# Macro to add unit depending on boost components.
-macro(d2_add_unit_test name) # additional boost components...
+# Basic macro to add tests with boost dependencies.
+macro(d2_add_test name source) # additional boost components...
     foreach(component ${ARGN})
         string(TOUPPER ${component} COMPONENT)
         if(NOT ${Boost_${COMPONENT}_FOUND})
@@ -20,36 +10,56 @@ macro(d2_add_unit_test name) # additional boost components...
     if(missing)
         message("Missing dependencies ${missing}: ${name} will be unavailable.")
     else()
-        d2_add_standalone_unit_test(${name})
+        add_executable(${name}_exe ${source})
+        d2_target_link_libraries(${name}_exe d2log)
+        add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
+
         foreach(component ${ARGN})
             string(TOUPPER ${component} COMPONENT)
             d2_target_link_libraries(${name}_exe ${Boost_${COMPONENT}_LIBRARY})
         endforeach()
     endif()
 endmacro()
-d2_add_unit_test(concepts)
-d2_add_unit_test(event_dispatcher)
-d2_add_unit_test(event_traits)
+
+
+# Macro to add unit tests. Unit tests will depend on the `unit' target.
+add_custom_target(unit)
+macro(d2_add_unit_test name source) # additional boost components...
+    d2_add_test(${name} ${source} ${ARGN})
+    if(TARGET ${name}_exe)
+        add_dependencies(unit ${name}_exe)
+    endif()
+endmacro()
+d2_add_unit_test(concepts unit/concepts.cpp)
+d2_add_unit_test(event_dispatcher unit/sandbox/event_dispatcher.cpp)
+d2_add_unit_test(event_traits unit/event_traits.cpp)
 
 
 # Add unit tests requiring Google test.
 if(NOT ${GTEST_FOUND})
     message("Missing Google test library: some unit tests will be unavailable.")
-else()
-    macro(d2_add_gtest_unit_test name) # additional boost components...
-        d2_add_unit_test(${name} ${ARGN})
-        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES})
-    endmacro()
-    d2_add_gtest_unit_test(acquire_event)
-    d2_add_gtest_unit_test(join_event)
-    d2_add_gtest_unit_test(lock_debug_info)
-    d2_add_gtest_unit_test(mixed_events)
-    d2_add_gtest_unit_test(release_event)
-    d2_add_gtest_unit_test(repository filesystem system)
-    d2_add_gtest_unit_test(segment_hop_event)
-    d2_add_gtest_unit_test(segmentation_graph graph)
-    d2_add_gtest_unit_test(start_event)
 endif()
+macro(d2_add_gtest_unit_test name source) # additional boost components...
+    if(${GTEST_FOUND})
+        d2_add_unit_test(${name} ${source} ${ARGN})
+        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES})
+    endif()
+endmacro()
+d2_add_gtest_unit_test(lock_debug_info unit/detail/lock_debug_info.cpp)
+d2_add_gtest_unit_test(mixed_events unit/mixed_events.cpp)
+d2_add_gtest_unit_test(repository unit/repository.cpp filesystem system)
+d2_add_gtest_unit_test(segmentation_graph unit/segmentation_graph.cpp graph)
+
+
+# Add unit tests for events
+macro(d2_add_event_test name) # additional boost dependencies...
+    d2_add_gtest_unit_test(${name} unit/events/${name}.cpp ${ARGN})
+endmacro()
+d2_add_event_test(acquire_event)
+d2_add_event_test(join_event)
+d2_add_event_test(release_event)
+d2_add_event_test(segment_hop_event)
+d2_add_event_test(start_event)
 
 
 # Add mock library and integration tests.

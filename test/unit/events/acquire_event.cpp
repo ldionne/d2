@@ -2,7 +2,7 @@
  * This file contains unit tests for the `AcquireEvent` event.
  */
 
-#include "serialization_test.hpp"
+#include "../serialization_test.hpp"
 #include <d2/events/acquire_event.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>

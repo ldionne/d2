@@ -3,7 +3,7 @@
  * and the `StackFrame` classes.
  */
 
-#include "serialization_test.hpp"
+#include "../serialization_test.hpp"
 #include <d2/detail/lock_debug_info.hpp>
 
 
@@ -33,7 +33,6 @@ struct LockDebugInfoWithCallStackTest : LockDebugInfoWithoutCallStackTest {
         return info;
     }
 };
-
 
 INSTANTIATE_TYPED_TEST_CASE_P(StackFrame, SerializationTest, StackFrameTest);
 INSTANTIATE_TYPED_TEST_CASE_P(LockDebugInfoWithoutCallStack, SerializationTest, LockDebugInfoWithoutCallStackTest);

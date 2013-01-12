@@ -6,14 +6,24 @@
 #ifndef D2_TEST_SERIALIZATION_TEST_HPP
 #define D2_TEST_SERIALIZATION_TEST_HPP
 
-#include "test_base.hpp"
-
 #include <algorithm>
+#include <boost/spirit/include/karma.hpp>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <sstream>
 #include <vector>
 
+
+namespace std {
+    // We need that for ASSERT_EQ(vector, vector)
+    template <typename T, typename A>
+    ostream& operator<<(ostream& os, vector<T, A> const& vec) {
+        os << boost::spirit::karma::format(
+            '(' << boost::spirit::karma::stream % ", " << ')'
+        , vec);
+        return os;
+    }
+} // end namespace std
 
 namespace d2 {
 namespace test {
