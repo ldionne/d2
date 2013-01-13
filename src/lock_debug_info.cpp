@@ -89,7 +89,6 @@ D2_API std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
 }
 
 D2_API std::istream& operator>>(std::istream& is, StackFrame& self) {
-    self = StackFrame();
     is >> const_cast<void*&>(self.ip) >> std::ws
        >> delimit(self.function)
        >> delimit(self.module);
