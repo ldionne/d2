@@ -66,7 +66,7 @@ endif()
 
 # Add the d2 logging library.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-file(GLOB d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_library(d2log SHARED ${d2log_sources})
 add_definitions(-DD2_DYN_LINK)
 d2_target_link_libraries(d2log dbg ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
