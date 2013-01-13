@@ -36,8 +36,6 @@ std::size_t>::type unique_id(T const& t) {
  */
 template <typename T>
 struct UniquelyIdentifiable {
-    UniquelyIdentifiable();
-
     BOOST_CONCEPT_USAGE(UniquelyIdentifiable) {
         using ::d2::unique_id;
         std::size_t id = unique_id(val);
@@ -46,6 +44,10 @@ struct UniquelyIdentifiable {
 
 private:
     T const& val;
+    // Silence MSVC warning C4610: ... user defined constructor required
+    UniquelyIdentifiable() /*= delete*/;
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    UniquelyIdentifiable& operator=(UniquelyIdentifiable const&) /*= delete*/;
 };
 
 namespace detail {
@@ -69,6 +71,10 @@ struct uniquely_identifiable_archetype : Base {
     friend std::size_t unique_id(uniquely_identifiable_archetype const&) {
         return 0;
     }
+
+private:
+    // Silence MSVC warning C4624: destructor could not be generated
+    ~uniquely_identifiable_archetype() /*= delete*/;
 };
 
 } // end namespace d2

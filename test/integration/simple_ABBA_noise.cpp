@@ -1,4 +1,9 @@
 
+#ifdef _WIN32
+// Disable MSVC warning C4996: Function call with parameters that may be unsafe.
+#   define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include "mock.hpp"
 
 #include <algorithm>

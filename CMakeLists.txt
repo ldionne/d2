@@ -78,13 +78,18 @@ endif()
 
 
 # Try finding Boost libraries.
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.53.0 OPTIONAL_COMPONENTS graph thread program_options filesystem system)
 if(NOT Boost_INCLUDE_DIR)
     message(FATAL_ERROR "Boost include directory was not found. Since Boost is used everywhere in d2, CMake generation will now stop.")
 else()
     include_directories(${Boost_INCLUDE_DIR})
     link_directories(${Boost_LIBRARY_DIRS})
-    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3)
+    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3
+                    -DBOOST_ALL_NO_LIB
+                    -DBOOST_ALL_DYN_LINK)
 endif()
 
 

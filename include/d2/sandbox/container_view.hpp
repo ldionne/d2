@@ -8,6 +8,7 @@
 #include <d2/sandbox/basic_container.hpp>
 
 #include <algorithm>
+#include <boost/config.hpp>
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/operators.hpp>
@@ -32,8 +33,14 @@ struct container_view
         >
     >
 {
+    // Strange, but MSVC chokes on the latter.
+#ifdef BOOST_MSVC
+    using typename basic_container_::iterator;
+    using typename basic_container_::const_iterator;
+#else
     using typename container_view::basic_container_::iterator;
     using typename container_view::basic_container_::const_iterator;
+#endif
 
     typedef typename boost::result_of<
                 Accessor(typename Container::value_type)
@@ -96,6 +103,9 @@ private:
     }
 
     Container& self_;
+
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    container_view& operator=(container_view const&) /*=delete*/;
 };
 
 struct identity_accessor {

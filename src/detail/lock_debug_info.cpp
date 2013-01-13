@@ -53,7 +53,7 @@ namespace {
 template <typename String>
 class DelimitedString {
     String& data;
-    DelimitedString& operator=(DelimitedString const&) /* = delete */;
+    DelimitedString& operator=(DelimitedString const&) /*= delete*/;
 
 public:
     explicit DelimitedString(String& s) : data(s) { }

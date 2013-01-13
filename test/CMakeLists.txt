@@ -1,39 +1,36 @@
-# Add unit tests with optional boost dependencies.
+# Add standalone unit tests with optional boost dependencies.
 # Unit tests will depend on the `unit' target.
 add_custom_target(unit)
-function(d2_add_unit_test name sources) # boost components...
-    if(TARGET d2log)
-        d2_add_executable(${name}_exe ${sources} ${ARGN})
-        d2_target_link_libraries(${name}_exe d2log)
-        add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
-        add_dependencies(unit ${name}_exe)
-    else()
-        message("Missing d2log library: ${name} will be unavailable.")
-    endif()
+function(d2_add_standalone_unit_test name sources) # boost components...
+    d2_add_executable(${name}_exe ${sources} ${ARGN})
+    add_test(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}_exe)
+    add_dependencies(unit ${name}_exe)
 endfunction()
-d2_add_unit_test(concepts unit/concepts.cpp)
-d2_add_unit_test(event_dispatcher unit/sandbox/event_dispatcher.cpp)
-d2_add_unit_test(event_traits unit/event_traits.cpp)
+d2_add_standalone_unit_test(concepts unit/concepts.cpp)
+d2_add_standalone_unit_test(event_dispatcher unit/sandbox/event_dispatcher.cpp)
+d2_add_standalone_unit_test(event_traits unit/event_traits.cpp)
 
 
-# Add unit tests requiring Google test.
-function(d2_add_gtest_unit_test name source) # boost components...
-    if(${GTEST_FOUND})
-        d2_add_unit_test(${name} ${source} ${ARGN})
-        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES})
-    else()
+# Add unit tests requiring Google test and d2log.
+function(d2_add_unit_test name source) # boost components...
+    if(NOT ${GTEST_FOUND})
         message("Missing Google Test library: ${name} will be unavailable.")
+    elseif(NOT TARGET d2log)
+        message("Missing d2log library: ${name} will be unavailable.")
+    else()
+        d2_add_standalone_unit_test(${name} ${source} ${ARGN})
+        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2log)
     endif()
 endfunction()
-d2_add_gtest_unit_test(lock_debug_info unit/detail/lock_debug_info.cpp)
-d2_add_gtest_unit_test(mixed_events unit/mixed_events.cpp)
-d2_add_gtest_unit_test(repository unit/repository.cpp filesystem system)
-d2_add_gtest_unit_test(segmentation_graph unit/segmentation_graph.cpp graph)
+d2_add_unit_test(lock_debug_info unit/detail/lock_debug_info.cpp)
+d2_add_unit_test(mixed_events unit/mixed_events.cpp)
+d2_add_unit_test(repository unit/repository.cpp filesystem system)
+d2_add_unit_test(segmentation_graph unit/segmentation_graph.cpp graph)
 
 
 # Add unit tests for events.
 function(d2_add_event_test name) # boost components...
-    d2_add_gtest_unit_test(${name} unit/events/${name}.cpp ${ARGN})
+    d2_add_unit_test(${name} unit/events/${name}.cpp ${ARGN})
 endfunction()
 d2_add_event_test(acquire_event)
 d2_add_event_test(join_event)

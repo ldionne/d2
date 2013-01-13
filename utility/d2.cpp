@@ -46,6 +46,9 @@ class LockGraphWriter {
                                                             VertexDescriptor;
     LockGraph const& graph_;
 
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    LockGraphWriter& operator=(LockGraphWriter const&) /*= delete*/;
+
 public:
     explicit LockGraphWriter(LockGraph const& lg) : graph_(lg) { }
 
@@ -100,6 +103,9 @@ template <typename Stats>
 class StatisticGatherer {
     Stats& stats_;
 
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    StatisticGatherer& operator=(StatisticGatherer const&) /*= delete*/;
+
 public:
     explicit StatisticGatherer(Stats& stats) : stats_(stats) {
         BOOST_ASSERT_MSG(!stats_.number_of_distinct_cycles,
@@ -122,6 +128,9 @@ StatisticGatherer<Stats> gather_stats(Stats& stats) {
 template <typename Ostream>
 class CyclePrinter {
     Ostream& os_;
+
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    CyclePrinter& operator=(CyclePrinter const&) /*= delete*/;
 
     void format_call_stack(d2::detail::LockDebugInfo const& info,
                            std::string const& indent = "") const {
