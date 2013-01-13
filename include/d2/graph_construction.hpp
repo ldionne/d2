@@ -16,12 +16,56 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_match.hpp>
 #include <boost/variant.hpp>
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
 
 
 namespace d2 {
+
+namespace detail {
+template <typename SegmentationGraph>
+void parse_and_build_seg_graph(std::istream& is, SegmentationGraph& graph) {
+    namespace qi = boost::spirit::qi;
+
+    typedef boost::variant<StartEvent, JoinEvent> Event;
+
+    is.unsetf(std::ios_base::skipws);
+    std::string source((std::istream_iterator<char>(is)),
+                        std::istream_iterator<char>());
+
+    qi::typed_stream<StartEvent> start;
+    qi::typed_stream<JoinEvent> join;
+
+    std::vector<Event> events;
+    qi::parse(source.begin(), source.end(), *(start | join), events);
+
+    build_segmentation_graph<>()(events, graph);
+}
+
+template <typename LockGraph>
+void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
+    namespace qi = boost::spirit::qi;
+
+    typedef boost::variant<AcquireEvent, ReleaseEvent, SegmentHopEvent> Event;
+
+    is.unsetf(std::ios_base::skipws);
+    std::string source((std::istream_iterator<char>(is)),
+                        std::istream_iterator<char>());
+
+    qi::typed_stream<AcquireEvent> acquire;
+    qi::typed_stream<ReleaseEvent> release;
+    qi::typed_stream<SegmentHopEvent> hop;
+
+    std::vector<Event> events;
+    qi::parse(source.begin(), source.end(),
+        *(acquire | release | hop)
+    , events);
+
+    build_lock_graph<>()(events, graph);
+}
+} // end namespace detail
 
 /**
  * Build the lock graph and the segmentation graph from the events inside the
@@ -32,42 +76,18 @@ template <typename Policy1, typename Policy2,
 void build_graphs(EventRepository<Policy1, Policy2>& repository,
                   LockGraph& lock_graph,
                   SegmentationGraph& seg_graph) {
-    namespace qi = boost::spirit::qi;
-    typedef boost::variant<StartEvent, JoinEvent> SegmentationEvent;
     typedef EventRepository<Policy1, Policy2> EventRepo;
 
-    qi::typed_stream<AcquireEvent> acquire;
-    qi::typed_stream<ReleaseEvent> release;
-    qi::typed_stream<StartEvent> start;
-    qi::typed_stream<JoinEvent> join;
-    qi::typed_stream<SegmentHopEvent> hop;
-
-    std::vector<SegmentationEvent> seg_events;
-    std::string seg_source(
-        (std::istream_iterator<char>(repository[EventRepo::process_wide])),
-        std::istream_iterator<char>());
-    qi::parse(seg_source.begin(), seg_source.end(), *(start | join), seg_events);
-
-    build_segmentation_graph<>()(seg_events, seg_graph);
+    detail::parse_and_build_seg_graph(
+        repository[EventRepo::process_wide], seg_graph);
 
     typedef typename EventRepo::template value_view<Thread>::type
                                                                 ThreadSources;
     ThreadSources thread_sources = repository.template values<Thread>();
-    typename ThreadSources::iterator first(thread_sources.begin()),
+    typename ThreadSources::iterator thread(thread_sources.begin()),
                                      last(thread_sources.end());
-    for (; first != last; ++first) {
-        typedef boost::variant<AcquireEvent, ReleaseEvent, SegmentHopEvent>
-                                                                ThreadEvent;
-        std::vector<ThreadEvent> thread_events;
-        std::string source((std::istream_iterator<char>(*first)),
-                           std::istream_iterator<char>());
-
-        qi::parse(source.begin(), source.end(),
-            *(acquire | release | hop)
-        , thread_events);
-
-        build_lock_graph<>()(thread_events, lock_graph);
-    }
+    for (; thread != last; ++thread)
+        detail::parse_and_build_lock_graph(*thread, lock_graph);
 }
 
 } // end namespace d2
