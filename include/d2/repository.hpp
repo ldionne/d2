@@ -419,7 +419,7 @@ public:
         namespace fs = boost::filesystem;
         if (fs::exists(root_) && !fs::is_directory(root_))
             D2_THROW(InvalidRepositoryPathException()
-                        << boost::errinfo_file_name(root_.c_str()));
+                        << boost::errinfo_file_name(root_.string().c_str()));
         fs::create_directories(root_);
 
         boost::fusion::for_each(bundle_map_, open_category(this));
@@ -449,7 +449,7 @@ private:
         fs::path path = path_for(category);
         if (fs::exists(path) && !fs::is_regular_file(path))
             D2_THROW(StreamApertureException()
-                        << boost::errinfo_file_name(path.c_str()));
+                        << boost::errinfo_file_name(path.string().c_str()));
 
         // Try opening an existing file with the same name.
         stream.open(path.c_str(), std::ios_base::in | std::ios_base::out);
@@ -461,7 +461,7 @@ private:
         if (!stream)
             D2_THROW(StreamApertureException()
                         << boost::errinfo_errno(errno)
-                        << boost::errinfo_file_name(path.c_str()));
+                        << boost::errinfo_file_name(path.string().c_str()));
     }
 
     /**
@@ -472,7 +472,7 @@ private:
      * exception is thrown.
      */
     template <typename Lock>
-    struct ScopedLock {
+    struct ScopedLock : boost::noncopyable {
         Lock& lock_;
 
         explicit ScopedLock(Lock& lock) : lock_(lock) {

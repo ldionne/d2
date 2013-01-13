@@ -44,7 +44,7 @@ private:
     }
 };
 
-struct D2_API LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
+struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     typedef std::vector<StackFrame> CallStack;
     CallStack call_stack;
 

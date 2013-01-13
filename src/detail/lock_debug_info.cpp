@@ -51,9 +51,11 @@ void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
 
 namespace {
 template <typename String>
-struct DelimitedString {
+class DelimitedString {
     String& data;
+    DelimitedString& operator=(DelimitedString const&) /* = delete */;
 
+public:
     explicit DelimitedString(String& s) : data(s) { }
 
     friend std::ostream& operator<<(std::ostream& os,
