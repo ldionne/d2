@@ -3,8 +3,6 @@
  */
 
 #define D2_SOURCE
-#include <boost/mpl/apply.hpp>
-#include <boost/mpl/vector.hpp>
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
@@ -104,8 +102,12 @@ D2_API extern void push_join(Thread const& parent, Thread const& child) {
 }
 } // end namespace detail
 
-D2_API extern bool set_log_repository(std::string const& path) {
+D2_API extern bool set_log_repository(char const* path) {
     return detail::dispatcher.set_repository(path);
+}
+
+D2_API extern bool set_log_repository(std::string const& path) {
+    return set_log_repository(path.c_str());
 }
 
 namespace {

@@ -40,6 +40,13 @@ namespace detail {
 D2_API extern bool set_log_repository(std::string const& path);
 
 /**
+ * Overload for users not using `std::string` or using an implementation of
+ * `std::string` that is not ABI comptatible with the implementation used
+ * when building the library.
+ */
+D2_API extern bool set_log_repository(char const* path);
+
+/**
  * Disable the logging of events by the deadlock detection framework.
  * @note This operation can be considered atomic.
  * @note This function is idempotent, i.e. calling it when the logging is
