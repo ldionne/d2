@@ -71,7 +71,8 @@ struct EventRepository
         event_repository_detail::EventKeys,
         event_repository_detail::EventMapping,
         EventCategoryLockingPolicy,
-        StreamLockingPolicy
+        StreamLockingPolicy,
+        use_fstream
     >
 {
     /**
@@ -86,6 +87,16 @@ struct EventRepository
      * Special tag for accessing the unique process-wide event stream.
      */
     static event_repository_detail::ProcessWideTag const process_wide;
+
+    /**
+     * Type of the stream used for process wide events.
+     */
+    typedef std::fstream process_wide_stream_type;
+
+    /**
+     * Type of the stream used for thread events.
+     */
+    typedef std::fstream thread_stream_type;
 };
 
 template <typename EventCategoryLockingPolicy, typename StreamLockingPolicy>
