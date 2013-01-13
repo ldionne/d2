@@ -1,21 +1,60 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
+cmake_policy(VERSION 2.8.8)
 
 project(d2)
 enable_testing()
 
-# Macro adding link dependencies to a target and copying these dependencies
+
+# Function adding link dependencies to a target and copying these dependencies
 # to the target's output directory when done. This is to make sure shared
 # libraries are always found.
-macro(d2_target_link_libraries target) # libaries...
-    target_link_libraries(${target} ${ARGN})
-    foreach(library ${ARGN})
-        if(EXISTS ${library})
-            add_custom_command(
-                TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-                ${library} $<TARGET_FILE_DIR:${target}>)
+function(d2_target_link_libraries target) # libaries...
+    if(TARGET ${target})
+        target_link_libraries(${target} ${ARGN})
+        foreach(library ${ARGN})
+            if(EXISTS ${library})
+                add_custom_command(
+                    TARGET ${target} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E
+                    copy ${library} $<TARGET_FILE_DIR:${target}>
+                )
+            endif()
+        endforeach()
+    endif()
+endfunction()
+
+
+# Function linking boost components to a target.
+function(d2_link_boost target) # boost components
+    foreach(component ${ARGN})
+        string(TOUPPER ${component} COMPONENT)
+        if(${Boost_${COMPONENT}_FOUND})
+            d2_target_link_libraries(${target} ${Boost_${COMPONENT}_LIBRARY})
         endif()
     endforeach()
-endmacro()
+endfunction()
+
+
+# Function adding an executable with optional boost dependencies. The
+# executable is added only if all the boost dependencies are satisfied. If so,
+# all the boost libraries upon which the executable depends are linked into it.
+function(d2_add_executable target sources) # boost components...
+    foreach(component ${ARGN})
+        string(TOUPPER ${component} COMPONENT)
+        if(NOT ${Boost_${COMPONENT}_FOUND})
+            set(missing "${component}, ${missing}")
+        else()
+            list(APPEND boost_dependencies ${Boost_${COMPONENT}_LIBRARY})
+        endif()
+    endforeach()
+
+    if(missing)
+        message("Missing dependencies ${missing}: ${target} will be unavailable.")
+    else()
+        add_executable(${target} ${sources})
+        d2_link_boost(${target} ${ARGN})
+    endif()
+endfunction()
 
 
 # Determine whether we are on clang.
@@ -31,7 +70,6 @@ if(${D2_WE_ARE_ON_CLANG})
     add_definitions(-stdlib=libc++)
     list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
 endif()
-
 if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
     add_definitions(-Wall -Wextra -pedantic -std=c++98)
 elseif(MSVC)
@@ -39,9 +77,20 @@ elseif(MSVC)
 endif()
 
 
+# Try finding Boost libraries.
+find_package(Boost 1.53.0 OPTIONAL_COMPONENTS graph thread program_options filesystem system)
+if(NOT Boost_INCLUDE_DIR)
+    message(FATAL_ERROR "Boost include directory was not found. Since Boost is used everywhere in d2, CMake generation will now stop.")
+else()
+    include_directories(${Boost_INCLUDE_DIR})
+    link_directories(${Boost_LIBRARY_DIRS})
+    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3)
+endif()
+
+
 # Add dbg (we should use find_package, but we don't have a FindFungo.cmake)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/dbg)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/dbg/include)
+add_subdirectory(ext/dbg)
+include_directories(ext/dbg/include)
 
 
 # Try finding Google test.
@@ -52,35 +101,15 @@ if(${GTEST_FOUND})
 endif()
 
 
-# Try finding Boost libraries.
-find_package(Boost 1.53.0 REQUIRED filesystem # required to build d2log
-                          OPTIONAL_COMPONENTS graph thread system program_options)
-if(NOT Boost_INCLUDE_DIR)
-    message(FATAL_ERROR "Boost include directory was not found. Stopping CMake generation.")
-else()
-    include_directories(${Boost_INCLUDE_DIR})
-    link_directories(${Boost_LIBRARY_DIRS})
-    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3)
-endif()
-
-
-# Add the d2 logging library.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-file(GLOB_RECURSE d2log_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-add_library(d2log SHARED ${d2log_sources})
-add_definitions(-DD2_DYN_LINK)
-d2_target_link_libraries(d2log dbg ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+include_directories(include)
+add_subdirectory(src)
+add_subdirectory(test)
 
 
 # Add the d2 command line utility.
-if(NOT ${Boost_GRAPH_FOUND})
-    message("Missing Boost.Graph library: d2 command line utility will be unavailable.")
-elseif(NOT ${Boost_PROGRAM_OPTIONS_FOUND})
-    message("Missing Boost.ProgramOptions library: d2 command line utility will be unavailable.")
+if(TARGET d2log)
+    d2_add_executable(d2 utility/d2.cpp graph program_options)
+    d2_target_link_libraries(d2 d2log)
 else()
-    add_executable(d2 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/d2.cpp)
-    d2_target_link_libraries(d2 d2log ${Boost_GRAPH_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+    message("Missing d2log library: d2 command line utility will be unavailable.")
 endif()
-
-
-add_subdirectory(test)

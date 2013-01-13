@@ -1,0 +1,10 @@
+# Add the d2log logging library.
+if(${Boost_FILESYSTEM_FOUND} AND ${Boost_SYSTEM_FOUND})
+    file(GLOB_RECURSE d2log_sources *.cpp)
+    add_library(d2log SHARED ${d2log_sources})
+    add_definitions(-DD2_DYN_LINK)
+    d2_target_link_libraries(d2log dbg)
+    d2_link_boost(d2log filesystem system)
+else()
+    message("Missing Boost.Filesystem and/or Boost.System libraries: the d2log logging library will be unavailable.")
+endif()
