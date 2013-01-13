@@ -20,6 +20,7 @@
 #include <boost/mpl/apply.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/transform.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/phoenix/core.hpp>
@@ -185,7 +186,7 @@ template <typename Categories,
           typename CategoryLockingPolicy = no_synchronization,
           typename StreamLockingPolicy = no_synchronization,
           typename StreamTypePolicy = use_fstream>
-class Repository {
+class Repository : boost::noncopyable {
 
     template <typename Category>
     struct Bundle {
