@@ -126,7 +126,9 @@ class CyclePrinter {
     void format_call_stack(d2::detail::LockDebugInfo const& info,
                            std::string const& indent = "") const {
         BOOST_FOREACH(d2::detail::StackFrame const& frame, info.call_stack) {
-            os_ << indent << frame << '\n';
+            os_ << indent
+            << frame.ip << "    " << frame.function << " in " << frame.module
+            << '\n';
         }
     }
 
