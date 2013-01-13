@@ -16,6 +16,8 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_match.hpp>
 #include <boost/variant.hpp>
+#include <iterator>
+#include <string>
 #include <vector>
 
 
