@@ -88,7 +88,7 @@ TEST_F(MixedEventTest, save_and_load_mixed_events) {
 
     std::vector<Event> loaded;
     std::string string(stream.str());
-    std::string::iterator first(string.begin()), last(string.end());
+    std::string::const_iterator first(string.begin()), last(string.end());
     bool success =
         qi::parse(first, last,
             *(acquire | release | start | join | hop)
