@@ -12,9 +12,12 @@
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/mpl/apply.hpp>
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
 #include <boost/unordered_set.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -106,6 +109,11 @@ TEST_F(RepositoryTest, get_all_keys) {
     ThreadRepository::key_view<Thread>::type
         repo_threads = repository.keys<Thread>();
 
+    // Try getting a const view.
+    ThreadRepository::const_key_view<Thread>::type const_repo_threads =
+            const_cast<ThreadRepository const&>(repository).keys<Thread>();
+    (void)const_repo_threads;
+
     // We must do an unordered comparison.
     boost::unordered_set<Thread>
                         expected(threads.begin(), threads.end()),
@@ -122,7 +130,15 @@ TEST_F(RepositoryTest, get_all_streams_only) {
 
     ThreadRepository::value_view<Thread>::type
         sources_sinks = repository.values<Thread>();
-    ASSERT_EQ(sources_sinks.size(), threads.size());
+
+    // Try getting a const view.
+    ThreadRepository::const_value_view<Thread>::type const_sources_sinks =
+            const_cast<ThreadRepository const&>(repository).values<Thread>();
+    (void)const_sources_sinks;
+
+    ASSERT_EQ(std::distance(boost::begin(sources_sinks),
+                            boost::end(sources_sinks)),
+              threads.size());
 }
 
 // Compile time test.

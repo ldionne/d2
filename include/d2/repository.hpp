@@ -34,9 +34,10 @@
 #include <boost/optional.hpp>
 #include <boost/phoenix/core.hpp>
 #include <boost/phoenix/operator.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/utility/result_of.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <cerrno>
 #include <cstdlib> // for NULL
@@ -320,54 +321,67 @@ class Repository : boost::noncopyable {
         >
     { };
 
-    template <typename Category, typename Accessor>
-    class make_view {
-        typedef typename bundle_of<Category>::type Bundle;
-        typedef typename bundle_of<Category>::const_type ConstBundle;
-
-    public:
-        typedef sandbox::container_view<
-                    typename Bundle::map_type, Accessor
-                > type;
-
-        typedef sandbox::container_view<
-                    typename ConstBundle::map_type, Accessor
-                > const_type;
-    };
-
 public:
     template <typename Category>
-    struct key_view
-        : make_view<Category, sandbox::first_accessor<> >
+    class key_view {
+        typedef typename bundle_of<Category>::type::map_type Map;
+
+    public:
+        typedef boost::select_first_range<Map> type;
+    };
+
+    template <typename Category>
+    struct const_key_view
+        : key_view<Category>
     { };
 
     template <typename Category>
-    struct value_view
-        : make_view<Category, sandbox::second_accessor<stream_accessor<> > >
-    { };
+    class const_value_view {
+        typedef typename bundle_of<Category>::type::map_type Map;
+        typedef boost::select_second_const_range<Map> Values;
+
+    public:
+        typedef boost::transformed_range<stream_accessor<>, Values> type;
+    };
+
+    template <typename Category>
+    class value_view {
+        typedef typename bundle_of<Category>::type::map_type Map;
+        typedef boost::select_second_mutable_range<Map> Values;
+
+    public:
+        typedef boost::transformed_range<stream_accessor<>, Values> type;
+    };
 
     template <typename Category>
     typename value_view<Category>::type values() {
-        typedef typename value_view<Category>::type View;
-        return View(bundle_of<Category>()(*this).map);
+        // Note: We have to create an lvalue to avoid errors deep in the boost
+        //       range code. It has to do with the fact that rvalues are taken
+        //       by const reference while lvalues are taken by reference.
+        typedef typename bundle_of<Category>::type::map_type Map;
+        typedef boost::select_second_mutable_range<Map> Values;
+        Values values = bundle_of<Category>()(*this).map
+                        | boost::adaptors::map_values;
+        return values | boost::adaptors::transformed(stream_accessor<>());
     }
 
     template <typename Category>
-    typename value_view<Category>::const_type values() const {
-        typedef typename value_view<Category>::const_type View;
-        return View(bundle_of<Category>()(*this).map);
+    typename const_value_view<Category>::type values() const {
+        typedef typename bundle_of<Category>::type::map_type Map;
+        typedef boost::select_second_const_range<Map> Values;
+        Values values = bundle_of<Category>()(*this).map
+                        | boost::adaptors::map_values;
+        return values | boost::adaptors::transformed(stream_accessor<>());
     }
 
     template <typename Category>
     typename key_view<Category>::type keys() {
-        typedef typename key_view<Category>::type View;
-        return View(bundle_of<Category>()(*this).map);
+        return bundle_of<Category>()(*this).map | boost::adaptors::map_keys;
     }
 
     template <typename Category>
-    typename key_view<Category>::const_type keys() const {
-        typedef typename key_view<Category>::const_type View;
-        return View(bundle_of<Category>()(*this).map);
+    typename const_key_view<Category>::type keys() const {
+        return bundle_of<Category>()(*this).map | boost::adaptors::map_keys;
     }
 
 private:
