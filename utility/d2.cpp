@@ -14,6 +14,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/properties.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <boost/phoenix.hpp>
 #include <boost/program_options.hpp>
@@ -176,6 +177,14 @@ CyclePrinter<Ostream> print_cycle(Ostream& os) {
     return CyclePrinter<Ostream>(os);
 }
 
+template <typename ErrorTag, typename Exception>
+std::string get_error_info(Exception const& e,
+                           std::string const& default_ = "\"unavailable\"") {
+    typename ErrorTag::value_type const* info =
+                                        boost::get_error_info<ErrorTag>(e);
+    return info ? boost::lexical_cast<std::string>(*info) : default_;
+}
+
 } // end anonymous namespace
 
 
@@ -220,6 +229,9 @@ int main(int argc, char const* argv[]) {
 
     po::variables_map args;
     po::command_line_parser parser(argc, argv);
+
+    try { // begin top-level try/catch all
+
     try {
         po::store(parser.options(all).positional(positionals).run(), args);
         po::notify(args);
@@ -286,18 +298,25 @@ int main(int argc, char const* argv[]) {
     try {
         d2::build_graphs(*repository, lg, sg);
     } catch (d2::EventTypeException const& e) {
-        using boost::get_error_info;
-        char const* const* actual_type = get_error_info<d2::ActualType>(e);
-        char const* const* expected_type = get_error_info<d2::ExpectedType>(e);
-
-        char const* unavailable = "\"unavailable\"";
-        if (!actual_type) actual_type = &unavailable;
-        if (!expected_type) expected_type = &unavailable;
+        std::string actual_type = get_error_info<d2::ActualType>(e);
+        std::string expected_type = get_error_info<d2::ExpectedType>(e);
 
         std::cerr <<
         "error while building the graphs:\n"
-        "    encountered an event of type " << *actual_type << '\n' <<
-        "    while expecting an event of type " << *expected_type << '\n';
+        "    encountered an event of type " << actual_type << '\n' <<
+        "    while expecting an event of type " << expected_type << '\n';
+        return EXIT_FAILURE;
+
+    } catch (d2::UnexpectedReleaseException const& e) {
+        std::string lock = get_error_info<d2::ReleasedLock>(e);
+        std::string thread = get_error_info<d2::ReleasingThread>(e);
+
+        std::cerr <<
+        "error while building the graphs:\n" <<
+        "    lock " << lock <<
+                    " was unexpectedly released by thread " << thread << '\n';
+         if (args.count("debug"))
+            std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -314,4 +333,13 @@ int main(int argc, char const* argv[]) {
         output << stats << std::endl;
     }
     return EXIT_SUCCESS;
+
+    // end top-level try/catch all
+    } catch (std::exception const& e) {
+        std::cerr << "an unknown problem has happened, please contact the devs\n";
+        if (args.count("debug"))
+            std::cerr << boost::diagnostic_information(e) << '\n';
+        return EXIT_FAILURE;
+
+    }
 }
