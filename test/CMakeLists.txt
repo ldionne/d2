@@ -3,7 +3,7 @@
 add_custom_target(unit)
 function(d2_add_standalone_unit_test name sources) # boost components...
     d2_add_executable(${name}_exe ${sources} ${ARGN})
-    add_test(${name} ${name}_exe)
+    add_test(NAME ${name} COMMAND ${name}_exe)
     add_dependencies(unit ${name}_exe)
 endfunction()
 d2_add_standalone_unit_test(concepts unit/concepts.cpp)
@@ -46,6 +46,8 @@ d2_add_event_test(start_event)
 if(TARGET d2log)
     add_library(d2mock STATIC integration/mock.cpp)
     d2_target_link_libraries(d2mock d2log)
+    # Note: If the dependencies of d2mock change, don't forget to update
+    #       the dependencies for the targets using it.
     d2_link_boost(d2mock thread system filesystem)
     if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
         set_target_properties(d2mock PROPERTIES COMPILE_FLAGS -std=c++11)
@@ -63,9 +65,11 @@ function(d2_add_integration_test name)
     elseif(NOT TARGET d2mock)
         message("Missing the d2mock library: ${name} will be unavailable.")
     else()
-        d2_add_executable(${name}_exe integration/${name}.cpp)
+        # Note: Since d2mock is a static library, we must propagate its
+        #       dependencies to the targets using it.
+        d2_add_executable(${name}_exe integration/${name}.cpp thread system filesystem)
         d2_target_link_libraries(${name}_exe d2log d2mock)
-        add_test(${name} ${name}_exe)
+        add_test(NAME ${name} COMMAND ${name}_exe)
         add_dependencies(integration ${name}_exe)
         if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
             set_target_properties(${name}_exe PROPERTIES COMPILE_FLAGS -std=c++11)
