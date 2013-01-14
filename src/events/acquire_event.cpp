@@ -3,6 +3,7 @@
  */
 
 #define D2_SOURCE
+#include <d2/detail/config.hpp>
 #include <d2/events/acquire_event.hpp>
 
 #include <boost/config.hpp>
@@ -22,12 +23,13 @@
 
 namespace d2 {
 
-extern std::ostream& operator<<(std::ostream& os, AcquireEvent const& self) {
+D2_API extern std::ostream& operator<<(std::ostream& os,
+                                       AcquireEvent const& self) {
     os << self.thread << '?' << self.lock << '?' << self.info;
     return os;
 }
 
-extern std::istream& operator>>(std::istream& is, AcquireEvent& self) {
+D2_API extern std::istream& operator>>(std::istream& is, AcquireEvent& self) {
     using namespace boost::spirit::qi;
 
     is >> match(ulong_ >> '?' >> ulong_ >> '?', self.thread, self.lock)

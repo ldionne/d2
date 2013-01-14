@@ -3,6 +3,7 @@
  */
 
 #define D2_SOURCE
+#include <d2/detail/config.hpp>
 #include <d2/events/release_event.hpp>
 
 #include <boost/config.hpp>
@@ -22,12 +23,13 @@
 
 namespace d2 {
 
-extern std::ostream& operator<<(std::ostream& os, ReleaseEvent const& self) {
+D2_API extern std::ostream& operator<<(std::ostream& os,
+                                       ReleaseEvent const& self) {
     os << self.thread << ';' << self.lock << ';';
     return os;
 }
 
-extern std::istream& operator>>(std::istream& is, ReleaseEvent& self) {
+D2_API extern std::istream& operator>>(std::istream& is, ReleaseEvent& self) {
     using namespace boost::spirit::qi;
 
     is >> match(ulong_ >> ';' >> ulong_ >> ';', self.thread, self.lock);

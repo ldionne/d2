@@ -3,6 +3,7 @@
  */
 
 #define D2_SOURCE
+#include <d2/detail/config.hpp>
 #include <d2/events/start_event.hpp>
 
 #include <boost/config.hpp>
@@ -22,13 +23,14 @@
 
 namespace d2 {
 
-extern std::ostream& operator<<(std::ostream& os, StartEvent const& self) {
+D2_API extern std::ostream& operator<<(std::ostream& os,
+                                       StartEvent const& self) {
     os << self.parent << '~' << self.new_parent << '~' << self.child
                                                                 << '~';
     return os;
 }
 
-extern std::istream& operator>>(std::istream& is, StartEvent& self) {
+D2_API extern std::istream& operator>>(std::istream& is, StartEvent& self) {
     using namespace boost::spirit::qi;
 
     unsigned long parent, new_parent, child;

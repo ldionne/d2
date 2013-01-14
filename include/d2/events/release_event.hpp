@@ -5,6 +5,7 @@
 #ifndef D2_EVENTS_RELEASE_EVENT_HPP
 #define D2_EVENTS_RELEASE_EVENT_HPP
 
+#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
@@ -46,8 +47,8 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
         return self.thread;
     }
 
-    friend std::ostream& operator<<(std::ostream&, ReleaseEvent const&);
-    friend std::istream& operator>>(std::istream&, ReleaseEvent&);
+    D2_API friend std::ostream& operator<<(std::ostream&, ReleaseEvent const&);
+    D2_API friend std::istream& operator>>(std::istream&, ReleaseEvent&);
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;

@@ -4,8 +4,8 @@
 
 #include <d2/detail/config.hpp>
 #ifdef D2_WIN32
-/* Disable MSVC C4996: Function call with parameters that may be unsafe. */
-#   define _SCL_SECURE_NO_WARNINGS
+/* Disable MSVC C4996: This function or variable may be unsafe. (tmpnam) */
+#   define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include <d2/logging.h>
