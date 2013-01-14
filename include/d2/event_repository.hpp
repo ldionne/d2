@@ -56,6 +56,27 @@ struct EventMapping {
         : boost::mpl::apply<unary_map, ProcessWideTag, Stream>
     { };
 };
+
+/**
+ * Category naming policy. Thread level events go in a subdirectory called
+ * "thread_events" and process wide events go in a subdirectory called
+ * "process_wide".
+ */
+struct NamingPolicy {
+    template <typename Category>
+    static char const* category_path();
+};
+
+template <>
+char const* NamingPolicy::category_path<Thread>() {
+    return "thread_events";
+}
+
+template <>
+char const* NamingPolicy::category_path<ProcessWideTag>() {
+    return "process_wide";
+}
+
 } // end namespace event_repository_detail
 
 /**
@@ -72,7 +93,8 @@ struct EventRepository
         event_repository_detail::EventMapping,
         EventCategoryLockingPolicy,
         StreamLockingPolicy,
-        use_fstream
+        use_fstream,
+        event_repository_detail::NamingPolicy
     >
 {
     /**

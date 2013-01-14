@@ -162,6 +162,17 @@ struct use_fstream {
 };
 
 /**
+ * Default category naming policy using the `typeid` of a type to derive the
+ * name of its category.
+ */
+struct use_typeid {
+    template <typename Category>
+    static char const* category_path() {
+        return typeid(Category).name();
+    }
+};
+
+/**
  * Class representing a repository into which data can be stored.
  *
  * The repository functions at 2 different levels. First, there is a
@@ -193,12 +204,17 @@ struct use_fstream {
  *  - StreamTypePolicy
  *      Given a `Category` type, it must return a type that will be used as
  *      a stream for the `Category`.
+ *  - CategoryNamingPolicy
+ *      Given a `Category` type, it must return a string that will be used
+ *      as the name of a subdirectory in which all the objects in that
+ *      `Category` will be stored.
  */
 template <typename Categories,
           typename MappingPolicy = boost_unordered_map,
           typename CategoryLockingPolicy = no_synchronization,
           typename StreamLockingPolicy = no_synchronization,
-          typename StreamTypePolicy = use_fstream>
+          typename StreamTypePolicy = use_fstream,
+          typename CategoryNamingPolicy = use_typeid>
 class Repository : boost::noncopyable {
 
     template <typename Category>
@@ -360,7 +376,8 @@ private:
     template <typename Category>
     boost::filesystem::path category_path_for() const {
         boost::filesystem::path path(root_);
-        return path /= typeid(Category).name();
+        return path /= CategoryNamingPolicy::
+                        template category_path<Category>();
     }
 
     struct open_category {
