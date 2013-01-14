@@ -13,12 +13,13 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
+#include <cstdlib> // included for integration tests needing it
 #include <string>
 
 
 namespace mock {
 
-extern void begin_integration_test(int argc, char const* argv[],
+extern bool begin_integration_test(int argc, char const* argv[],
                                    std::string const& source_file);
 extern void end_integration_test();
 

@@ -30,7 +30,8 @@ int main(int argc, char const* argv[]) {
 
     mock::thread t0(g), t1(h);
 
-    mock::begin_integration_test(argc, argv, __FILE__);
+    if (!mock::begin_integration_test(argc, argv, __FILE__))
+        return EXIT_FAILURE;
 
     t0.start();
     t1.start();
@@ -38,4 +39,5 @@ int main(int argc, char const* argv[]) {
     t0.join();
 
     mock::end_integration_test();
+    return EXIT_SUCCESS;
 }

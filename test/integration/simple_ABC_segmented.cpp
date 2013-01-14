@@ -3,7 +3,8 @@
 
 
 int main(int argc, char const* argv[]) {
-    mock::begin_integration_test(argc, argv, __FILE__);
+    if (!mock::begin_integration_test(argc, argv, __FILE__))
+        return EXIT_FAILURE;
 
     mock::mutex A, B, C;
 
@@ -38,4 +39,5 @@ int main(int argc, char const* argv[]) {
     t2.join();
 
     mock::end_integration_test();
+    return EXIT_SUCCESS;
 }

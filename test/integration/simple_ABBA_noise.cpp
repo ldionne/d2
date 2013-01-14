@@ -49,10 +49,12 @@ int main(int argc, char const* argv[]) {
     boost::range::random_shuffle(threads);
 
 
-    mock::begin_integration_test(argc, argv, __FILE__);
+    if (!mock::begin_integration_test(argc, argv, __FILE__))
+        return EXIT_FAILURE;
 
     boost::for_each(threads, [](mock::thread& t) { t.start(); });
     boost::for_each(threads, [](mock::thread& t) { t.join(); });
 
     mock::end_integration_test();
+    return EXIT_SUCCESS;
 }

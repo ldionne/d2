@@ -37,13 +37,26 @@ std::string create_tmp_directory(std::string const& path_to_test_source) {
 }
 } // end anonymous namespace
 
-extern void begin_integration_test(int argc, char const* argv[],
-                                          std::string const& test_source) {
+/**
+ * Setup a small environment for the integration test to take place.
+ *
+ * @return Whether setting the environment succeeded. If the function reports
+ *         a failure, the test should not take place.
+ */
+extern bool begin_integration_test(int argc, char const* argv[],
+                                   std::string const& test_source) {
     std::string log_repo(argc > 1 ? argv[1] :
                                     create_tmp_directory(test_source));
-    std::cout << "logging repository: \"" << log_repo << '"' << std::endl;
-    d2::set_log_repository(log_repo);
+    // If setting the repo fails, we just don't enable logging and we won't
+    // have any results for the test.
+    if (d2::set_log_repository(log_repo)) {
+        std::cerr << "setting the repository at \""
+                  << log_repo << "\" failed\n";
+        return false;
+    }
+    std::cout << "repository is at \"" << log_repo << "\"\n";
     d2::enable_event_logging();
+    return true;
 }
 
 extern void end_integration_test() {
