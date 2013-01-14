@@ -15,12 +15,16 @@
 #ifndef D2_DETAIL_CONFIG_HPP
 #define D2_DETAIL_CONFIG_HPP
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#   define D2_WIN32
+#endif
+
 #if defined(D2_HAS_BOOST)
 #   include <boost/config.hpp>
 #   define D2_SYMBOL_IMPORT BOOST_SYMBOL_IMPORT
 #   define D2_SYMBOL_EXPORT BOOST_SYMBOL_EXPORT
 #else
-#   if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#   if defined(D2_WIN32)
 #       define D2_SYMBOL_IMPORT __declspec(dllimport)
 #       define D2_SYMBOL_EXPORT __declspec(dllexport)
 #   else

@@ -2,6 +2,12 @@
  * Integration test to try using the library from C.
  */
 
+#include <d2/detail/config.hpp>
+#ifdef D2_WIN32
+/* Disable MSVC C4996: Function call with parameters that may be unsafe. */
+#   define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include <d2/logging.h>
 
 #include <assert.h>
@@ -13,6 +19,7 @@
 int main(int argc, char const* argv[]) {
     size_t A, B, t0, t1;
     char repository[L_tmpnam];
+    (void)argc; (void)argv;
     A = 4;
     B = 8;
     t0 = 0;
