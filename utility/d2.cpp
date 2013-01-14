@@ -19,6 +19,7 @@
 #include <boost/program_options.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
@@ -200,6 +201,7 @@ int main(int argc, char const* argv[]) {
     po::options_description hidden;
     hidden.add_options()
         ("repo-path", po::value<std::string>(), "path of the repository to examine")
+        ("debug", "enable special debugging output")
     ;
     po::positional_options_description positionals;
     positionals.add("repo-path", 1);
@@ -221,7 +223,7 @@ int main(int argc, char const* argv[]) {
     try {
         po::store(parser.options(all).positional(positionals).run(), args);
         po::notify(args);
-    } catch(po::error const& e) {
+    } catch (po::error const& e) {
         std::cerr << e.what() << std::endl
                   << allowed << std::endl;
         return EXIT_FAILURE;
@@ -252,7 +254,17 @@ int main(int argc, char const* argv[]) {
                   << allowed << std::endl;
         return EXIT_FAILURE;
     }
-    d2::EventRepository<> repository(args["repo-path"].as<std::string>());
+    std::string repo_path = args["repo-path"].as<std::string>();
+    boost::scoped_ptr<d2::EventRepository<> > repository;
+    try {
+        repository.reset(new d2::EventRepository<>(repo_path));
+    } catch (d2::RepositoryException const& e) {
+        std::cerr << "unable to open the repository at \""
+                  << repo_path << "\"\n";
+        if (args.count("debug"))
+            std::cerr << boost::diagnostic_information(e) << '\n';
+        return EXIT_FAILURE;
+    }
 
     // Open the output stream to whatever passed on the command line or to
     // stdout if unspecified.
@@ -261,7 +273,7 @@ int main(int argc, char const* argv[]) {
         std::string output_file = args["output-file"].as<std::string>();
         output_ofs.open(output_file.c_str());
         if (!output_ofs) {
-            std::cerr << "Unable to open output file \"" << output_file <<'"';
+            std::cerr << "unable to open output file \"" << output_file << '"';
             return EXIT_FAILURE;
         }
     }
@@ -272,7 +284,7 @@ int main(int argc, char const* argv[]) {
     d2::SegmentationGraph sg;
     d2::LockGraph lg;
     try {
-        d2::build_graphs(repository, lg, sg);
+        d2::build_graphs(*repository, lg, sg);
     } catch (d2::EventTypeException const& e) {
         using boost::get_error_info;
         char const* const* actual_type = get_error_info<d2::ActualType>(e);
@@ -282,11 +294,10 @@ int main(int argc, char const* argv[]) {
         if (!actual_type) actual_type = &unavailable;
         if (!expected_type) expected_type = &unavailable;
 
-        std::cerr << "Error while building the graphs:\n"
-                     "    encountered an event of type " << *actual_type
-                  << " while expecting an event of type " << *expected_type
-                  << "." << std::endl;
-
+        std::cerr <<
+        "error while building the graphs:\n"
+        "    encountered an event of type " << *actual_type << '\n' <<
+        "    while expecting an event of type " << *expected_type << '\n';
         return EXIT_FAILURE;
     }
 
