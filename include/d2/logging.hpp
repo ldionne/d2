@@ -5,6 +5,7 @@
 #ifndef D2_LOGGING_HPP
 #define D2_LOGGING_HPP
 
+#include <d2/detail/api_detail.hpp>
 #include <d2/logging.h>
 
 #include <cstddef>
@@ -73,11 +74,8 @@ inline bool is_disabled() {
  */
 template <typename Thread, typename Lock>
 void notify_acquire(Thread const& thread, Lock const& lock) {
-    notify_acquire(unique_id(thread), unique_id(lock));
-}
-
-inline void notify_acquire(std::size_t thread, std::size_t lock) {
-    d2_notify_acquire(thread, lock);
+    d2_notify_acquire(api_detail::unique_id_impl(thread),
+                      api_detail::unique_id_impl(lock));
 }
 
 /**
@@ -89,11 +87,8 @@ inline void notify_acquire(std::size_t thread, std::size_t lock) {
  */
 template <typename Thread, typename Lock>
 void notify_release(Thread const& thread, Lock const& lock) {
-    notify_release(unique_id(thread), unique_id(lock));
-}
-
-inline void notify_release(std::size_t thread, std::size_t lock) {
-    d2_notify_release(thread, lock);
+    d2_notify_release(api_detail::unique_id_impl(thread),
+                      api_detail::unique_id_impl(lock));
 }
 
 /**
@@ -105,11 +100,8 @@ inline void notify_release(std::size_t thread, std::size_t lock) {
  */
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
-    notify_start(unique_id(parent), unique_id(child));
-}
-
-inline void notify_start(std::size_t parent, std::size_t child) {
-    d2_notify_start(parent, child);
+    d2_notify_start(api_detail::unique_id_impl(parent),
+                    api_detail::unique_id_impl(child));
 }
 
 /**
@@ -121,11 +113,8 @@ inline void notify_start(std::size_t parent, std::size_t child) {
  */
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
-    notify_join(unique_id(parent), unique_id(child));
-}
-
-inline void notify_join(std::size_t parent, std::size_t child) {
-    d2_notify_join(parent, child);
+    d2_notify_join(api_detail::unique_id_impl(parent),
+                   api_detail::unique_id_impl(child));
 }
 
 } // end namespace d2
