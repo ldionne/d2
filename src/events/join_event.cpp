@@ -3,7 +3,6 @@
  */
 
 #define D2_SOURCE
-#include <d2/detail/config.hpp>
 #include <d2/events/join_event.hpp>
 
 #include <boost/spirit/include/qi.hpp>
@@ -13,12 +12,12 @@
 
 namespace d2 {
 
-D2_API std::ostream& operator<<(std::ostream& os, JoinEvent const& self) {
+extern std::ostream& operator<<(std::ostream& os, JoinEvent const& self) {
     os << self.parent << '^' << self.new_parent << '^' << self.child << '^';
     return os;
 }
 
-D2_API std::istream& operator>>(std::istream& is, JoinEvent& self) {
+extern std::istream& operator>>(std::istream& is, JoinEvent& self) {
     using namespace boost::spirit::qi;
 
     unsigned long parent, new_parent, child;

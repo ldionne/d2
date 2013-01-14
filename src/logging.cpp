@@ -1,5 +1,5 @@
 /**
- * This file implements the event logging API in d2/logging.hpp.
+ * This file implements the interface to interact with the d2log library.
  */
 
 #define D2_SOURCE
@@ -16,42 +16,72 @@
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
-#include <exception>
-#include <string>
+#include <stddef.h>
 
 
 namespace d2 {
-
 namespace detail {
-static FilesystemDispatcher dispatcher;
+    static FilesystemDispatcher dispatcher;
 
-D2_API extern void push_acquire(SyncObject const& s, Thread const& t,
-                                                     unsigned int ignore) {
-    if (is_enabled()) {
-        AcquireEvent event(s, t);
-        event.info.init_call_stack(ignore + 1); // ignore current frame
-        dispatcher.dispatch(event);
-    }
-}
+    static basic_mutex segment_lock;
+    // default initialized to the initial segment value
+    static Segment current_segment;
+    static boost::unordered_map<Thread, Segment> segment_of;
 
-D2_API extern void push_release(SyncObject const& s, Thread const& t) {
-    if (is_enabled())
-        dispatcher.dispatch(ReleaseEvent(s, t));
-}
-
-static basic_mutex segment_lock;
-static Segment current_segment; // initialized to the initial segment value
-static boost::unordered_map<Thread, Segment> segment_of;
-
-namespace {
     template <typename Value, typename Container>
     bool contains(Value const& v, Container const& c) {
         return c.find(v) != c.end();
     }
+
+    static basic_atomic<bool> event_logging_enabled(false);
+} // end namespace detail
+} // end namespace d2
+
+D2_API extern void d2_disable_event_logging(void) {
+    d2::detail::event_logging_enabled = false;
 }
 
-D2_API extern void push_start(Thread const& parent, Thread const& child) {
-    if (is_enabled()) {
+D2_API extern void d2_enable_event_logging(void) {
+    d2::detail::event_logging_enabled = true;
+}
+
+D2_API extern int d2_is_enabled(void) {
+    return d2::detail::event_logging_enabled ? 1 : 0;
+}
+
+D2_API extern int d2_is_disabled(void) {
+    return d2_is_enabled() ? 0 : 1;
+}
+
+D2_API extern int d2_set_log_repository(char const* path) {
+    // Note: 0 for success and anything else but 0 for failure.
+    return d2::detail::dispatcher.set_repository_noexcept(path) ? 0 : 1;
+}
+
+D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled()) {
+        AcquireEvent event((SyncObject(lock_id)), Thread(thread_id));
+                        // ignore current frame
+        event.info.init_call_stack(1);
+        dispatcher.dispatch(event);
+    }
+}
+
+D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled())
+        dispatcher.dispatch(ReleaseEvent((SyncObject(lock_id)),
+                                          Thread(thread_id)));
+}
+
+D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled()) {
+        Thread parent(parent_id), child(child_id);
         segment_lock.lock();
         BOOST_ASSERT_MSG(parent != child, "thread starting itself");
         BOOST_ASSERT_MSG(segment_of.empty() || contains(parent, segment_of),
@@ -78,8 +108,11 @@ D2_API extern void push_start(Thread const& parent, Thread const& child) {
     }
 }
 
-D2_API extern void push_join(Thread const& parent, Thread const& child) {
-    if (is_enabled()) {
+D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled()) {
+        Thread parent(parent_id), child(child_id);
         segment_lock.lock();
         BOOST_ASSERT_MSG(parent != child, "thread joining itself");
         BOOST_ASSERT_MSG(contains(parent, segment_of),
@@ -100,29 +133,3 @@ D2_API extern void push_join(Thread const& parent, Thread const& child) {
         // in the child thread, but that's not strictly necessary right now.
     }
 }
-} // end namespace detail
-
-D2_API extern bool set_log_repository(char const* path) {
-    return detail::dispatcher.set_repository(path);
-}
-
-D2_API extern bool set_log_repository(std::string const& path) {
-    return set_log_repository(path.c_str());
-}
-
-namespace {
-    static detail::basic_atomic<bool> event_logging_enabled(false);
-}
-D2_API extern void disable_event_logging() {
-    event_logging_enabled = false;
-}
-
-D2_API extern void enable_event_logging() {
-    event_logging_enabled = true;
-}
-
-D2_API extern bool is_enabled() {
-    return event_logging_enabled;
-}
-
-} // end namespace d2

@@ -5,7 +5,6 @@
 #ifndef D2_EVENTS_JOIN_EVENT_HPP
 #define D2_EVENTS_JOIN_EVENT_HPP
 
-#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
 
@@ -46,8 +45,8 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
                a.child == b.child;
     }
 
-    D2_API friend std::istream& operator>>(std::istream&, JoinEvent&);
-    D2_API friend std::ostream& operator<<(std::ostream&, JoinEvent const&);
+    friend std::istream& operator>>(std::istream&, JoinEvent&);
+    friend std::ostream& operator<<(std::ostream&, JoinEvent const&);
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;

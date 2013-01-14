@@ -1,114 +1,131 @@
 /**
- * This file defines the interface to log events which constitute the trace
- * of an analyzed program.
+ * Wrapper around the C API to make it more C++ish.
  */
 
 #ifndef D2_LOGGING_HPP
 #define D2_LOGGING_HPP
 
-#include <d2/detail/config.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/logging.h>
 
+#include <cstddef>
 #include <string>
 
 
 namespace d2 {
-namespace detail {
-    // These methods are not part of the public API.
-    D2_API extern void push_acquire(SyncObject const&, Thread const&,
-                                                       unsigned int);
-    D2_API extern void push_release(SyncObject const&, Thread const&);
-    D2_API extern void push_start(Thread const&, Thread const&);
-    D2_API extern void push_join(Thread const&, Thread const&);
-} // end namespace detail
 
 /**
- * Set the path of the repository into which events are written when logging
- * is enabled. A path must be set before logging may start, i.e. before
- * `enable_event_logging` is called for the first time.
+ * Forwards to `d2_set_log_repository`.
  *
- * The `path` must either
- *  - Point to nothing (no file, no directory, etc..).
- *  - Point to an empty directory.
- * Anything else will make the call fail.
+ * @see `d2_set_log_repository`
+ * @internal The C-style return type is conserved because we might want to use
+ *           error codes in the future.
+ */
+inline int set_log_repository(char const* path) {
+    return d2_set_log_repository(path);
+}
+
+inline int set_log_repository(std::string const& path) {
+    return set_log_repository(path.c_str());
+}
+
+/**
+ * Forwards to `d2_disable_event_logging`.
  *
- * @return Whether the operation succeeded. Causes of failure include the
- *         non respect of the preconditions amongst others.
- * @note This operation can be considered atomic.
+ * @see `d2_disable_event_logging`
  */
-D2_API extern bool set_log_repository(std::string const& path);
+inline void disable_event_logging() {
+    d2_disable_event_logging();
+}
 
 /**
- * Overload for users not using `std::string` or using an implementation of
- * `std::string` that is not ABI comptatible with the implementation used
- * when building the library.
+ * Forwards to `d2_enable_event_logging`.
+ *
+ * @see `d2_enable_event_logging`
  */
-D2_API extern bool set_log_repository(char const* path);
+inline void enable_event_logging() {
+    d2_enable_event_logging();
+}
 
 /**
- * Disable the logging of events by the deadlock detection framework.
- * @note This operation can be considered atomic.
- * @note This function is idempotent, i.e. calling it when the logging is
- *       already disabled is useless yet harmless.
+ * Forwards to `d2_is_enabled`.
+ *
+ * @see `d2_is_enabled`
  */
-D2_API extern void disable_event_logging();
+inline bool is_enabled() {
+    return d2_is_enabled() == 1;
+}
 
 /**
- * Enable the logging of events by the deadlock detection framework.
- * @note This operation can be considered atomic.
- * @note This function is idempotent, i.e. calling it when the logging is
- *       already enabled is useless yet harmless.
- */
-D2_API extern void enable_event_logging();
-
-/**
- * Return whether event logging is currently enabled.
- */
-D2_API extern bool is_enabled();
-
-/**
- * Return whether event logging is currently disabled.
+ * Forwards to d2_is_disabled`.
+ *
+ * @see `d2_is_disabled`
  */
 inline bool is_disabled() {
-    return !is_enabled();
+    return d2_is_disabled() == 1;
 }
 
 /**
- * Notify the deadlock detection system of the acquisition of synchronization
- * object `s` by thread `t`.
+ * Forwards to `d2_notify_acquire`. Additionally, both objects may define a
+ * `unique_id` function that can be found via ADL and that must return an
+ * unsigned integral type representing the unique identifier of the object.
+ *
+ * @see `d2_notify_acquire`
  */
-template <typename SyncObject, typename Thread>
-void notify_acquire(SyncObject const& s, Thread const& t) {
-                                                // ignore this frame
-    detail::push_acquire(d2::SyncObject(s), d2::Thread(t), 1);
+template <typename Thread, typename Lock>
+void notify_acquire(Thread const& thread, Lock const& lock) {
+    notify_acquire(unique_id(thread), unique_id(lock));
+}
+
+inline void notify_acquire(std::size_t thread, std::size_t lock) {
+    d2_notify_acquire(thread, lock);
 }
 
 /**
- * Notify the deadlock detection system of the release of synchronization
- * object `s` by thread `t`.
+ * Forwards to `d2_notify_release`. Arguments may support the same as with
+ * `notify_acquire`.
+ *
+ * @see `notify_acquire`
+ * @see `d2_notify_release`
  */
-template <typename SyncObject, typename Thread>
-void notify_release(SyncObject const& s, Thread const& t) {
-    detail::push_release(d2::SyncObject(s), d2::Thread(t));
+template <typename Thread, typename Lock>
+void notify_release(Thread const& thread, Lock const& lock) {
+    notify_release(unique_id(thread), unique_id(lock));
+}
+
+inline void notify_release(std::size_t thread, std::size_t lock) {
+    d2_notify_release(thread, lock);
 }
 
 /**
- * Notify the deadlock detection system of the start of a new thread `child`
- * initiated by `parent`.
+ * Forwards to `d2_notify_start`. Arguments may support the same as with
+ * `notify_acquire`.
+ *
+ * @see `notify_acquire`
+ * @see `d2_notify_start`
  */
 template <typename Thread>
 void notify_start(Thread const& parent, Thread const& child) {
-    detail::push_start(d2::Thread(parent), d2::Thread(child));
+    notify_start(unique_id(parent), unique_id(child));
+}
+
+inline void notify_start(std::size_t parent, std::size_t child) {
+    d2_notify_start(parent, child);
 }
 
 /**
- * Notify the deadlock detection system of the join of thread `child` by
- * `parent`.
+ * Forwards to `d2_notify_join`. Arguments may support the same as with
+ * `notify_acquire`.
+ *
+ * @see `notify_acquire`
+ * @see `d2_notify_join`
  */
 template <typename Thread>
 void notify_join(Thread const& parent, Thread const& child) {
-    detail::push_join(d2::Thread(parent), d2::Thread(child));
+    notify_join(unique_id(parent), unique_id(child));
+}
+
+inline void notify_join(std::size_t parent, std::size_t child) {
+    d2_notify_join(parent, child);
 }
 
 } // end namespace d2

@@ -5,7 +5,6 @@
 #ifndef D2_EVENTS_ACQUIRE_EVENT_HPP
 #define D2_EVENTS_ACQUIRE_EVENT_HPP
 
-#include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/sync_object.hpp>
@@ -49,8 +48,8 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
         return self.thread;
     }
 
-    D2_API friend std::istream& operator>>(std::istream&, AcquireEvent&);
-    D2_API friend std::ostream& operator<<(std::ostream&, AcquireEvent const&);
+    friend std::istream& operator>>(std::istream&, AcquireEvent&);
+    friend std::ostream& operator<<(std::ostream&, AcquireEvent const&);
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;

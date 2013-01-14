@@ -5,7 +5,6 @@
 #ifndef D2_EVENTS_START_EVENT_HPP
 #define D2_EVENTS_START_EVENT_HPP
 
-#include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
 
@@ -46,8 +45,8 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
                a.child == b.child;
     }
 
-    D2_API friend std::istream& operator>>(std::istream&, StartEvent&);
-    D2_API friend std::ostream& operator<<(std::ostream&, StartEvent const&);
+    friend std::istream& operator>>(std::istream&, StartEvent&);
+    friend std::ostream& operator<<(std::ostream&, StartEvent const&);
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;

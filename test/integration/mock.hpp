@@ -7,7 +7,6 @@
 #define TEST_MOCK_HPP
 
 #include <d2/detail/basic_atomic.hpp>
-#include <d2/detail/config.hpp>
 
 #include <boost/function.hpp>
 #include <boost/move/move.hpp>
@@ -19,9 +18,9 @@
 
 namespace mock {
 
-D2_API extern void begin_integration_test(int argc, char const* argv[],
-                                          std::string const& source_file);
-D2_API extern void end_integration_test();
+extern void begin_integration_test(int argc, char const* argv[],
+                                   std::string const& source_file);
+extern void end_integration_test();
 
 class thread {
     boost::scoped_ptr<boost::thread> actual_;

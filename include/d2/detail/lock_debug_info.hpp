@@ -5,8 +5,6 @@
 #ifndef D2_DETAIL_LOCK_DEBUG_INFO_HPP
 #define D2_DETAIL_LOCK_DEBUG_INFO_HPP
 
-#include <d2/detail/config.hpp>
-
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
 #include <iosfwd>
@@ -33,8 +31,8 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
         return a.ip == b.ip && a.function == b.function && a.module == b.module;
     }
 
-    D2_API friend std::istream& operator>>(std::istream&, StackFrame&);
-    D2_API friend std::ostream& operator<<(std::ostream&, StackFrame const&);
+    friend std::istream& operator>>(std::istream&, StackFrame&);
+    friend std::ostream& operator<<(std::ostream&, StackFrame const&);
 
 private:
     friend class boost::serialization::access;
@@ -54,8 +52,8 @@ struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
         return a.call_stack == b.call_stack;
     }
 
-    D2_API friend std::istream& operator>>(std::istream&, LockDebugInfo&);
-    D2_API friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
+    friend std::istream& operator>>(std::istream&, LockDebugInfo&);
+    friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
 
 private:
     friend class boost::serialization::access;

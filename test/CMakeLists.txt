@@ -10,6 +10,9 @@ d2_add_standalone_unit_test(concepts unit/concepts.cpp)
 d2_add_standalone_unit_test(event_dispatcher unit/sandbox/event_dispatcher.cpp)
 d2_add_standalone_unit_test(event_traits unit/event_traits.cpp)
 
+d2_add_standalone_unit_test(c_compiler integration/c_compiler.c)
+d2_target_link_libraries(c_compiler_exe d2log)
+
 
 # Add unit tests requiring Google test and d2log.
 function(d2_add_unit_test name source) # boost components...
@@ -41,7 +44,7 @@ d2_add_event_test(start_event)
 
 # Add the d2mock library for integration tests.
 if(TARGET d2log)
-    add_library(d2mock integration/mock.cpp)
+    add_library(d2mock STATIC integration/mock.cpp)
     d2_target_link_libraries(d2mock d2log)
     d2_link_boost(d2mock thread system filesystem)
     if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))

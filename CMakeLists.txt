@@ -5,6 +5,12 @@ project(d2)
 enable_testing()
 
 
+# Default the build type to Debug
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+
 # Function adding link dependencies to a target and copying these dependencies
 # to the target's output directory when done. This is to make sure shared
 # libraries are always found.

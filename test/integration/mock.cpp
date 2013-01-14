@@ -3,10 +3,8 @@
  * for testing purposes.
  */
 
-#define D2_SOURCE
 #include "mock.hpp"
 #include <d2/detail/basic_atomic.hpp>
-#include <d2/detail/config.hpp>
 #include <d2/logging.hpp>
 
 #include <boost/assert.hpp>
@@ -20,12 +18,6 @@
 #include <iostream>
 #include <string>
 
-
-namespace boost {
-    inline std::size_t unique_id(boost::thread::id thread_id) {
-        return hash_value(thread_id);
-    }
-}
 
 namespace mock {
 
@@ -45,16 +37,16 @@ std::string create_tmp_directory(std::string const& path_to_test_source) {
 }
 } // end anonymous namespace
 
-D2_API extern void begin_integration_test(int argc, char const* argv[],
+extern void begin_integration_test(int argc, char const* argv[],
                                           std::string const& test_source) {
     std::string log_repo(argc > 1 ? argv[1] :
                                     create_tmp_directory(test_source));
-    std::cout << "logging repository: " << log_repo << std::endl;
+    std::cout << "logging repository: \"" << log_repo << '"' << std::endl;
     d2::set_log_repository(log_repo);
     d2::enable_event_logging();
 }
 
-D2_API extern void end_integration_test() {
+extern void end_integration_test() {
     d2::disable_event_logging();
 }
 
@@ -70,9 +62,9 @@ public:
 
     void operator()() const {
         boost::thread::id child = boost::this_thread::get_id();
-        d2::notify_start(parent_, child);
+        d2::notify_start(hash_value(parent_), hash_value(child));
         f_();
-        d2::notify_join(parent_, child);
+        d2::notify_join(hash_value(parent_), hash_value(child));
     }
 };
 } // end namespace detail
@@ -106,11 +98,11 @@ void thread::join() {
 mutex::mutex() : id_(counter++) { }
 
 void mutex::lock() const {
-   d2::notify_acquire(id_, boost::this_thread::get_id());
+   d2::notify_acquire(hash_value(boost::this_thread::get_id()), id_);
 }
 
 void mutex::unlock() const {
-    d2::notify_release(id_, boost::this_thread::get_id());
+    d2::notify_release(hash_value(boost::this_thread::get_id()), id_);
 }
 
 d2::detail::basic_atomic<std::size_t> mutex::counter(0);

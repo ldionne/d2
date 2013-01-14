@@ -3,7 +3,6 @@
  */
 
 #define D2_SOURCE
-#include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 
 #include <algorithm>
@@ -83,28 +82,28 @@ DelimitedString<String> delimit(String& s) {
 }
 } // end anonymous namespace
 
-D2_API std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
+extern std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
     os << self.ip << ' '
        << delimit(self.function)
        << delimit(self.module);
     return os;
 }
 
-D2_API std::istream& operator>>(std::istream& is, StackFrame& self) {
+extern std::istream& operator>>(std::istream& is, StackFrame& self) {
     is >> const_cast<void*&>(self.ip) >> std::ws
        >> delimit(self.function)
        >> delimit(self.module);
     return is;
 }
 
-D2_API std::ostream& operator<<(std::ostream& os, LockDebugInfo const& self) {
+extern std::ostream& operator<<(std::ostream& os, LockDebugInfo const& self) {
     os << self.call_stack.size() << '~';
     std::copy(self.call_stack.begin(), self.call_stack.end(),
                 std::ostream_iterator<StackFrame>(os));
     return os;
 }
 
-D2_API std::istream& operator>>(std::istream& is, LockDebugInfo& self) {
+extern std::istream& operator>>(std::istream& is, LockDebugInfo& self) {
     std::size_t num_frames;
     char sep = 'X';
 
