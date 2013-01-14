@@ -30,6 +30,7 @@
 #include <boost/utility/result_of.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <cerrno>
+#include <cstdlib> // for NULL
 #include <fstream>
 #include <ios>
 #include <string>
@@ -509,11 +510,12 @@ private:
         // another thread to access the associative map at the same time.
         // Note: The usage of a pointer here is required because we can't
         //       initialize the reference inside the scope of the scoped lock.
-        StreamBundle* stream_bundle_ptr;
+        StreamBundle* stream_bundle_ptr = NULL;
         {
             ScopedLock<CategoryLocker> lock(category_locker);
             stream_bundle_ptr = &streams[category];
         }
+        BOOST_ASSERT(stream_bundle_ptr != NULL);
         StreamLocker& stream_locker = stream_bundle_ptr->stream_locker;
         Stream& stream = stream_bundle_ptr->stream;
 
