@@ -380,13 +380,12 @@ private:
             Bundle& bundle = bundle_of<Category>()(*this_);
             AssociativeContainer& streams = bundle.map;
             BOOST_ASSERT_MSG(streams.empty(),
-                "Opening a category that already has some open streams.");
+                "opening a category that already has some open streams");
 
             fs::path path = this_->category_path_for<Category>();
             BOOST_ASSERT_MSG(!fs::exists(path) || fs::is_directory(path),
-                "What should be a category directory is not a directory. "
-                "Since we're in charge inside the repository, this is a "
-                "programming error.");
+                "what should be a path to nothing or to a category's "
+                "directory is a path to something that is not a directory");
 
             // We create a new directory if it does not already exist.
             // If it did exist, we open all the streams that reside inside
@@ -397,15 +396,15 @@ private:
                 for (; first != last; ++first) {
                     fs::path file(*first);
                     BOOST_ASSERT_MSG(fs::is_regular_file(file),
-                        "For the moment, there should not be anything else "
-                        "than regular files inside a category directory.");
+                        "for the moment, there should not be anything else "
+                        "than regular files inside a category directory");
                     // Here, we translate a file name that was generated
                     // using a category instance back to it.
                     Category const& category = boost::lexical_cast<Category>(
                                                     file.filename().string());
                     BOOST_ASSERT_MSG(!streams[category].stream.is_open(),
-                        "While opening a category, opening a stream that "
-                        "we already know of.");
+                        "while opening a category, opening a stream that "
+                        "we already know of");
                     this_->open_stream(streams[category].stream, category);
                 }
             }
@@ -457,7 +456,7 @@ private:
                      Category const& category) const {
         namespace fs = boost::filesystem;
         BOOST_ASSERT_MSG(!stream.is_open(),
-            "Opening a stream that is already open.");
+            "opening a stream that is already open");
 
         fs::path path = path_for(category);
         if (fs::exists(path) && !fs::is_regular_file(path))
