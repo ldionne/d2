@@ -5,8 +5,18 @@
 #define D2_SOURCE
 #include <d2/events/join_event.hpp>
 
+#include <boost/config.hpp>
+#ifdef BOOST_MSVC
+#   pragma warning(push)
+// Remove: assignment operator could not be generated
+//         conditional expression is constant
+#   pragma warning(disable: 4512 4127)
+#endif
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_match.hpp>
+#ifdef BOOST_MSVC
+#   pragma warning(pop)
+#endif
 #include <iostream>
 
 

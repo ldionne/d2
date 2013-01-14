@@ -8,6 +8,15 @@
 #include <d2/detail/exceptions.hpp>
 #include <d2/sandbox/container_view.hpp>
 
+#include <boost/config.hpp>
+#ifdef BOOST_MSVC
+#   pragma warning(push)
+// Remove: assignment operator could not be generated
+//         conditional expression is constant
+//         default constructor could not be generated
+//         user defined constructor required
+#   pragma warning(disable: 4512 4127 4510 4610)
+#endif
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/fusion/include/all.hpp>
@@ -35,6 +44,9 @@
 #include <ios>
 #include <string>
 #include <typeinfo>
+#ifdef BOOST_MSVC
+#   pragma warning(pop)
+#endif
 
 
 namespace d2 {
