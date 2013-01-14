@@ -11,6 +11,7 @@
 #include <d2/thread.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -72,28 +73,42 @@ public:
     { }
 
     /**
-     * Set a new repository for the event dispatcher.
+     * Set a new repository for the event dispatcher. If setting the
+     * repository fails, an exception is thrown.
      *
-     * @return Whether setting a new repository succeeded.
-     * @note The method offers the strong exception safety guarantee.
-     *       If setting the repository fails, logging will continue in the
-     *       same repository as before.
+     * @note The method offers the strong exception safety guarantee. If
+     *       setting the repository fails, the repository is left unmodified
+     *       (as-if the call never happened) and logging continues in the same
+     *       repository as before the call.
      */
     template <typename Source>
-    bool set_repository(Source const& path) {
+    void set_repository(Source const& path) {
         // Try to create a new repository.
+        // If it throw, the repository won't be modified in any way.
         boost::interprocess::unique_ptr<Repository, RepoDeleter> new_repo;
-        try {
-            new_repo.reset(new Repository(path));
-        } catch (std::exception const&) {
-            return false;
-        }
+        new_repo.reset(new Repository(path));
 
         // "Atomically" exchange the old repository with the new one.
-        // This has nothrow guarantee.
+        // This has noexcept guarantee.
         repository_lock_.lock();
         repository_.reset(new_repo.release());
         repository_lock_.unlock();
+    }
+
+    /**
+     * Same as `set_repository`, but offers the `noexcept` guarantee. Instead
+     * of reporting the success or failure using an exception, it will do so
+     * using its return value.
+     *
+     * @return Whether setting a new repository succeeded.
+     */
+    template <typename Source>
+    bool set_repository_noexcept(Source const& path) BOOST_NOEXCEPT {
+        try {
+            set_repository(path);
+        } catch (std::exception const&) {
+            return false;
+        }
         return true;
     }
 
