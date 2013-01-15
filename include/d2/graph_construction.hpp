@@ -48,7 +48,11 @@ template <typename LockGraph>
 void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
     namespace qi = boost::spirit::qi;
 
-    typedef boost::variant<AcquireEvent, ReleaseEvent, SegmentHopEvent> Event;
+    typedef boost::variant<
+                AcquireEvent, ReleaseEvent,
+                RecursiveAcquireEvent, RecursiveReleaseEvent,
+                SegmentHopEvent
+            > Event;
 
     is.unsetf(std::ios_base::skipws);
     std::string source((std::istream_iterator<char>(is)),
@@ -56,11 +60,13 @@ void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
 
     qi::typed_stream<AcquireEvent> acquire;
     qi::typed_stream<ReleaseEvent> release;
+    qi::typed_stream<RecursiveAcquireEvent> rec_acquire;
+    qi::typed_stream<RecursiveReleaseEvent> rec_release;
     qi::typed_stream<SegmentHopEvent> hop;
 
     std::vector<Event> events;
     qi::parse(source.begin(), source.end(),
-        *(acquire | release | hop)
+        *(acquire | release | rec_acquire | rec_release | hop)
     , events);
 
     build_lock_graph<>()(events, graph);

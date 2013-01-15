@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/variant.hpp>
 #include <cstddef>
@@ -183,6 +184,7 @@ class build_lock_graph {
         HeldLocks& held_locks;
         Thread& this_thread;
         Segment current_segment;
+        boost::unordered_map<SyncObject, std::size_t> recursive_lock_count;
 
         // Note:
         // There are two possible cases for the current_segment:
@@ -258,6 +260,39 @@ class build_lock_graph {
             held_locks.insert(CurrentlyHeldLock(l2, s2, e.info));
         }
 
+        void operator()(RecursiveAcquireEvent const& e) {
+            if (e.thread != this_thread)
+                D2_THROW(EventThreadException()
+                            << ExpectedThread(this_thread)
+                            << ActualThread(e.thread));
+
+            std::size_t& lock_count = recursive_lock_count[e.lock];
+            // If this is the first time its being locked, then we must
+            // signal an acquire event. In all cases, we increment the
+            // number of times this lock has been locked.
+            if (lock_count++ == 0)
+                (*this)(AcquireEvent(e.lock, e.thread));
+        }
+
+        void operator()(RecursiveReleaseEvent const& e) {
+            if (e.thread != this_thread)
+                D2_THROW(EventThreadException()
+                            << ExpectedThread(this_thread)
+                            << ActualThread(e.thread));
+
+            std::size_t& lock_count = recursive_lock_count[e.lock];
+            if (lock_count == 0)
+                D2_THROW(UnexpectedReleaseException()
+                            << ReleasingThread(this_thread)
+                            << ReleasedLock(e.lock));
+
+            // If this is a top level release, i.e. the thread does not hold
+            // the lock at all anymore after this release, then we really
+            // signal a release event.
+            if (--lock_count == 0)
+                (*this)(ReleaseEvent(e.lock, e.thread));
+        }
+
         void operator()(ReleaseEvent const& e) {
             if (e.thread != this_thread)
                 D2_THROW(EventThreadException()
@@ -290,7 +325,9 @@ class build_lock_graph {
         template <typename Event>
         Thread operator()(Event const& event) const {
             D2_THROW(EventTypeException()
-                        << ExpectedType("AcquireEvent or SegmentHopEvent")
+                        << ExpectedType("AcquireEvent or "
+                                        "RecursiveAcquireEvent or "
+                                        "SegmentHopEvent")
                         << ActualType(typeid(event).name()));
             return Thread(); // never reached.
         }
