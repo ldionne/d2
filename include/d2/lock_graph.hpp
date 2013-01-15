@@ -372,6 +372,9 @@ class build_lock_graph {
             return Thread(); // never reached.
         }
 
+        Thread operator()(RecursiveAcquireEvent const& e) const
+        { return e.thread; }
+
         Thread operator()(AcquireEvent const& e) const
         { return e.thread; }
 
