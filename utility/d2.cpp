@@ -9,6 +9,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -33,8 +34,9 @@
 
 static std::string const VERSION = "0.1a";
 
-namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 namespace phx = boost::phoenix;
+namespace po = boost::program_options;
 using phx::arg_names::_1;
 
 namespace {
@@ -266,13 +268,17 @@ int main(int argc, char const* argv[]) {
                   << allowed << std::endl;
         return EXIT_FAILURE;
     }
-    std::string repo_path = args["repo-path"].as<std::string>();
+    fs::path repo_path = args["repo-path"].as<std::string>();
+    if (!fs::exists(repo_path)) {
+        std::cerr << "the repository path " << repo_path << " does not exist\n";
+        return EXIT_FAILURE;
+    }
+
     boost::scoped_ptr<d2::EventRepository<> > repository;
     try {
         repository.reset(new d2::EventRepository<>(repo_path));
     } catch (d2::RepositoryException const& e) {
-        std::cerr << "unable to open the repository at \""
-                  << repo_path << "\"\n";
+        std::cerr << "unable to open the repository at " << repo_path << '\n';
         if (args.count("debug"))
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
