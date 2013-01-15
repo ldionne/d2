@@ -37,6 +37,8 @@ function(d2_add_event_test name) # boost components...
 endfunction()
 d2_add_event_test(acquire_event)
 d2_add_event_test(join_event)
+d2_add_event_test(recursive_acquire_event)
+d2_add_event_test(recursive_release_event)
 d2_add_event_test(release_event)
 d2_add_event_test(segment_hop_event)
 d2_add_event_test(start_event)
