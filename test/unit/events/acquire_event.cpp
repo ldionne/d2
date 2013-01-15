@@ -15,8 +15,27 @@
 namespace d2 {
 namespace test {
 
+namespace detail {
+// Same as an AcquireEvent, but the operator== also checks for the
+// lock debug info to be the same.
+struct MockAcquireEvent : AcquireEvent {
+    MockAcquireEvent() { }
+
+    MockAcquireEvent(SyncObject const& lock, Thread const& thread)
+        : AcquireEvent(lock, thread)
+    { }
+
+    friend bool operator==(MockAcquireEvent const& a,
+                           MockAcquireEvent const& b) {
+        return static_cast<AcquireEvent const&>(a) ==
+               static_cast<AcquireEvent const&>(b) &&
+               a.info == b.info;
+    }
+};
+} // end namespace detail
+
 struct AcquireEventWithoutInfoTest {
-    typedef AcquireEvent value_type;
+    typedef detail::MockAcquireEvent value_type;
     static boost::random::mt19937 gen;
 
     static value_type get_random_object() {

@@ -15,8 +15,27 @@
 namespace d2 {
 namespace test {
 
+namespace detail {
+// Same as a RecursiveAcquireEvent, but the operator== also checks for the
+// lock debug info to be the same.
+struct MockRecursiveAcquireEvent : RecursiveAcquireEvent {
+    MockRecursiveAcquireEvent() { }
+
+    MockRecursiveAcquireEvent(SyncObject const& lock, Thread const& thread)
+        : RecursiveAcquireEvent(lock, thread)
+    { }
+
+    friend bool operator==(MockRecursiveAcquireEvent const& a,
+                           MockRecursiveAcquireEvent const& b) {
+        return static_cast<RecursiveAcquireEvent const&>(a) ==
+               static_cast<RecursiveAcquireEvent const&>(b) &&
+               a.info == b.info;
+    }
+};
+} // end namespace detail
+
 struct RecursiveAcquireEventWithoutInfoTest {
-    typedef RecursiveAcquireEvent value_type;
+    typedef detail::MockRecursiveAcquireEvent value_type;
     static boost::random::mt19937 gen;
 
     static value_type get_random_object() {
