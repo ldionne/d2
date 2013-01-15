@@ -4,9 +4,12 @@
 #include <cstddef>
 
 
-static std::size_t const REPETITIONS = 100;
-
+// This test makes sure that we do not report multiple deadlocks when there
+// are redundant locking patterns. For example, we do not wish to report
+// more than 1 potential deadlock between t0 and t1, even though the
+// pattern leading to a deadlock is encountered 100 times in each thread.
 int main(int argc, char const* argv[]) {
+    static std::size_t const REPETITIONS = 100;
     if (!mock::begin_integration_test(argc, argv, __FILE__))
         return EXIT_FAILURE;
 

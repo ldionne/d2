@@ -2,6 +2,13 @@
 #include "mock.hpp"
 
 
+// This test makes sure that the same locking pattern repeated in two
+// different functions will still trigger two different deadlock potentials.
+// For example, f() and g() perform the exact same thing. If we build the
+// graph/do the analysis naively, we could end up ignoring one of these two
+// deadlock potentials because one of them seems redundant. However, since
+// they happen in two different functions, it is pertinent to report both
+// deadlock potentials because it may be non obvious in real code.
 int main(int argc, char const* argv[]) {
     mock::mutex A, B;
 
