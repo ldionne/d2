@@ -25,6 +25,7 @@
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/named_graph.hpp>
+#include <boost/integer_traits.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/operators.hpp>
@@ -99,21 +100,51 @@ struct EventThreadException : virtual EventException {
     }
 };
 
+/**
+ * Exception thrown when a recursive lock is locked too many times for the
+ * system to handle. While this is _very_ unlikely, we still handle it
+ * gracefully.
+ */
+struct RecursiveLockOverflowException : virtual EventException {
+    virtual char const* what() const throw() {
+        return "d2::RecursiveLockOverflowException";
+    }
+};
+
 namespace exception_tag {
     struct expected_thread;
     struct actual_thread;
 
     struct releasing_thread;
     struct released_lock;
+
+    struct overflowing_lock;
+    struct current_thread;
 }
 
-typedef boost::error_info<exception_tag::expected_thread, Thread>
-                                                            ExpectedThread;
-typedef boost::error_info<exception_tag::actual_thread, Thread> ActualThread;
-typedef boost::error_info<exception_tag::releasing_thread, Thread>
-                                                            ReleasingThread;
-typedef boost::error_info<exception_tag::released_lock, SyncObject>
-                                                                ReleasedLock;
+typedef boost::error_info<
+            exception_tag::expected_thread, Thread
+        > ExpectedThread;
+
+typedef boost::error_info<
+            exception_tag::actual_thread, Thread
+        > ActualThread;
+
+typedef boost::error_info<
+            exception_tag::releasing_thread, Thread
+        > ReleasingThread;
+
+typedef boost::error_info<
+            exception_tag::released_lock, SyncObject
+        > ReleasedLock;
+
+typedef boost::error_info<
+            exception_tag::current_thread, Thread
+        > CurrentThread;
+
+typedef boost::error_info<
+            exception_tag::overflowing_lock, SyncObject
+        > OverflowingLock;
 
 /**
  * Function object used to build the lock graph from a range of events.
@@ -267,11 +298,20 @@ class build_lock_graph {
                             << ActualThread(e.thread));
 
             std::size_t& lock_count = recursive_lock_count[e.lock];
+            // This is very unlikely, but it *could* happen and we *must*
+            // handle it gracefully.
+            if (lock_count == ::boost::integer_traits<std::size_t>::const_max)
+                D2_THROW(RecursiveLockOverflowException()
+                            << CurrentThread(this_thread)
+                            << OverflowingLock(e.lock));
             // If this is the first time its being locked, then we must
             // signal an acquire event. In all cases, we increment the
             // number of times this lock has been locked.
-            if (lock_count++ == 0)
-                (*this)(AcquireEvent(e.lock, e.thread));
+            if (lock_count++ == 0) {
+                AcquireEvent acquire_event(e.lock, e.thread);
+                acquire_event.info = e.info;
+                (*this)(acquire_event);
+            }
         }
 
         void operator()(RecursiveReleaseEvent const& e) {
