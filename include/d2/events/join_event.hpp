@@ -10,7 +10,6 @@
 #include <d2/segment.hpp>
 
 #include <boost/operators.hpp>
-#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
@@ -28,11 +27,10 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline JoinEvent() { }
+    JoinEvent() { }
 
-    inline JoinEvent(Segment const& parent,
-                     Segment const& new_parent,
-                     Segment const& child)
+    JoinEvent(Segment const& parent, Segment const& new_parent,
+                                                        Segment const& child)
         : parent(parent), new_parent(new_parent), child(child)
     { }
 
@@ -51,13 +49,6 @@ struct JoinEvent : boost::equality_comparable<JoinEvent> {
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & parent & new_parent & child;
-    }
 };
 
 } // end namespace d2

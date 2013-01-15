@@ -56,14 +56,14 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
                a.g == b.g;
     }
 
-    inline LockGraphLabel() { }
+    LockGraphLabel() { }
 
-    inline LockGraphLabel(detail::LockDebugInfo const& l1_info,
-                          Segment s1,
-                          Thread t,
-                          boost::unordered_set<SyncObject> const& g,
-                          Segment s2,
-                          detail::LockDebugInfo const& l2_info)
+    LockGraphLabel(detail::LockDebugInfo const& l1_info,
+                   Segment s1,
+                   Thread t,
+                   boost::unordered_set<SyncObject> const& g,
+                   Segment s2,
+                   detail::LockDebugInfo const& l2_info)
         : l1_info(l1_info), s1(s1), t(t), g(g), s2(s2), l2_info(l2_info)
     { }
 

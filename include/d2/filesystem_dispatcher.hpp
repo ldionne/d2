@@ -15,6 +15,7 @@
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <cstddef>
 
 
 namespace d2 {
@@ -65,7 +66,9 @@ class FilesystemDispatcher {
     }
 
 public:
-    FilesystemDispatcher() { }
+    FilesystemDispatcher()
+        : repository_()
+    { }
 
     template <typename Source>
     explicit FilesystemDispatcher(Source const& path)
@@ -84,15 +87,17 @@ public:
     template <typename Source>
     void set_repository(Source const& path) {
         // Try to create a new repository.
-        // If it throw, the repository won't be modified in any way.
-        boost::interprocess::unique_ptr<Repository, RepoDeleter> new_repo;
+        // If it throws, the repository won't be modified in any way.
+        boost::interprocess::unique_ptr<Repository,RepoDeleter> new_repo(NULL);
         new_repo.reset(new Repository(path));
+        BOOST_ASSERT(new_repo);
 
         // "Atomically" exchange the old repository with the new one.
         // This has noexcept guarantee.
-        repository_lock_.lock();
-        repository_.reset(new_repo.release());
-        repository_lock_.unlock();
+        {
+            detail::scoped_lock<detail::basic_mutex> lock(repository_lock_);
+            repository_.reset(new_repo.release());
+        }
     }
 
     /**
@@ -117,10 +122,8 @@ public:
      * in which events are dispatched.
      */
     bool has_repository() const {
-        repository_lock_.lock();
-        bool const repo_is_not_null = repository_ != 0;
-        repository_lock_.unlock();
-        return repo_is_not_null;
+        detail::scoped_lock<detail::basic_mutex> lock(repository_lock_);
+        return repository_;
     }
 
     template <typename Event>

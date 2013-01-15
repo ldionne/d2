@@ -6,7 +6,7 @@
 #define D2_DETAIL_LOCK_DEBUG_INFO_HPP
 
 #include <boost/operators.hpp>
-#include <boost/serialization/access.hpp>
+#include <cstddef>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -20,10 +20,12 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
     std::string function;
     std::string module;
 
-    inline StackFrame() { }
+    StackFrame()
+        : ip(NULL)
+    { }
 
-    inline StackFrame(void const* ip, std::string const& function,
-                                      std::string const& module)
+    StackFrame(void const* ip, std::string const& function,
+                               std::string const& module)
         : ip(ip), function(function), module(module)
     { }
 
@@ -33,13 +35,6 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
 
     friend std::istream& operator>>(std::istream&, StackFrame&);
     friend std::ostream& operator<<(std::ostream&, StackFrame const&);
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & ip & function & module;
-    }
 };
 
 struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
@@ -54,13 +49,6 @@ struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
 
     friend std::istream& operator>>(std::istream&, LockDebugInfo&);
     friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & call_stack;
-    }
 };
 
 } // end namespace detail

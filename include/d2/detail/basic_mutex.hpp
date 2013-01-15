@@ -1,28 +1,16 @@
 /**
- * This file defines several utilities used in the rest of the library.
- * Note: This file is inspired from Boost. Because of this, this file is
- *       distributed under the same license as the original work.
- *
- * (C) Copyright 2006-8 Anthony Williams
- * (C) Copyright 2011-2012 Vicente J. Botet Escriba
- * (C) Copyright 2012 Louis Dionne
- *
- * Distributed under the Boost Software License, Version 1.0. (See
- * accompanying file LICENSE_1_0.txt or copy at
- * http://www.boost.org/LICENSE_1_0.txt)
+ * This file defines mutex related utilities.
  */
 
 #ifndef D2_DETAIL_BASIC_MUTEX_HPP
 #define D2_DETAIL_BASIC_MUTEX_HPP
 
 #include <boost/assert.hpp>
-#include <boost/config.hpp> // for BOOST_STATIC_CONSTANT
 #include <boost/noncopyable.hpp>
-#include <cstddef>
+#include <cstddef> // for NULL
 
 #include <boost/thread/detail/platform.hpp>
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD)
-#   include <cerrno> // for EINTR
 #   include <pthread.h>
 #elif defined(BOOST_THREAD_PLATFORM_WIN32)
 #   include <Windows.h>
@@ -43,33 +31,24 @@ private:
     pthread_mutex_t mutex_;
 
 public:
-    inline basic_mutex() {
-        int res = pthread_mutex_init(&mutex_, NULL);
-        (void)res;
-        BOOST_ASSERT(!res);
+    basic_mutex() {
+        int const res = pthread_mutex_init(&mutex_, NULL);
+        BOOST_ASSERT(res == 0); (void)res;
     }
 
-    inline void lock() {
-        int res;
-        do
-            res = pthread_mutex_lock(&mutex_);
-        while (res == EINTR);
-        BOOST_ASSERT(!res);
+    void lock() {
+        int const res = pthread_mutex_lock(&mutex_);
+        BOOST_ASSERT(res == 0); (void)res;
     }
 
-    inline void unlock() {
-        int res;
-        do
-            res = pthread_mutex_unlock(&mutex_);
-        while (res == EINTR);
-        BOOST_ASSERT(!res);
+    void unlock() {
+        int const res = pthread_mutex_unlock(&mutex_);
+        BOOST_ASSERT(res == 0); (void)res;
     }
 
-    inline ~basic_mutex() {
-        int res;
-        do
-            res = pthread_mutex_destroy(&mutex_);
-        while (res == EINTR);
+    ~basic_mutex() {
+        int const res = pthread_mutex_destroy(&mutex_);
+        BOOST_ASSERT(res == 0);(void)res;
     }
 
 #elif defined(BOOST_THREAD_PLATFORM_WIN32)
@@ -77,25 +56,42 @@ private:
     CRITICAL_SECTION section_;
 
 public:
-    inline basic_mutex() {
+    basic_mutex() {
         bool const success =
                 ::InitializeCriticalSectionAndSpinCount(&section_, 0) != 0;
-        BOOST_ASSERT_MSG(success,
-            "failed to initialize the critical section of the basic_mutex");
+        BOOST_ASSERT(success); (void)success;
     }
 
-    inline ~basic_mutex() {
-        ::DeleteCriticalSection(&section_);
-    }
-
-    inline void lock() {
+    void lock() {
         ::EnterCriticalSection(&section_);
     }
 
-    inline void unlock() {
+    void unlock() {
         ::LeaveCriticalSection(&section_);
     }
+
+    ~basic_mutex() {
+        ::DeleteCriticalSection(&section_);
+    }
 #endif // BOOST_THREAD_PLATFORM_{PTHREAD, WIN32}
+};
+
+/**
+ * Helper class locking a mutex in its constructor and unlocking it in its
+ * destructor.
+ */
+template <typename Mutex>
+class scoped_lock : boost::noncopyable {
+    Mutex& mutex_;
+
+public:
+    explicit scoped_lock(Mutex& mutex) : mutex_(mutex) {
+        mutex_.lock();
+    }
+
+    ~scoped_lock() {
+        mutex_.unlock();
+    }
 };
 
 } // end namespace detail

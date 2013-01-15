@@ -7,6 +7,7 @@
 
 #include <boost/operators.hpp>
 #include <cstddef>
+#include <iostream>
 
 
 namespace d2 {
@@ -19,7 +20,9 @@ struct Segment : boost::totally_ordered<Segment,
                  boost::additive<Segment, std::size_t,
                  boost::unit_steppable<Segment> > > {
 
-    inline Segment() : value_(0) { }
+    Segment()
+        : value_(0)
+    { }
 
     friend bool operator==(Segment const& a, Segment const& b) {
         return a.value_ == b.value_;
@@ -43,23 +46,21 @@ struct Segment : boost::totally_ordered<Segment,
         return a;
     }
 
-    inline Segment& operator++() {
+    Segment& operator++() {
         ++value_;
         return *this;
     }
 
-    inline Segment& operator--() {
+    Segment& operator--() {
         --value_;
         return *this;
     }
 
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, Segment const& self) {
+    friend std::ostream& operator<<(std::ostream& os, Segment const& self) {
         return os << self.value_, os;
     }
 
-    template <typename Istream>
-    friend Istream& operator>>(Istream& is, Segment& self) {
+    friend std::istream& operator>>(std::istream& is, Segment& self) {
         return is >> self.value_, is;
     }
 

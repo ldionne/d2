@@ -11,7 +11,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <cstddef>
-#include <iosfwd>
+#include <iostream>
 
 
 namespace d2 {
@@ -29,7 +29,9 @@ public:
      * This constructor should only be used when serializing `Thread`s.
      * A default-constructed `Thread` is in an invalid state.
      */
-    inline Thread() { }
+    Thread()
+        : id_(0)
+    { }
 
     /**
      * Create a `Thread` representing the `UniquelyIdentifiable` object
@@ -45,7 +47,9 @@ public:
      * Construct a `Thread` refering to the same thread of the analyzed
      * program as `other`.
      */
-    inline Thread(Thread const& other) : id_(other.id_) { }
+    Thread(Thread const& other)
+        : id_(other.id_)
+    { }
 
     /**
      * Save a `Thread` to an output stream.

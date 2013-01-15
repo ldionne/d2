@@ -28,11 +28,10 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline StartEvent() { }
+    StartEvent() { }
 
-    inline StartEvent(Segment const& parent,
-                      Segment const& new_parent,
-                      Segment const& child)
+    StartEvent(Segment const& parent, Segment const& new_parent,
+                                                        Segment const& child)
         : parent(parent), new_parent(new_parent), child(child)
     { }
 
@@ -51,13 +50,6 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
 
     typedef process_scope event_scope;
     typedef strict_order_policy ordering_policy;
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & parent & new_parent & child;
-    }
 };
 
 } // end namespace d2

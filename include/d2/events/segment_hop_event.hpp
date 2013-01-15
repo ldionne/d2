@@ -11,7 +11,6 @@
 #include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
-#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
@@ -29,9 +28,9 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline SegmentHopEvent() { }
+    SegmentHopEvent() { }
 
-    inline SegmentHopEvent(Thread const& thread, Segment const& segment)
+    SegmentHopEvent(Thread const& thread, Segment const& segment)
         : thread(thread), segment(segment)
     { }
 
@@ -54,13 +53,6 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & thread & segment;
-    }
 };
 
 } // end namespace d2

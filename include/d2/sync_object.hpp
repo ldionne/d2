@@ -11,7 +11,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <cstddef>
-#include <iosfwd>
+#include <iostream>
 
 
 namespace d2 {
@@ -30,7 +30,9 @@ public:
      * This constructor should only be used when serializing `SyncObject`s.
      * A default-constructed `SyncObject` is in an invalid state.
      */
-    inline SyncObject() { }
+    SyncObject()
+        : id_(0)
+    { }
 
     /**
      * Create a `SyncObject` representing the `UniquelyIdentifiable` object
@@ -46,7 +48,9 @@ public:
      * Construct a `SyncObject` refering to the same synchronization object
      * in the analyzed program as `other`.
      */
-    inline SyncObject(SyncObject const& other) : id_(other.id_) { }
+    SyncObject(SyncObject const& other)
+        : id_(other.id_)
+    { }
 
     /**
      * Save a `SyncObject` to an output stream.

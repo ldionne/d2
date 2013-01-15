@@ -1,5 +1,5 @@
 /**
- * This file defines several utilities used in the rest of the library.
+ * This file defines a pseudo-atomic class.
  */
 
 #ifndef D2_DETAIL_BASIC_ATOMIC_HPP
@@ -21,9 +21,11 @@ namespace detail {
 template <typename T>
 class basic_atomic : public boost::noncopyable {
     T val_;
-    basic_mutex mutable lock_;
+    basic_mutex mutable mutex_;
 
 public:
+    // val_ voluntarily left uninitialized. basic_atomic should have
+    // the same behavior as T, but with the operators being atomic.
     basic_atomic() { }
 
     basic_atomic(T const& val)
@@ -31,58 +33,50 @@ public:
     { }
 
     basic_atomic& operator=(T const& val) {
-        lock_.lock();
+        scoped_lock<basic_mutex> lock(mutex_);
         val_ = val;
-        lock_.unlock();
         return *this;
     }
 
     friend T operator++(basic_atomic& self) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(++self.val_);
-        self.lock_.unlock();
         return ret;
     }
 
     friend T operator++(basic_atomic& self, int) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(self.val_++);
-        self.lock_.unlock();
         return ret;
     }
 
     friend T operator--(basic_atomic& self) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(--self.val_);
-        self.lock_.unlock();
         return ret;
     }
 
     friend T operator--(basic_atomic& self, int) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(self.val_--);
-        self.lock_.unlock();
         return ret;
     }
 
     friend T operator+=(basic_atomic& self, T const& val) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(self.val_ += val);
-        self.lock_.unlock();
         return ret;
     }
 
     friend T operator-=(basic_atomic& self, T const& val) {
-        self.lock_.lock();
+        scoped_lock<basic_mutex> lock(self.mutex_);
         T ret(self.val_ -= val);
-        self.lock_.unlock();
         return ret;
     }
 
     operator T() const {
-        lock_.lock();
+        scoped_lock<basic_mutex> lock(mutex_);
         T ret(val_);
-        lock_.unlock();
         return ret;
     }
 };
