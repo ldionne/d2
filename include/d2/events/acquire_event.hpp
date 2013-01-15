@@ -12,7 +12,6 @@
 #include <d2/thread.hpp>
 
 #include <boost/operators.hpp>
-#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
@@ -31,9 +30,9 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
      */
-    inline AcquireEvent() { }
+    AcquireEvent() { }
 
-    inline AcquireEvent(SyncObject const& l, Thread const& t)
+    AcquireEvent(SyncObject const& l, Thread const& t)
         : thread(t), lock(l)
     { }
 
@@ -54,13 +53,6 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
 
     typedef thread_scope event_scope;
     typedef strict_order_policy ordering_policy;
-
-private:
-    friend class boost::serialization::access;
-    template <typename Archive>
-    void serialize(Archive& ar, unsigned int const) {
-        ar & thread & lock & info;
-    }
 };
 
 } // end namespace d2
