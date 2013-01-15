@@ -65,19 +65,19 @@ extern void end_integration_test() {
 
 namespace detail {
 class thread_functor_wrapper {
-    boost::thread::id parent_;
+    thread::id parent_;
     boost::function<void()> f_;
 
 public:
     explicit thread_functor_wrapper(boost::function<void()> const& f)
-        : parent_(boost::this_thread::get_id()), f_(f)
+        : parent_(this_thread::get_id()), f_(f)
     { }
 
     void operator()() const {
-        boost::thread::id child = boost::this_thread::get_id();
-        d2::notify_start(hash_value(parent_), hash_value(child));
+        thread::id child = this_thread::get_id();
+        d2::notify_start(parent_, child);
         f_();
-        d2::notify_join(hash_value(parent_), hash_value(child));
+        d2::notify_join(parent_, child);
     }
 };
 } // end namespace detail
@@ -108,16 +108,48 @@ void thread::join() {
 }
 
 
-mutex::mutex() : id_(counter++) { }
+thread::id::id(boost::thread::id const& thread_id)
+    : id_(thread_id)
+{ }
+
+extern std::size_t unique_id(thread::id const& self) {
+    using boost::hash_value;
+    return hash_value(self.id_);
+}
+
+
+namespace this_thread {
+    extern thread::id get_id() {
+        return thread::id(boost::this_thread::get_id());
+    }
+}
+
+
+mutex::mutex()
+    : id_(counter++)
+{ }
 
 void mutex::lock() const {
-   d2::notify_acquire(hash_value(boost::this_thread::get_id()), id_);
+    d2::notify_acquire(this_thread::get_id(), *this);
 }
 
 void mutex::unlock() const {
-    d2::notify_release(hash_value(boost::this_thread::get_id()), id_);
+    d2::notify_release(this_thread::get_id(), *this);
+}
+
+extern std::size_t unique_id(mutex const& self) {
+    return self.id_;
 }
 
 d2::detail::basic_atomic<std::size_t> mutex::counter(0);
+
+
+void recursive_mutex::lock() const {
+    d2::notify_recursive_acquire(this_thread::get_id(), *this);
+}
+
+void recursive_mutex::unlock() const {
+    d2::notify_recursive_release(this_thread::get_id(), *this);
+}
 
 } // end namespace mock

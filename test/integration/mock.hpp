@@ -28,6 +28,15 @@ class thread {
     boost::function<void()> f_;
 
 public:
+    class id {
+        boost::thread::id id_;
+
+    public:
+        /* implicit */ id(boost::thread::id const& thread_id);
+
+        friend std::size_t unique_id(id const& self);
+    };
+
     explicit thread(boost::function<void()> const& f);
 
     thread(BOOST_RV_REF(thread) other);
@@ -39,6 +48,10 @@ public:
     void join();
 };
 
+namespace this_thread {
+    extern thread::id get_id();
+}
+
 class mutex {
     static d2::detail::basic_atomic<std::size_t> counter;
     std::size_t id_;
@@ -49,7 +62,17 @@ public:
     void lock() const;
 
     void unlock() const;
+
+    friend std::size_t unique_id(mutex const& self);
 };
+
+class recursive_mutex : public mutex {
+public:
+    void lock() const;
+
+    void unlock() const;
+};
+
 } // end namespace mock
 
 #endif // !TEST_MOCK_HPP
