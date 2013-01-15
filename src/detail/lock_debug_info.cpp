@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
+#include <iostream>
 #include <iterator>
 #include <string>
 
@@ -32,7 +33,7 @@ namespace {
     };
 } // end anonymous namespace
 
-void LockDebugInfo::init_call_stack(unsigned int ignore /* = 0 */) {
+void LockDebugInfo::init_call_stack(unsigned int ignore /*= 0*/) {
     dbg::call_stack<100> stack;
     dbg::symdb symbols;
     stack.collect(ignore + 1); // ignore our frame
@@ -68,9 +69,15 @@ public:
         std::size_t length;
         char sep = 'X';
 
-        if ((is >> length >> sep) && sep == '|' && length > 0) {
-            self.data.resize(length);
-            is.read(&self.data[0], length);
+        if (is >> length >> sep) {
+            if (sep == '|') {
+                if (length > 0) {
+                    self.data.resize(length);
+                    is.read(&self.data[0], length);
+                }
+            } else {
+                is.setstate(std::ios_base::failbit);
+            }
         }
         return is;
     }
@@ -108,12 +115,18 @@ extern std::istream& operator>>(std::istream& is, LockDebugInfo& self) {
     char sep = 'X';
 
     self.call_stack.clear();
-    if ((is >> num_frames >> sep) && sep == '~' && num_frames > 0) {
-        self.call_stack.reserve(num_frames);
-        while (num_frames--) {
-            StackFrame frame;
-            is >> frame;
-            self.call_stack.push_back(frame);
+    if (is >> num_frames >> sep) {
+        if (sep == '~') {
+            if (num_frames > 0) {
+                self.call_stack.reserve(num_frames);
+                while (num_frames--) {
+                    StackFrame frame;
+                    is >> frame;
+                    self.call_stack.push_back(frame);
+                }
+            }
+        } else {
+            is.setstate(std::ios_base::failbit);
         }
     }
 
