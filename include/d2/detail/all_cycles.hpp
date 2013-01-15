@@ -36,7 +36,7 @@ namespace detail {
  *
  * Its use is twofold:
  *  Keep track of the cycles seen so far, so the `all_cycles` algorithm can
- *  start its dfs only on vertices implicated in a cycle.
+ *  start its dfs only on vertices involved in a cycle.
  *
  *  Call a visitor complying to the `boost::tiernan_all_cycles` visitor
  *  interface on every cycle encountered.
@@ -110,7 +110,7 @@ public:
  * Dumb algorithm to compute all the cycles in a graph.
  *
  * It first does a depth first search and detects the cycles in the graph.
- * Then, it starts over a depth first search at each vertex implicated in a
+ * Then, it starts over a depth first search at each vertex involved in a
  * cycle found during the first pass to find the cycles in every possible
  * direction.
  *
@@ -136,7 +136,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     typedef AllCyclesWrapper<Visitor, Graph, std::set<Cycle> > Wrapper;
     Wrapper wrapper(visitor, g, seen_cycles);
 
-    // Perform a first dfs to find vertices implicated in a cycle.
+    // Perform a first dfs to find vertices involved in a cycle.
     Vertex first_vertex = *vertices(g).first;
     boost::depth_first_search(g,
         boost::root_vertex(first_vertex).visitor(wrapper));
@@ -145,7 +145,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
         "first dfs done\n"
     <<  "    found " << seen_cycles.size() << " cycles\n");
 
-    // Find all vertices implicated in a cycle.
+    // Find all vertices involved in a cycle.
     std::set<Vertex> vertices_in_a_cycle;
     BOOST_FOREACH(Cycle const& cycle, seen_cycles) {
         vertices_in_a_cycle.insert(source(cycle[0], g));
@@ -156,7 +156,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     D2_DEBUG_ALL_CYCLES(std::cout <<
     "    involving " << vertices_in_a_cycle.size() << " different vertices\n");
 
-    // Start over a depth-first search at every vertex implicated in a cycle.
+    // Start over a depth-first search at every vertex involved in a cycle.
     // This allows us to find all the different cycles in the directed graph.
     // Let's say the first dfs found a->b->a;
     // the subsequent searches will find b->a->b
