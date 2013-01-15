@@ -114,11 +114,12 @@ D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
             //    which is fine.
             //  - we must PREincrement the current_segment so it is distinct
             //    from the initial value.
-            parent_segment = segment_of[parent];
+            Segment& segment_of_parent = segment_of[parent];
+            parent_segment = segment_of_parent;
             new_parent_segment = ++current_segment;
             child_segment = ++current_segment;
             segment_of[child] = child_segment;
-            segment_of[parent] = new_parent_segment;
+            segment_of_parent = new_parent_segment;
         }
 
         dispatcher.dispatch(StartEvent(parent_segment, new_parent_segment,
@@ -141,10 +142,11 @@ D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
         "joining a thread into another thread that has not been created yet");
             BOOST_ASSERT_MSG(contains(child, segment_of),
                             "joining a thread that has not been created yet");
-            parent_segment = segment_of[parent];
+            Segment& segment_of_parent = segment_of[parent];
+            parent_segment = segment_of_parent;
             child_segment = segment_of[child];
             new_parent_segment = ++current_segment;
-            segment_of[parent] = new_parent_segment;
+            segment_of_parent = new_parent_segment;
             segment_of.erase(child);
         }
 
