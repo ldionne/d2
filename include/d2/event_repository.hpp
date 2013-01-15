@@ -116,9 +116,30 @@ struct EventRepository
     typedef std::fstream process_wide_stream_type;
 
     /**
+     * Type of a range of thread streams. The type of the range itself is
+     * left unspecified, but the type is guaranteed to be a range.
+     */
+    typedef typename EventRepository::template
+                                value_view<Thread>::type thread_stream_range;
+
+    typedef typename EventRepository::template
+                    const_value_view<Thread>::type const_thread_stream_range;
+
+    /**
      * Type of the stream used for thread events.
      */
     typedef std::fstream thread_stream_type;
+
+    /**
+     * Return a range containing the thread streams.
+     */
+    thread_stream_range thread_streams() {
+        return this->template values<Thread>();
+    }
+
+    const_thread_stream_range thread_streams() const {
+        return this->template values<Thread>();
+    }
 };
 
 template <typename EventCategoryLockingPolicy, typename StreamLockingPolicy>

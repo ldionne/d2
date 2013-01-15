@@ -83,15 +83,14 @@ void build_graphs(EventRepository<Policy1, Policy2>& repository,
                   LockGraph& lock_graph,
                   SegmentationGraph& seg_graph) {
     typedef EventRepository<Policy1, Policy2> EventRepo;
+    typedef typename EventRepo::thread_stream_range ThreadStreams;
 
     detail::parse_and_build_seg_graph(
         repository[EventRepo::process_wide], seg_graph);
 
-    typedef typename EventRepo::template value_view<Thread>::type
-                                                                ThreadSources;
-    ThreadSources thread_sources = repository.template values<Thread>();
-    typename ThreadSources::iterator thread(thread_sources.begin()),
-                                     last(thread_sources.end());
+    ThreadStreams thread_streams = repository.thread_streams();
+    typename ThreadStreams::iterator thread(thread_streams.begin()),
+                                     last(thread_streams.end());
     for (; thread != last; ++thread)
         detail::parse_and_build_lock_graph(*thread, lock_graph);
 }
