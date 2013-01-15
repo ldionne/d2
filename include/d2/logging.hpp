@@ -79,6 +79,19 @@ void notify_acquire(Thread const& thread, Lock const& lock) {
 }
 
 /**
+ * Forwards to `d2_notify_recursive_acquire`. Arguments may support the same
+ * as with `notify_acquire`.
+ *
+ * @see `notify_acquire`
+ * @see `d2_notify_recursive_acquire`
+ */
+template <typename Thread, typename Lock>
+void notify_recursive_acquire(Thread const& thread, Lock const& lock) {
+    d2_notify_recursive_acquire(api_detail::unique_id_impl(thread),
+                                api_detail::unique_id_impl(lock));
+}
+
+/**
  * Forwards to `d2_notify_release`. Arguments may support the same as with
  * `notify_acquire`.
  *
@@ -89,6 +102,19 @@ template <typename Thread, typename Lock>
 void notify_release(Thread const& thread, Lock const& lock) {
     d2_notify_release(api_detail::unique_id_impl(thread),
                       api_detail::unique_id_impl(lock));
+}
+
+/**
+ * Forwards to `d2_notify_recursive_release`. Arguments may support the same
+ * as with `notify_acquire`.
+ *
+ * @see `notify_acquire`
+ * @see `d2_notify_recursive_release`
+ */
+template <typename Thread, typename Lock>
+void notify_recursive_release(Thread const& thread, Lock const& lock) {
+    d2_notify_recursive_release(api_detail::unique_id_impl(thread),
+                                api_detail::unique_id_impl(lock));
 }
 
 /**

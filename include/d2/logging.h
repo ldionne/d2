@@ -66,11 +66,31 @@ D2_API extern int d2_is_disabled(void);
 D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id);
 
 /**
+ * Same as `d2_notify_acquire`, but the synchronization object is a
+ * `recursive' synchronization object, i.e. it can be acquired several
+ * times by the same thread.
+ *
+ * @see `d2_notify_acquire`
+ */
+D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
+                                               size_t lock_id);
+
+/**
  * Notify the library of the release of a synchronization object with the
  * unique identitifer `lock_id` by the thread with the unique identitifer
  * `thread_id`.
  */
 D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id);
+
+/**
+ * Same as `d2_notify_release`, but the synchronization object is a
+ * `recursive' synchronization object, i.e. it can be released several
+ * times by the same thread.
+ *
+ * @see `d2_notify_release`
+ */
+D2_API extern void d2_notify_recursive_release(size_t thread_id,
+                                               size_t lock_id);
 
 /**
  * Notify the library of the start of a new thread uniquely identified by

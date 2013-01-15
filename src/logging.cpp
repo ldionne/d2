@@ -6,11 +6,7 @@
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
-#include <d2/events/acquire_event.hpp>
-#include <d2/events/join_event.hpp>
-#include <d2/events/release_event.hpp>
-#include <d2/events/segment_hop_event.hpp>
-#include <d2/events/start_event.hpp>
+#include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/logging.hpp>
 #include <d2/sync_object.hpp>
@@ -69,12 +65,33 @@ D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
     }
 }
 
+D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
+                                               size_t lock_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled()) {
+        RecursiveAcquireEvent event((SyncObject(lock_id)), Thread(thread_id));
+                        // ignore current frame
+        event.info.init_call_stack(1);
+        dispatcher.dispatch(event);
+    }
+}
+
 D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled())
         dispatcher.dispatch(ReleaseEvent((SyncObject(lock_id)),
                                           Thread(thread_id)));
+}
+
+D2_API extern void d2_notify_recursive_release(size_t thread_id,
+                                               size_t lock_id) {
+    using namespace d2;
+    using namespace d2::detail;
+    if (d2_is_enabled())
+        dispatcher.dispatch(RecursiveReleaseEvent((SyncObject(lock_id)),
+                                                  Thread(thread_id)));
 }
 
 D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
