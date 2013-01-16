@@ -9,6 +9,7 @@
 #include <d2/repository.hpp>
 #include <d2/thread.hpp>
 
+#include <boost/config.hpp>
 #include <boost/mpl/apply.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/utility/value_init.hpp>
@@ -119,11 +120,17 @@ struct EventRepository
      * Type of a range of thread streams. The type of the range itself is
      * left unspecified, but the type is guaranteed to be a range.
      */
-    typedef typename EventRepository::template
-                                value_view<Thread>::type thread_stream_range;
+    typedef typename
+#if !defined(BOOST_MSVC)
+    EventRepository::template
+#endif
+    value_view<Thread>::type thread_stream_range;
 
-    typedef typename EventRepository::template
-                    const_value_view<Thread>::type const_thread_stream_range;
+    typedef typename
+#if !defined(BOOST_MSVC)
+    EventRepository::template
+#endif
+    const_value_view<Thread>::type const_thread_stream_range;
 
     /**
      * Type of the stream used for thread events.

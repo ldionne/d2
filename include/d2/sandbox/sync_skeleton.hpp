@@ -42,6 +42,9 @@ namespace detail {
  */
 template <typename Repository>
 class SyncSkeleton {
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    SyncSkeleton& operator=(SyncSkeleton const&) /*= delete*/;
+
     Repository& repository_;
     SegmentationGraph segmentation_graph_;
     LockGraph lock_graph_;
