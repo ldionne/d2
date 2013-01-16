@@ -118,9 +118,9 @@ add_subdirectory(test)
 
 
 # Add the d2 command line utility.
-if(TARGET d2log)
+if(TARGET d2support)
     d2_add_executable(d2 utility/d2.cpp graph program_options filesystem system)
-    d2_target_link_libraries(d2 d2log)
+    d2_target_link_libraries(d2 d2support dbg)
 else()
-    message("Missing d2log library: d2 command line utility will be unavailable.")
+    message("Missing d2support library: d2 command line utility will be unavailable.")
 endif()
