@@ -14,15 +14,15 @@ d2_add_standalone_unit_test(c_compiler integration/c_compiler.c)
 d2_target_link_libraries(c_compiler_exe d2log)
 
 
-# Add unit tests requiring Google test and d2log.
+# Add unit tests requiring Google test and d2support.
 function(d2_add_unit_test name source) # boost components...
     if(NOT ${GTEST_FOUND})
         message("Missing Google Test library: ${name} will be unavailable.")
-    elseif(NOT TARGET d2log)
-        message("Missing d2log library: ${name} will be unavailable.")
+    elseif(NOT TARGET d2support)
+        message("Missing d2support library: ${name} will be unavailable.")
     else()
         d2_add_standalone_unit_test(${name} ${source} ${ARGN})
-        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2log)
+        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2support)
     endif()
 endfunction()
 d2_add_unit_test(lock_debug_info unit/detail/lock_debug_info.cpp)
