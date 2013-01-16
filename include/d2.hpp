@@ -11,7 +11,6 @@
 #include <d2/event_traits.hpp>
 #include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
-#include <d2/graph_construction.hpp>
 #include <d2/lock_graph.hpp>
 #include <d2/logging.hpp>
 #include <d2/repository.hpp>
