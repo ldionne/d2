@@ -3,9 +3,8 @@
  * with the d2 library.
  */
 
-#include <d2/analysis.hpp>
 #include <d2/event_repository.hpp>
-#include <d2/graph_construction.hpp>
+#include <d2/sandbox/sync_skeleton.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/assign.hpp>
@@ -22,6 +21,7 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/spirit/include/karma.hpp>
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
@@ -35,6 +35,7 @@
 static std::string const VERSION = "0.1a";
 
 namespace fs = boost::filesystem;
+namespace kma = boost::spirit::karma;
 namespace phx = boost::phoenix;
 namespace po = boost::program_options;
 using phx::arg_names::_1;
@@ -126,57 +127,6 @@ public:
 template <typename Stats>
 StatisticGatherer<Stats> gather_stats(Stats& stats) {
     return StatisticGatherer<Stats>(stats);
-}
-
-// Deadlock analysis
-template <typename Ostream>
-class CyclePrinter {
-    Ostream& os_;
-
-    // Silence MSVC warning C4512: assignment operator could not be generated
-    CyclePrinter& operator=(CyclePrinter const&) /*= delete*/;
-
-    void format_call_stack(d2::detail::LockDebugInfo const& info,
-                           std::string const& indent = "") const {
-        BOOST_FOREACH(d2::detail::StackFrame const& frame, info.call_stack) {
-            os_ << indent
-            << frame.ip << "    " << frame.function << " in " << frame.module
-            << '\n';
-        }
-    }
-
-public:
-    explicit CyclePrinter(Ostream& os) : os_(os) { }
-
-    template <typename EdgePath, typename LockGraph>
-    void operator()(EdgePath const& cycle, LockGraph const& graph) const {
-        typedef typename boost::graph_traits<LockGraph>::edge_descriptor
-                                                    LockGraphEdgeDescriptor;
-        typedef typename boost::edge_property_type<LockGraph>::type
-                                                                LockGraphEdge;
-        os_ << "----------------------------------------------------";
-
-        BOOST_FOREACH(LockGraphEdgeDescriptor const& edge_desc, cycle) {
-            LockGraphEdge const& edge = graph[edge_desc];
-            d2::SyncObject const& l1 = graph[source(edge_desc, graph)];
-            d2::SyncObject const& l2 = graph[target(edge_desc, graph)];
-
-            os_ << '\n';
-
-            os_ << "Thread " << edge.t << " acquired lock " << l2 << " in\n";
-            format_call_stack(edge.l2_info, "    ");
-
-            os_ << "while holding lock " << l1 << " taken in\n";
-            format_call_stack(edge.l1_info, "    ");
-        }
-
-        os_ << "----------------------------------------------------\n\n";
-    }
-};
-
-template <typename Ostream>
-CyclePrinter<Ostream> print_cycle(Ostream& os) {
-    return CyclePrinter<Ostream>(os);
 }
 
 template <typename ErrorTag, typename Exception>
@@ -274,15 +224,17 @@ int main(int argc, char const* argv[]) {
         return EXIT_FAILURE;
     }
 
-    boost::scoped_ptr<d2::EventRepository<> > repository;
+    typedef d2::EventRepository<> Repository;
+    boost::scoped_ptr<Repository> repository;
     try {
-        repository.reset(new d2::EventRepository<>(repo_path));
+        repository.reset(new Repository(repo_path));
     } catch (d2::RepositoryException const& e) {
         std::cerr << "unable to open the repository at " << repo_path << '\n';
         if (args.count("debug"))
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
     }
+    BOOST_ASSERT(repository);
 
     // Open the output stream to whatever passed on the command line or to
     // stdout if unspecified.
@@ -297,12 +249,11 @@ int main(int argc, char const* argv[]) {
     }
     std::ostream& output = args.count("output-file") ? output_ofs : std::cout;
 
-    // Build the segmentation and the lock graph. They are required no matter
-    // the options we received on the command line.
-    d2::SegmentationGraph sg;
-    d2::LockGraph lg;
+    // Create the skeleton of the program from the repository.
+    typedef d2::sandbox::SyncSkeleton<Repository> Skeleton;
+    boost::scoped_ptr<Skeleton> skeleton;
     try {
-        d2::build_graphs(*repository, lg, sg);
+        skeleton.reset(new Skeleton(*repository));
     } catch (d2::EventTypeException const& e) {
         std::string actual_type = get_error_info<d2::ActualType>(e);
         std::string expected_type = get_error_info<d2::ExpectedType>(e);
@@ -325,18 +276,25 @@ int main(int argc, char const* argv[]) {
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
     }
+    BOOST_ASSERT(skeleton);
 
     // Main switch dispatching to the right action to perform.
     if (args.count("analyze") || (!args.count("dot") && !args.count("stats"))) {
-        d2::analyze(lg, sg, print_cycle(std::cout));
+        output << kma::format(
+            kma::stream % ('\n' << kma::repeat(80)['-'] << '\n') << '\n'
+        , skeleton->deadlocks());
     }
     else if (args.count("dot")) {
-        boost::write_graphviz(output, lg, render_dot(lg), render_dot(lg));
+        std::cout << "option not supported right now\n";
+        // boost::write_graphviz(output, lg, render_dot(lg), render_dot(lg));
+        return EXIT_FAILURE;
     }
     else if (args.count("stats")) {
-        Statistics<d2::LockGraph, d2::SegmentationGraph> stats(lg, sg);
-        d2::analyze(lg, sg, gather_stats(stats));
-        output << stats << std::endl;
+        std::cout << "option not supported right now\n";
+        // Statistics<d2::LockGraph, d2::SegmentationGraph> stats(lg, sg);
+        // d2::analyze(lg, sg, gather_stats(stats));
+        // output << stats << std::endl;
+        return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 

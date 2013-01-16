@@ -17,9 +17,13 @@ namespace d2 {
 namespace sandbox {
 
 std::string DeadlockDiagnostic::format_step(AcquireStreak const& streak) {
-    return (boost::format("thread %1% acquired %2%")
+    BOOST_ASSERT_MSG(streak.locks.size() == 2,
+        "we should only be supporting 2 locks right now, "
+        "update this function otherwise");
+    return (boost::format("thread %1% acquired %2%, ..., %3%")
             % streak.thread.thread_id
-            % "..." // temporary until we have something meaningful
+            % streak.locks[0].lock_id
+            % streak.locks[1].lock_id
             ).str();
 }
 
@@ -37,12 +41,12 @@ std::ostream& operator<<(std::ostream& os, DeadlockDiagnostic const& self) {
     namespace karma = boost::spirit::karma;
     using namespace boost::adaptors;
 
-    os << karma::format((karma::string << '\n') % "while\n"
+    os << karma::format(karma::string % "\nwhile "
         , self.steps_ | transformed(DeadlockDiagnostic::format_step))
 
-       << "which creates a deadlock if\n"
+       << "\n\nwhich creates a deadlock if\n"
 
-       << karma::format(+(karma::string << '\n')
+       << karma::format((karma::string) % '\n'
         , self.steps_ | transformed(DeadlockDiagnostic::format_explanation));
     return os;
 }
