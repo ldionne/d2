@@ -65,9 +65,11 @@ public:
      *
      * @note The conditions are those that make a cycle a potential deadlock
      *       in the lock graph.
+     * @internal This must not be const in order to allow non-const functors
+     *           to be called.
      */
     template <typename EdgePath>
-    void cycle(EdgePath const& edge_path, LockGraph const& graph) const {
+    void cycle(EdgePath const& edge_path, LockGraph const& graph) {
         // These are the conditions for a cycle to be a valid
         // potential deadlock:
 
