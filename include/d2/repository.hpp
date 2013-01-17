@@ -341,7 +341,7 @@ public:
         typedef boost::select_second_const_range<Map> Values;
 
     public:
-        typedef boost::transformed_range<stream_accessor<>, Values> type;
+        typedef boost::transformed_range<stream_accessor<>, Values const> type;
     };
 
     template <typename Category>
@@ -367,11 +367,9 @@ public:
 
     template <typename Category>
     typename const_value_view<Category>::type values() const {
-        typedef typename bundle_of<Category>::type::map_type Map;
-        typedef boost::select_second_const_range<Map> Values;
-        Values values = bundle_of<Category>()(*this).map
-                        | boost::adaptors::map_values;
-        return values | boost::adaptors::transformed(stream_accessor<>());
+        return bundle_of<Category>()(*this).map
+                    | boost::adaptors::map_values
+                    | boost::adaptors::transformed(stream_accessor<>());
     }
 
     template <typename Category>
