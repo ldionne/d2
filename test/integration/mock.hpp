@@ -13,15 +13,16 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
-#include <cstdlib> // included for integration tests needing it
 #include <string>
 
 
+namespace d2 {
 namespace mock {
 
-extern bool begin_integration_test(int argc, char const* argv[],
-                                   std::string const& source_file);
-extern void end_integration_test();
+struct integration_test {
+    integration_test(int argc, char const* argv[], std::string const& file);
+    ~integration_test();
+};
 
 class thread {
     boost::scoped_ptr<boost::thread> actual_;
@@ -74,5 +75,6 @@ public:
 };
 
 } // end namespace mock
+} // end namespace d2
 
 #endif // !TEST_MOCK_HPP

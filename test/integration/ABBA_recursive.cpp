@@ -3,12 +3,11 @@
 
 
 int main(int argc, char const* argv[]) {
-    if (!mock::begin_integration_test(argc, argv, __FILE__))
-        return EXIT_FAILURE;
+    d2::mock::integration_test start(argc, argv, __FILE__);
 
-    mock::recursive_mutex A, B;
+    d2::mock::recursive_mutex A, B;
 
-    mock::thread t0([&] {
+    d2::mock::thread t0([&] {
         A.lock();
         A.lock();
         A.lock();
@@ -21,7 +20,7 @@ int main(int argc, char const* argv[]) {
         A.unlock();
     });
 
-    mock::thread t1([&] {
+    d2::mock::thread t1([&] {
         B.lock();
         B.lock();
         B.lock();
@@ -43,7 +42,4 @@ int main(int argc, char const* argv[]) {
 
     t1.join();
     t0.join();
-
-    mock::end_integration_test();
-    return EXIT_SUCCESS;
 }

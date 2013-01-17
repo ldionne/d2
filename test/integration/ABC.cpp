@@ -3,26 +3,25 @@
 
 
 int main(int argc, char const* argv[]) {
-    if (!mock::begin_integration_test(argc, argv, __FILE__))
-        return EXIT_FAILURE;
+    d2::mock::integration_test start(argc, argv, __FILE__);
 
-    mock::mutex A, B, C;
+    d2::mock::mutex A, B, C;
 
-    mock::thread t0([&] {
+    d2::mock::thread t0([&] {
         A.lock();
             B.lock();
             B.unlock();
         A.unlock();
     });
 
-    mock::thread t1([&] {
+    d2::mock::thread t1([&] {
         B.lock();
             C.lock();
             C.unlock();
         B.unlock();
     });
 
-    mock::thread t2([&] {
+    d2::mock::thread t2([&] {
         C.lock();
             A.lock();
             A.unlock();
@@ -36,7 +35,4 @@ int main(int argc, char const* argv[]) {
     t2.join();
     t1.join();
     t0.join();
-
-    mock::end_integration_test();
-    return EXIT_SUCCESS;
 }

@@ -20,6 +20,7 @@
 #include <string>
 
 
+namespace d2 {
 namespace mock {
 
 namespace {
@@ -44,25 +45,22 @@ std::string create_tmp_directory(std::string const& path_to_test_source) {
  * @return Whether setting the environment succeeded. If the function reports
  *         a failure, the test should not take place.
  */
-extern bool begin_integration_test(int argc, char const* argv[],
+integration_test::integration_test(int argc, char const* argv[],
                                    std::string const& test_source) {
     std::string log_repo(argc > 1 ? argv[1] :
                                     create_tmp_directory(test_source));
-    // If setting the repo fails, we just don't enable logging and we won't
-    // have any results for the test.
-    if (d2::set_log_repository(log_repo)) {
-        std::cerr <<boost::format("setting the repository at \"%1%\" failed\n")
-                                                                    % log_repo;
-        return false;
-    }
+    if (d2::set_log_repository(log_repo))
+        throw std::runtime_error((boost::format(
+            "setting the repository at \"%1%\" failed\n") % log_repo).str());
+
     std::cout << boost::format("repository is at \"%1%\"\n") % log_repo;
     d2::enable_event_logging();
-    return true;
 }
 
-extern void end_integration_test() {
+integration_test::~integration_test() {
     d2::disable_event_logging();
 }
+
 
 namespace detail {
 class thread_functor_wrapper {
@@ -154,3 +152,4 @@ void recursive_mutex::unlock() const {
 }
 
 } // end namespace mock
+} // end namespace d2

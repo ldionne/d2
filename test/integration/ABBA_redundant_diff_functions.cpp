@@ -1,16 +1,18 @@
+/**
+ * This test makes sure that the same locking pattern repeated in two
+ * different functions will still trigger two different deadlock potentials.
+ * For example, f() and g() perform the exact same thing. If we build the
+ * graph/do the analysis naively, we could end up ignoring one of these two
+ * deadlock potentials because one of them seems redundant. However, since
+ * they happen in two different functions, it is pertinent to report both
+ * deadlock potentials because it may be non obvious in real code.
+ */
 
 #include "mock.hpp"
 
 
-// This test makes sure that the same locking pattern repeated in two
-// different functions will still trigger two different deadlock potentials.
-// For example, f() and g() perform the exact same thing. If we build the
-// graph/do the analysis naively, we could end up ignoring one of these two
-// deadlock potentials because one of them seems redundant. However, since
-// they happen in two different functions, it is pertinent to report both
-// deadlock potentials because it may be non obvious in real code.
 int main(int argc, char const* argv[]) {
-    mock::mutex A, B;
+    d2::mock::mutex A, B;
 
     auto f = [&] {
         A.lock();
@@ -35,16 +37,12 @@ int main(int argc, char const* argv[]) {
         B.unlock();
     };
 
-    mock::thread t0(g), t1(h);
+    d2::mock::thread t0(g), t1(h);
 
-    if (!mock::begin_integration_test(argc, argv, __FILE__))
-        return EXIT_FAILURE;
+    d2::mock::integration_test start(argc, argv, __FILE__);
 
     t0.start();
     t1.start();
     t1.join();
     t0.join();
-
-    mock::end_integration_test();
-    return EXIT_SUCCESS;
 }
