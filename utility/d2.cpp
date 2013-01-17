@@ -10,6 +10,7 @@
 #include <boost/assign.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -213,14 +214,14 @@ int main(int argc, char const* argv[]) {
 
     // Open the repository on which we must operate.
     if (!args.count("repo-path")) {
-        std::cerr << "missing the path of a repository on which to operate "
-                     "from the command line" << std::endl
+        std::cerr << "missing the path of a repository on which to operate\n"
                   << allowed << std::endl;
         return EXIT_FAILURE;
     }
     fs::path repo_path = args["repo-path"].as<std::string>();
     if (!fs::exists(repo_path)) {
-        std::cerr << "the repository path " << repo_path << " does not exist\n";
+        std::cerr << boost::format("the repository path %1% does not exist\n")
+                                                                % repo_path;
         return EXIT_FAILURE;
     }
 
@@ -229,7 +230,8 @@ int main(int argc, char const* argv[]) {
     try {
         repository.reset(new Repository(repo_path));
     } catch (d2::RepositoryException const& e) {
-        std::cerr << "unable to open the repository at " << repo_path << '\n';
+        std::cerr << boost::format("unable to open the repository at %1%\n")
+                                                                % repo_path;
         if (args.count("debug"))
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
@@ -243,7 +245,8 @@ int main(int argc, char const* argv[]) {
         std::string output_file = args["output-file"].as<std::string>();
         output_ofs.open(output_file.c_str());
         if (!output_ofs) {
-            std::cerr << "unable to open output file \"" << output_file << '"';
+            std::cerr << boost::format("unable to open output file \"%1%\"\n")
+                                                                % output_file;
             return EXIT_FAILURE;
         }
     }
@@ -258,20 +261,21 @@ int main(int argc, char const* argv[]) {
         std::string actual_type = get_error_info<d2::ActualType>(e);
         std::string expected_type = get_error_info<d2::ExpectedType>(e);
 
-        std::cerr <<
+        std::cerr << boost::format(
         "error while building the graphs:\n"
-        "    encountered an event of type " << actual_type << '\n' <<
-        "    while expecting an event of type " << expected_type << '\n';
+        "    encountered an event of type %1%\n"
+        "    while expecting an event of type %2%\n")
+        % actual_type % expected_type;
         return EXIT_FAILURE;
 
     } catch (d2::UnexpectedReleaseException const& e) {
         std::string lock = get_error_info<d2::ReleasedLock>(e);
         std::string thread = get_error_info<d2::ReleasingThread>(e);
 
-        std::cerr <<
-        "error while building the graphs:\n" <<
-        "    lock " << lock <<
-                    " was unexpectedly released by thread " << thread << '\n';
+        std::cerr << boost::format(
+        "error while building the graphs:\n"
+        "    lock %1% was unexpectedly released by thread %2%\n")
+                                                            % lock % thread;
          if (args.count("debug"))
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
@@ -304,6 +308,5 @@ int main(int argc, char const* argv[]) {
         if (args.count("debug"))
             std::cerr << boost::diagnostic_information(e) << '\n';
         return EXIT_FAILURE;
-
     }
 }
