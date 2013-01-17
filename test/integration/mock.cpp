@@ -9,6 +9,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/lexical_cast.hpp>
@@ -50,11 +51,11 @@ extern bool begin_integration_test(int argc, char const* argv[],
     // If setting the repo fails, we just don't enable logging and we won't
     // have any results for the test.
     if (d2::set_log_repository(log_repo)) {
-        std::cerr << "setting the repository at \""
-                  << log_repo << "\" failed\n";
+        std::cerr <<boost::format("setting the repository at \"%1%\" failed\n")
+                                                                    % log_repo;
         return false;
     }
-    std::cout << "repository is at \"" << log_repo << "\"\n";
+    std::cout << boost::format("repository is at \"%1%\"\n") % log_repo;
     d2::enable_event_logging();
     return true;
 }
