@@ -46,7 +46,7 @@ std::ostream& operator<<(std::ostream& os, DeadlockDiagnostic const& self) {
 
        << "\n\nwhich creates a deadlock if\n"
 
-       << karma::format((karma::string) % '\n'
+       << karma::format(karma::string % '\n'
         , self.steps_ | transformed(DeadlockDiagnostic::format_explanation));
     return os;
 }
