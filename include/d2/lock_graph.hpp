@@ -392,10 +392,14 @@ public:
     operator()(Iterator first, Iterator last, LockGraph& graph) const {
         // We must be able to add new vertices/edges and to set their
         // respective properties to build the lock graph.
+        // Note: See the note in segmentation_graph.hpp to know why these
+        //       concept checks are disabled. It applies to LockGraph too.
+#if 0
         BOOST_CONCEPT_ASSERT((
                     boost::concepts::VertexMutablePropertyGraph<LockGraph>));
         BOOST_CONCEPT_ASSERT((
                     boost::concepts::EdgeMutablePropertyGraph<LockGraph>));
+#endif
 
         BOOST_CONCEPT_ASSERT((boost::InputIteratorConcept<Iterator>));
 

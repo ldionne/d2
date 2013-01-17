@@ -119,9 +119,18 @@ public:
     operator()(Iterator first, Iterator last, SegmentationGraph& graph) const {
         // We need to be able to add new vertices/edges to build the
         // segmentation graph.
+        // Note: The VertexMutableGraph concept includes a check for
+        //       remove_vertex(). However, since the SegmentationGraph is a
+        //       named_graph using vecS as its out edge list, we can't use
+        //       remove_vertex because of iterator invalidation as seen in
+        //       https://svn.boost.org/trac/boost/ticket/7863. Therefore, we
+        //       do not check the concept because we don't need remove_vertex
+        //       anyway.
+#if 0
         BOOST_CONCEPT_ASSERT((boost::MutableGraphConcept<SegmentationGraph>));
         BOOST_CONCEPT_ASSERT((boost::VertexMutablePropertyGraphConcept<
                                                         SegmentationGraph>));
+#endif
 
         BOOST_CONCEPT_ASSERT((boost::InputIterator<Iterator>));
 
