@@ -69,12 +69,12 @@ struct NamingPolicy {
 };
 
 template <>
-char const* NamingPolicy::category_path<Thread>() {
+inline char const* NamingPolicy::category_path<Thread>() {
     return "thread_events";
 }
 
 template <>
-char const* NamingPolicy::category_path<ProcessWideTag>() {
+inline char const* NamingPolicy::category_path<ProcessWideTag>() {
     return "process_wide";
 }
 
