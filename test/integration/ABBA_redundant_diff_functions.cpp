@@ -39,10 +39,22 @@ int main(int argc, char const* argv[]) {
 
     d2::mock::thread t0(g), t1(h);
 
-    d2::mock::integration_test start(argc, argv, __FILE__);
+    d2::mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();
     t1.join();
     t0.join();
+
+    // We should detect the same deadlock twice. The information associated
+    // to each deadlock should also be different, but we don't check that now.
+    integration_test.verify_deadlocks({
+        {
+            {t0, A, B},
+            {t1, B, A}
+        }, {
+            {t0, A, B},
+            {t1, B, A}
+        }
+    });
 }

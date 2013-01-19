@@ -50,15 +50,13 @@ public:
     struct AcquireStreak {
         // Note: This solution is temporary until we find a better way to
         //       attach arbitrary data to graph edges.
-        explicit AcquireStreak(ThreadId thread, LockId lock1, LockId lock2) {
+        AcquireStreak(ThreadId thread, LockId lock1, LockId lock2) {
             LockInformation l1 = {lock1}, l2 = {lock2};
             locks.push_back(l1);
             locks.push_back(l2);
             this->thread.thread_id = thread;
         }
 
-    private:
-        friend class DeadlockDiagnostic;
         ThreadInformation thread;
         // sorted in order of acquisition
         std::vector<LockInformation> locks;
@@ -74,7 +72,8 @@ public:
     std::set<ThreadInformation> involved_threads() const;
     std::set<LockInformation> involved_locks() const;
 
-private:
+    typedef std::vector<AcquireStreak> Steps;
+
     /**
      * Range of `AcquireStreak`s showing the state required by each
      * involved thread in order for the system as a whole to become
@@ -93,7 +92,15 @@ private:
      *       user to spot a deadlock when the steps leading to it are ordered
      *       that way.
      */
-    typedef std::vector<AcquireStreak> Steps;
+    Steps& steps() {
+        return steps_;
+    }
+
+    Steps const& steps() const {
+        return steps_;
+    }
+
+private:
     Steps steps_;
 
     static std::string format_step(AcquireStreak const& streak);

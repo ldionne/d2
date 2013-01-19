@@ -3,8 +3,6 @@
 
 
 int main(int argc, char const* argv[]) {
-    d2::mock::integration_test start(argc, argv, __FILE__);
-
     d2::mock::mutex A, B, C;
 
     d2::mock::thread t0([&] {
@@ -28,6 +26,8 @@ int main(int argc, char const* argv[]) {
         C.unlock();
     });
 
+    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+
     t0.start();
     t1.start();
 
@@ -36,4 +36,6 @@ int main(int argc, char const* argv[]) {
 
     t1.join();
     t2.join();
+
+    integration_test.verify_deadlocks(/* none */);
 }

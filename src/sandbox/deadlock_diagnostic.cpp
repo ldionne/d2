@@ -42,12 +42,12 @@ std::ostream& operator<<(std::ostream& os, DeadlockDiagnostic const& self) {
     using namespace boost::adaptors;
 
     os << karma::format(karma::string % "\nwhile "
-        , self.steps_ | transformed(DeadlockDiagnostic::format_step))
+        , self.steps() | transformed(DeadlockDiagnostic::format_step))
 
        << "\n\nwhich creates a deadlock if\n"
 
        << karma::format(karma::string % '\n'
-        , self.steps_ | transformed(DeadlockDiagnostic::format_explanation));
+        , self.steps() | transformed(DeadlockDiagnostic::format_explanation));
     return os;
 }
 

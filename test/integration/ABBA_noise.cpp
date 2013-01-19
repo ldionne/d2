@@ -8,15 +8,17 @@
 #include "mock.hpp"
 
 #include <algorithm>
-#include <boost/move/move.hpp>
-#include <boost/range/adaptors.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/shared_ptr.hpp>
 #include <cstddef>
+#include <iterator>
 #include <vector>
 
 
 static std::size_t const NOISE_THREADS = 10;
 static std::size_t const MUTEXES_PER_NOISE_THREAD = 100;
+typedef boost::shared_ptr<d2::mock::thread> ThreadPtr;
 
 int main(int argc, char const* argv[]) {
     auto noise = [&] {
@@ -28,30 +30,37 @@ int main(int argc, char const* argv[]) {
 
     d2::mock::mutex A, B;
 
-    d2::mock::thread t0([&] {
+    ThreadPtr t0(new d2::mock::thread([&] {
         A.lock();
             B.lock();
             B.unlock();
         A.unlock();
-    });
+    }));
 
-    d2::mock::thread t1([&] {
+    ThreadPtr t1(new d2::mock::thread([&] {
         B.lock();
             A.lock();
             A.unlock();
         B.unlock();
+    }));
+
+    std::vector<ThreadPtr> threads;
+    threads.push_back(t0); threads.push_back(t1);
+    std::generate_n(std::back_inserter(threads), NOISE_THREADS, [&] {
+        return ThreadPtr(new d2::mock::thread(noise));
     });
+    boost::random_shuffle(threads);
 
-    std::vector<d2::mock::thread> threads;
-    threads.push_back(boost::move(t0)); threads.push_back(boost::move(t1));
-    std::generate_n(boost::back_move_inserter(threads), NOISE_THREADS, [&] {
-        return d2::mock::thread(noise);
+
+    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+
+    boost::for_each(threads, [](ThreadPtr t) { t->start(); });
+    boost::for_each(threads, [](ThreadPtr t) { t->join(); });
+
+    integration_test.verify_deadlocks({
+        {
+            {*t0, A, B},
+            {*t1, B, A}
+        }
     });
-    boost::range::random_shuffle(threads);
-
-
-    d2::mock::integration_test start(argc, argv, __FILE__);
-
-    boost::for_each(threads, [](d2::mock::thread& t) { t.start(); });
-    boost::for_each(threads, [](d2::mock::thread& t) { t.join(); });
 }
