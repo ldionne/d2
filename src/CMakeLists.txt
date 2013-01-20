@@ -5,7 +5,8 @@ d2_target_link_libraries(d2support dbg)
 
 # Add the d2log logging library.
 if(${Boost_FILESYSTEM_FOUND} AND ${Boost_SYSTEM_FOUND} AND TARGET d2support)
-    add_library(d2log SHARED logging.cpp)
+    file(GLOB d2log_sources api/*.cpp)
+    add_library(d2log SHARED ${d2log_sources})
     set_target_properties(d2log PROPERTIES COMPILE_DEFINITIONS D2_DYN_LINK)
     d2_target_link_libraries(d2log d2support dbg)
     d2_link_boost(d2log filesystem system)

@@ -1,5 +1,5 @@
 /**
- * This file implements the interface to interact with the d2log library.
+ * This file implements the _d2_ API.
  */
 
 #define D2_SOURCE
