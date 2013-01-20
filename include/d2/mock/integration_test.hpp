@@ -6,7 +6,6 @@
 #define D2_MOCK_INTEGRATION_TEST_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/sync_object.hpp>
 #include <d2/thread.hpp>
 
@@ -26,12 +25,11 @@ struct D2_API integration_test {
 
     ~integration_test();
 
-    struct Streak : boost::equality_comparable<
-                        Streak, sandbox::DeadlockDiagnostic::AcquireStreak
-                    >
-    {
+    struct Streak : boost::equality_comparable<Streak> {
         Thread thread_id;
         std::vector<SyncObject> locks;
+
+        Streak() : thread_id() { }
 
         template <typename Thread, typename ...Locks>
         Streak(Thread const& thread, Locks&& ...locks)
@@ -39,24 +37,24 @@ struct D2_API integration_test {
               locks{SyncObject(boost::forward<Locks>(locks))...}
         { }
 
-        D2_API friend bool
-        operator==(Streak const& self,
-                   sandbox::DeadlockDiagnostic::AcquireStreak const& other);
+        friend bool operator==(Streak const& self, Streak const& other) {
+            return self.thread_id == other.thread_id &&
+                   self.locks == other.locks;
+        }
     };
 
-    struct D2_API Deadlock : boost::equality_comparable<
-                               Deadlock, sandbox::DeadlockDiagnostic
-                            >
-    {
+    struct Deadlock : boost::equality_comparable<Deadlock> {
         std::vector<Streak> steps;
+
+        Deadlock() { }
 
         Deadlock(std::initializer_list<Streak> const& streaks)
             : steps(streaks)
         { }
 
-        D2_API friend bool
-        operator==(Deadlock const& self,
-                   sandbox::DeadlockDiagnostic const& other);
+        friend bool operator==(Deadlock const& self, Deadlock const& other) {
+            return self.steps == other.steps;
+        }
     };
 
     void verify_deadlocks(std::initializer_list<Deadlock> const& expected);

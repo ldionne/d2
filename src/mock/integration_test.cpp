@@ -15,6 +15,7 @@
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -57,8 +58,8 @@ integration_test::integration_test(int argc, char const* argv[],
                                    std::string const& test_source) {
     repo_ = argc > 1 ? argv[1] : create_tmp_directory(test_source);
     if (set_log_repository(repo_.string()))
-        throw std::runtime_error((boost::format(
-            "setting the repository at %1% failed\n") % repo_).str());
+        throw std::runtime_error(boost::str(boost::format(
+            "setting the repository at %1% failed\n") % repo_));
 
     std::cout << boost::format("repository is at %1%\n") % repo_;
     enable_event_logging();
@@ -68,74 +69,51 @@ integration_test::~integration_test() {
     disable_event_logging();
 }
 
-
-D2_API extern bool
-operator==(integration_test::Streak const& self,
-           sandbox::DeadlockDiagnostic::AcquireStreak const& other) {
-    typedef sandbox::DeadlockDiagnostic::LockInformation LockInfo;
-    return self.thread_id == other.thread.thread_id &&
-           self.locks == (other.locks |
-           boost::adaptors::transformed(d2::detail::get(&LockInfo::lock_id)));
-}
-
-D2_API extern bool
-operator==(integration_test::Deadlock const& self,
-           sandbox::DeadlockDiagnostic const& other) {
-    return self.steps.size() == other.steps().size() &&
-           std::equal(boost::begin(self.steps), boost::end(self.steps),
-                      boost::begin(other.steps()));
-}
-
 namespace detail {
-    /**
-     * Functor returning whether an element is contained in a sequence.
-     */
-    template <typename Container>
-    struct contained_in_type {
-        Container const& container_;
+integration_test::Streak
+make_streak(sandbox::DeadlockDiagnostic::AcquireStreak const& step) {
+    integration_test::Streak streak;
+    streak.thread_id = step.thread.thread_id;
+    typedef sandbox::DeadlockDiagnostic::LockInformation LockInfo;
+    BOOST_FOREACH(LockInfo const& lock_info, step.locks)
+        streak.locks.push_back(lock_info.lock_id);
+    return streak;
+}
 
-        explicit contained_in_type(Container const& c) : container_(c) { }
-
-        typedef bool result_type;
-
-        template <typename T>
-        result_type operator()(T const& element) const {
-            return boost::find(container_, element) != boost::end(container_);
-        }
-     };
-
-     template <typename Container>
-     contained_in_type<Container> contained_in(Container const& c) {
-        return contained_in_type<Container>(c);
-     }
-
-    /**
-     * Return whether the arbitrary sequence `s1` is a non-strict subset of
-     * the arbitrary sequence `s2`.
-     */
-    template <typename S1, typename S2>
-    bool is_non_strict_subset_of(S1 const& s1, S2 const& s2) {
-        return boost::algorithm::all_of(s1, contained_in(s2));
-    }
-
-    /**
-     * Return whether two arbitrary sequences contain the same elements.
-     */
-    template <typename S1, typename S2>
-    bool contain_same_elements(S1 const& s1, S2 const& s2) {
-        return is_non_strict_subset_of(s1, s2) &&
-               is_non_strict_subset_of(s2, s1);
-    }
+integration_test::Deadlock
+make_deadlock(sandbox::DeadlockDiagnostic const& diagnostic) {
+    integration_test::Deadlock deadlock;
+    BOOST_FOREACH(sandbox::DeadlockDiagnostic::AcquireStreak const& streak,
+                                                        diagnostic.steps())
+        deadlock.steps.push_back(make_streak(streak));
+    return deadlock;
+}
 } // end namespace detail
 
 void integration_test::verify_deadlocks(
                             std::initializer_list<Deadlock> const& expected) {
-    BOOST_ASSERT(fs::exists(repo_));
+    if (!fs::exists(repo_))
+        throw std::logic_error(boost::str(boost::format(
+            "repository path %1% does not exist") % repo_));
     EventRepository<> events(repo_);
     sandbox::SyncSkeleton<EventRepository<> > skeleton(events);
-    auto actual = skeleton.deadlocks();
-    BOOST_ASSERT_MSG(detail::contain_same_elements(actual, expected),
-        "the found deadlocks were not as expected");
+    std::vector<Deadlock> actual;
+    BOOST_FOREACH(sandbox::DeadlockDiagnostic const& diagnostic,
+                                                        skeleton.deadlocks())
+        actual.push_back(detail::make_deadlock(diagnostic));
+
+    if (expected.size() != actual.size())
+        throw std::logic_error(boost::str(boost::format(
+            "expected %1% deadlocks, but got %2%\n")
+            % expected.size() % actual.size()));
+
+    BOOST_FOREACH(Deadlock const& exp, expected)
+        if (boost::find(actual, exp) == boost::end(actual))
+            throw std::logic_error("expected deadlock that was not found\n");
+
+    BOOST_FOREACH(Deadlock const& act, actual)
+        if (boost::find(expected, act) == boost::end(expected))
+            throw std::logic_error("found a deadlock that was not expected\n");
 }
 
 } // end namespace mock
