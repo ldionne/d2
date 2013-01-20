@@ -3,7 +3,7 @@
  */
 
 #define D2_SOURCE
-#include <d2/api.hpp>
+#include <d2/api.h>
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/config.hpp>
@@ -39,6 +39,10 @@ D2_API extern int d2_is_disabled(void) {
 D2_API extern int d2_set_log_repository(char const* path) {
     // Note: 0 for success and anything else but 0 for failure.
     return d2::detail::dispatcher.set_repository_noexcept(path) ? 0 : 1;
+}
+
+D2_API extern void d2_unset_log_repository(void) {
+    d2::detail::dispatcher.unset_repository();
 }
 
 D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {

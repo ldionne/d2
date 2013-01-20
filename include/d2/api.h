@@ -31,6 +31,14 @@ extern "C" {
 D2_API extern int d2_set_log_repository(char const* path);
 
 /**
+ * Close the repository into which events are written.
+ *
+ * @note This operation can be considered atomic.
+ * @note Nothing happens if there is no current repository set.
+ */
+D2_API extern void d2_unset_log_repository(void);
+
+/**
  * Disable the logging of events by the library.
  *
  * @note This operation can be considered atomic.

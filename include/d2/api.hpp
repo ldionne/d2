@@ -30,6 +30,15 @@ inline int set_log_repository(std::string const& path) {
 }
 
 /**
+ * Forwards to `d2_unset_log_repository`.
+ *
+ * @see `d2_unset_log_repository`
+ */
+inline void unset_log_repository() {
+    d2_unset_log_repository();
+}
+
+/**
  * Forwards to `d2_disable_event_logging`.
  *
  * @see `d2_disable_event_logging`

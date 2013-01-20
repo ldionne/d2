@@ -10,12 +10,10 @@
 #include <d2/event_repository.hpp>
 #include <d2/thread.hpp>
 
-#include <boost/assert.hpp>
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <cstddef>
 
 
 namespace d2 {
@@ -56,13 +54,11 @@ class FilesystemDispatcher {
     // because a call to `set_repository` happened.
     boost::shared_ptr<Repository> repository_;
     detail::basic_mutex mutable repository_lock_;
+    typedef detail::scoped_lock<detail::basic_mutex> scoped_lock;
 
     boost::shared_ptr<Repository> get_repository() {
-        boost::shared_ptr<Repository> current_repo;
-        repository_lock_.lock();
-        current_repo = repository_;
-        repository_lock_.unlock();
-        return current_repo;
+        scoped_lock lock(repository_lock_);
+        return repository_;
     }
 
 public:
@@ -88,16 +84,23 @@ public:
     void set_repository(Source const& path) {
         // Try to create a new repository.
         // If it throws, the repository won't be modified in any way.
-        boost::interprocess::unique_ptr<Repository,RepoDeleter> new_repo(NULL);
-        new_repo.reset(new Repository(path));
-        BOOST_ASSERT(new_repo);
+        namespace ipc = boost::interprocess;
+        ipc::unique_ptr<Repository,RepoDeleter> new_repo(new Repository(path));
 
         // "Atomically" exchange the old repository with the new one.
         // This has noexcept guarantee.
         {
-            detail::scoped_lock<detail::basic_mutex> lock(repository_lock_);
+            scoped_lock lock(repository_lock_);
             repository_.reset(new_repo.release());
         }
+    }
+
+    /**
+     * Unset the current repository.
+     */
+    void unset_repository() {
+        scoped_lock lock(repository_lock_);
+        repository_.reset();
     }
 
     /**
@@ -122,7 +125,7 @@ public:
      * in which events are dispatched.
      */
     bool has_repository() const {
-        detail::scoped_lock<detail::basic_mutex> lock(repository_lock_);
+        scoped_lock lock(repository_lock_);
         return repository_;
     }
 
