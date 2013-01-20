@@ -5,7 +5,7 @@
 #ifndef D2_ANALYSIS_HPP
 #define D2_ANALYSIS_HPP
 
-#include <d2/detail/all_cycles.hpp>
+#include <d2/detail/non_equivalent_cycles.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -110,7 +110,7 @@ template <typename LockGraph, typename SegmentationGraph, typename Function>
 void analyze(LockGraph const& lg, SegmentationGraph const& sg,
              Function const& f) {
     detail::CycleVisitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
-    detail::all_cycles(lg, vis);
+    detail::non_equivalent_cycles(lg, vis);
 }
 
 } // end namespace d2
