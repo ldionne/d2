@@ -6,7 +6,6 @@
 #define D2_EVENTS_EXCEPTIONS_HPP
 
 #include <d2/detail/exceptions.hpp>
-#include <d2/thread.hpp>
 
 
 namespace d2 {
