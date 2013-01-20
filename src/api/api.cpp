@@ -15,17 +15,10 @@
 #include <stddef.h>
 
 
-namespace d2 {
-namespace detail {
-    template <typename Value, typename Container>
-    bool contains(Value const& v, Container const& c) {
-        return c.find(v) != c.end();
-    }
-
+namespace d2 { namespace detail {
     static FilesystemDispatcher dispatcher;
     static basic_atomic<bool> event_logging_enabled(false);
-} // end namespace detail
-} // end namespace d2
+}}
 
 D2_API extern void d2_disable_event_logging(void) {
     d2::detail::event_logging_enabled = false;
@@ -93,6 +86,11 @@ namespace d2 { namespace detail {
     static Segment current_segment;
     static basic_mutex segment_mutex;
     static boost::unordered_map<Thread, Segment> segment_of;
+
+    template <typename Value, typename Container>
+    bool contains(Value const& v, Container const& c) {
+        return c.find(v) != c.end();
+    }
 }}
 
 D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
