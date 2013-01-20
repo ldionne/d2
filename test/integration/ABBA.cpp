@@ -32,16 +32,10 @@ int main(int argc, char const* argv[]) {
     t1.join();
     t0.join();
 
-    d2::mock::integration_test::Streak streak{t0, A, B};
-    d2::mock::integration_test::Deadlock dlock{
-            {t0, A, B},
-            {t0, A, B}
-    };
-
-    integration_test.verify_deadlocks(
+    integration_test.verify_deadlocks({
             {
                 {t0, A, B},
                 {t1, B, A}
             }
-    );
+    });
 }

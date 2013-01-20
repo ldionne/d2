@@ -36,11 +36,11 @@ int main(int argc, char const* argv[]) {
     t1.join();
     t0.join();
 
-    integration_test.verify_deadlocks(
+    integration_test.verify_deadlocks({
         {
             {t0, A, B},
             {t1, B, C},
             {t2, C, A}
         }
-    );
+    });
 }

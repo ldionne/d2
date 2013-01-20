@@ -24,8 +24,10 @@
 #include <boost/range/end.hpp>
 #include <initializer_list>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 
 namespace fs = boost::filesystem;
@@ -59,7 +61,7 @@ integration_test::integration_test(int argc, char const* argv[],
     repo_ = argc > 1 ? argv[1] : create_tmp_directory(test_source);
     if (set_log_repository(repo_.string()))
         throw std::runtime_error(boost::str(boost::format(
-            "setting the repository at %1% failed\n") % repo_));
+            "setting the repository at %1% failed") % repo_));
 
     std::cout << boost::format("repository is at %1%\n") % repo_;
     enable_event_logging();
@@ -70,9 +72,8 @@ integration_test::~integration_test() {
 }
 
 namespace detail {
-integration_test::Streak
-make_streak(sandbox::DeadlockDiagnostic::AcquireStreak const& step) {
-    integration_test::Streak streak;
+Streak make_streak(sandbox::DeadlockDiagnostic::AcquireStreak const& step) {
+    Streak streak;
     streak.thread_id = step.thread.thread_id;
     typedef sandbox::DeadlockDiagnostic::LockInformation LockInfo;
     BOOST_FOREACH(LockInfo const& lock_info, step.locks)
@@ -80,39 +81,88 @@ make_streak(sandbox::DeadlockDiagnostic::AcquireStreak const& step) {
     return streak;
 }
 
-integration_test::Deadlock
-make_deadlock(sandbox::DeadlockDiagnostic const& diagnostic) {
-    integration_test::Deadlock deadlock;
+Deadlock make_deadlock(sandbox::DeadlockDiagnostic const& diagnostic) {
+    Deadlock deadlock;
     BOOST_FOREACH(sandbox::DeadlockDiagnostic::AcquireStreak const& streak,
                                                         diagnostic.steps())
         deadlock.steps.push_back(make_streak(streak));
     return deadlock;
 }
+
+template <typename OutputIterator>
+void verify_consume(std::vector<Deadlock> expected,
+                    std::vector<Deadlock> actual,
+                    OutputIterator missing) {
+    if (expected.empty())
+        return;
+
+    Deadlock const& exp = expected.back();
+    std::vector<Deadlock>::iterator
+        it = boost::find_if(actual, [&](Deadlock const& act) {
+            return exp.is_equivalent_to(act);
+        });
+    if (it == boost::end(actual))
+        *missing++ = exp;
+    else
+        actual.erase(it);
+
+    expected.pop_back();
+    verify_consume(expected, actual, missing);
+}
 } // end namespace detail
 
 void integration_test::verify_deadlocks(
-                            std::initializer_list<Deadlock> const& expected) {
+                    std::initializer_list<detail::Deadlock> const& expected) {
     unset_log_repository();
     EventRepository<> events(repo_);
     sandbox::SyncSkeleton<EventRepository<> > skeleton(events);
-    std::vector<Deadlock> actual;
+    std::vector<detail::Deadlock> actual;
     BOOST_FOREACH(sandbox::DeadlockDiagnostic const& diagnostic,
                                                         skeleton.deadlocks())
         actual.push_back(detail::make_deadlock(diagnostic));
 
-    if (expected.size() != actual.size())
-        throw std::logic_error(boost::str(boost::format(
-            "expected %1% deadlocks, but got %2%\n")
-            % expected.size() % actual.size()));
+    std::vector<detail::Deadlock> not_found, unexpected;
+    detail::verify_consume(expected, actual, std::back_inserter(not_found));
+    detail::verify_consume(actual, expected, std::back_inserter(unexpected));
 
-    BOOST_FOREACH(Deadlock const& exp, expected)
-        if (boost::find(actual, exp) == boost::end(actual))
-            throw std::logic_error("expected deadlock that was not found\n");
+    BOOST_FOREACH(detail::Deadlock const& dl, not_found)
+        std::cout << "did not find expected deadlock:\n" << dl << '\n';
 
-    BOOST_FOREACH(Deadlock const& act, actual)
-        if (boost::find(expected, act) == boost::end(expected))
-            throw std::logic_error("found a deadlock that was not expected\n");
+    BOOST_FOREACH(detail::Deadlock const& dl, unexpected)
+        std::cout << "found unexpected deadlock:\n" << dl << '\n';
+
+    if (!unexpected.empty() || !not_found.empty())
+        throw std::logic_error("failed integration test");
 }
+
+namespace detail {
+D2_API extern std::ostream& operator<<(std::ostream& os, Streak const& self) {
+    os << "thread " << self.thread_id << " acquires ";
+    boost::copy(self.locks, std::ostream_iterator<LockId>(os, ", "));
+    return os;
+}
+
+/**
+ * Return whether two deadlocks are equivalent.
+ *
+ * @todo Instead of copying, rotate back the other deadlock.
+ */
+bool Deadlock::is_equivalent_to(Deadlock other) const {
+    typedef std::vector<Streak>::size_type size_type;
+    for (size_type n = 0; n < this->steps.size(); ++n) {
+        if (this->steps == other.steps)
+            return true;
+        std::rotate(other.steps.begin(), other.steps.begin() + 1,
+                    other.steps.end());
+    }
+    return false;
+}
+
+D2_API extern std::ostream& operator<<(std::ostream& os,Deadlock const& self){
+    boost::copy(self.steps, std::ostream_iterator<Streak>(os, "\n"));
+    return os;
+}
+} // end namespace detail
 
 } // end namespace mock
 } // end namespace d2

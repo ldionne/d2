@@ -57,10 +57,10 @@ int main(int argc, char const* argv[]) {
     boost::for_each(threads, [](ThreadPtr t) { t->start(); });
     boost::for_each(threads, [](ThreadPtr t) { t->join(); });
 
-    integration_test.verify_deadlocks(
+    integration_test.verify_deadlocks({
         {
             {*t0, A, B},
             {*t1, B, A}
         }
-    );
+    });
 }
