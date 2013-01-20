@@ -36,9 +36,9 @@
 
 #if defined(D2_DYN_LINK)
 #   if defined(D2_SOURCE)
-#       define D2_API BOOST_SYMBOL_EXPORT
+#       define D2_API D2_SYMBOL_EXPORT
 #   else
-#       define D2_API BOOST_SYMBOL_IMPORT
+#       define D2_API D2_SYMBOL_IMPORT
 #   endif
 #else
 #   define D2_API /* nothing */
