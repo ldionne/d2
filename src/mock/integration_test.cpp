@@ -1,12 +1,14 @@
 /**
- * Implementation of a mock mutex and a mock thread class
- * for testing purposes.
+ * This file implements the `mock/integration_test.hpp` header.
  */
 
-#include "mock.hpp"
-#include <d2/detail/basic_atomic.hpp>
+#define D2_SOURCE
+#include <d2/detail/config.hpp>
+#include <d2/detail/getter.hpp>
 #include <d2/event_repository.hpp>
 #include <d2/logging.hpp>
+#include <d2/mock/integration_test.hpp>
+#include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/sandbox/sync_skeleton.hpp>
 
 #include <algorithm>
@@ -14,38 +16,21 @@
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/functional/hash.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/move/move.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <boost/thread/thread.hpp>
-#include <cstddef>
+#include <initializer_list>
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 
 namespace fs = boost::filesystem;
 
 namespace d2 {
 namespace mock {
-
-namespace detail {
-    inline bool operator==(Deadlock const& a,
-                           sandbox::DeadlockDiagnostic const& b) {
-        return a.size() == b.steps().size() &&
-               std::equal(a.begin(), a.end(), b.steps().begin());
-    }
-
-    inline bool operator==(sandbox::DeadlockDiagnostic const& a,
-                           Deadlock const& b) {
-        return b == a;
-    }
-} // end namespace detail
 
 namespace {
 fs::path create_tmp_directory(fs::path const& test_source) {
@@ -71,16 +56,34 @@ fs::path create_tmp_directory(fs::path const& test_source) {
 integration_test::integration_test(int argc, char const* argv[],
                                    std::string const& test_source) {
     repo_ = argc > 1 ? argv[1] : create_tmp_directory(test_source);
-    if (d2::set_log_repository(repo_.string()))
+    if (set_log_repository(repo_.string()))
         throw std::runtime_error((boost::format(
             "setting the repository at %1% failed\n") % repo_).str());
 
     std::cout << boost::format("repository is at %1%\n") % repo_;
-    d2::enable_event_logging();
+    enable_event_logging();
 }
 
 integration_test::~integration_test() {
-    d2::disable_event_logging();
+    disable_event_logging();
+}
+
+
+D2_API extern bool
+operator==(integration_test::Streak const& self,
+           sandbox::DeadlockDiagnostic::AcquireStreak const& other) {
+    typedef sandbox::DeadlockDiagnostic::LockInformation LockInfo;
+    return self.thread_id == other.thread.thread_id &&
+           self.locks == (other.locks |
+           boost::adaptors::transformed(d2::detail::get(&LockInfo::lock_id)));
+}
+
+D2_API extern bool
+operator==(integration_test::Deadlock const& self,
+           sandbox::DeadlockDiagnostic const& other) {
+    return self.steps.size() == other.steps().size() &&
+           std::equal(boost::begin(self.steps), boost::end(self.steps),
+                      boost::begin(other.steps()));
 }
 
 namespace detail {
@@ -125,120 +128,14 @@ namespace detail {
     }
 } // end namespace detail
 
-void integration_test::verify_deadlocks(detail::Deadlocks expected) {
+void integration_test::verify_deadlocks(
+                            std::initializer_list<Deadlock> const& expected) {
     BOOST_ASSERT(fs::exists(repo_));
     EventRepository<> events(repo_);
     sandbox::SyncSkeleton<EventRepository<> > skeleton(events);
     auto actual = skeleton.deadlocks();
     BOOST_ASSERT_MSG(detail::contain_same_elements(actual, expected),
         "the found deadlocks were not as expected");
-}
-
-
-namespace detail {
-class thread_functor_wrapper {
-    thread::id parent_;
-    boost::function<void()> f_;
-
-public:
-    explicit thread_functor_wrapper(boost::function<void()> const& f)
-        : parent_(this_thread::get_id()), f_(f)
-    { }
-
-    void operator()() const {
-        thread::id child = this_thread::get_id();
-        d2::notify_start(parent_, child);
-        f_();
-        d2::notify_join(parent_, child);
-    }
-};
-} // end namespace detail
-
-bool thread::is_initialized() const {
-    return id_ && actual_;
-}
-
-thread::thread(boost::function<void()> const& f)
-    : f_(detail::thread_functor_wrapper(f))
-{ }
-
-thread::thread(BOOST_RV_REF(thread) other) : f_(boost::move(other.f_)) {
-    using std::swap;
-    swap(actual_, other.actual_);
-    swap(id_, other.id_);
-}
-
-thread::id thread::get_id() const {
-    BOOST_ASSERT(is_initialized());
-    return thread::id(actual_->get_id());
-}
-
-void swap(thread& a, thread& b) {
-    using std::swap;
-    swap(a.f_, b.f_);
-    swap(a.actual_, b.actual_);
-    swap(a.id_, b.id_);
-}
-
-void thread::start() {
-    BOOST_ASSERT_MSG(!is_initialized(),
-        "starting a thread that is already started");
-    actual_.reset(new boost::thread(f_));
-    id_ = actual_->get_id();
-}
-
-void thread::join() {
-    BOOST_ASSERT_MSG(is_initialized(), "joining a thread that is not started");
-    actual_->join();
-}
-
-extern std::size_t unique_id(thread const& self) {
-    BOOST_ASSERT(self.is_initialized());
-    return unique_id(*self.id_);
-}
-
-
-thread::id::id(boost::thread::id const& thread_id)
-    : id_(thread_id)
-{ }
-
-extern std::size_t unique_id(thread::id const& self) {
-    using boost::hash_value;
-    return hash_value(self.id_);
-}
-
-namespace this_thread {
-    extern thread::id get_id() {
-        return thread::id(boost::this_thread::get_id());
-    }
-}
-
-
-mutex::mutex()
-    : id_(counter++)
-{ }
-
-void mutex::lock() const {
-    d2::notify_acquire(this_thread::get_id(), *this);
-}
-
-void mutex::unlock() const {
-    d2::notify_release(this_thread::get_id(), *this);
-}
-
-extern std::size_t unique_id(mutex const& self) {
-    return self.id_;
-}
-
-d2::detail::basic_atomic<std::size_t> mutex::counter(0);
-
-
-void recursive_mutex::lock() const {
-    d2::notify_recursive_acquire(this_thread::get_id(), *this);
-}
-
-void recursive_mutex::unlock() const {
-    d2::notify_recursive_release(this_thread::get_id(), *this);
 }
 
 } // end namespace mock

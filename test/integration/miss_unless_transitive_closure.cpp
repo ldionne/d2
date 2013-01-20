@@ -8,7 +8,7 @@
  * B lock because there is a DIRECT edge from A to C.
  */
 
-#include "mock.hpp"
+#include <d2/mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
@@ -38,10 +38,10 @@ int main(int argc, char const* argv[]) {
     t1.join();
     t0.join();
 
-    integration_test.verify_deadlocks({
+    integration_test.verify_deadlocks(
         {
-            {t0, A, C},
+            {t0, A, B, C},
             {t1, C, A}
         }
-    });
+    );
 }

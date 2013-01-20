@@ -5,7 +5,7 @@
  * pattern leading to a deadlock is encountered 100 times in each thread.
  */
 
-#include "mock.hpp"
+#include <d2/mock.hpp>
 
 #include <cstddef>
 
@@ -41,10 +41,10 @@ int main(int argc, char const* argv[]) {
     t1.join();
     t0.join();
 
-    integration_test.verify_deadlocks({
+    integration_test.verify_deadlocks(
         {
             {t0, A, B},
             {t1, B, A}
         }
-    });
+    );
 }

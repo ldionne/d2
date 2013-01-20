@@ -1,5 +1,11 @@
+/**
+ * This test makes sure that we do not find a deadlock when the threads
+ * involved in the deadlock have a start/join relationship such that it is
+ * impossible for them to run at the same time, i.e. a deadlock is not
+ * possible.
+ */
 
-#include "mock.hpp"
+#include <d2/mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
@@ -27,5 +33,5 @@ int main(int argc, char const* argv[]) {
     t1.start();
     t1.join();
 
-    integration_test.verify_deadlocks(/* none */);
+    integration_test.verify_deadlocks({/* none */});
 }

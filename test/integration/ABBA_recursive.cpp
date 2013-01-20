@@ -1,5 +1,5 @@
 
-#include "mock.hpp"
+#include <d2/mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
@@ -43,10 +43,10 @@ int main(int argc, char const* argv[]) {
     t1.join();
     t0.join();
 
-    integration_test.verify_deadlocks({
+    integration_test.verify_deadlocks(
         {
             {t0, A, B},
             {t1, B, A}
         }
-    });
+    );
 }

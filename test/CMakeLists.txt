@@ -44,21 +44,6 @@ d2_add_event_test(segment_hop_event)
 d2_add_event_test(start_event)
 
 
-# Add the d2mock library for integration tests.
-if(TARGET d2log AND TARGET d2support)
-    add_library(d2mock STATIC integration/mock.cpp)
-    d2_target_link_libraries(d2mock d2log d2support)
-    # Note: If the dependencies of d2mock change, don't forget to update
-    #       the dependencies for the targets using it.
-    d2_link_boost(d2mock thread system filesystem)
-    if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
-        set_target_properties(d2mock PROPERTIES COMPILE_FLAGS -std=c++11)
-    endif()
-else()
-    message("Missing the d2log and/or d2support library: d2mock will be unavailable.")
-endif()
-
-
 # Add integration tests.
 add_custom_target(integration)
 function(d2_add_integration_test name)
@@ -69,9 +54,7 @@ function(d2_add_integration_test name)
     elseif(NOT TARGET d2mock)
         message("Missing the d2mock library: ${name} will be unavailable.")
     else()
-        # Note: Since d2mock is a static library, we must propagate its
-        #       dependencies to the targets using it.
-        d2_add_executable(${name}_exe integration/${name}.cpp thread system filesystem)
+        d2_add_executable(${name}_exe integration/${name}.cpp)
         d2_target_link_libraries(${name}_exe d2log d2support d2mock)
         add_test(NAME ${name} COMMAND ${name}_exe)
         add_dependencies(integration ${name}_exe)

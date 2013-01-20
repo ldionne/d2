@@ -8,7 +8,7 @@
  * deadlock potentials because it may be non obvious in real code.
  */
 
-#include "mock.hpp"
+#include <d2/mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
