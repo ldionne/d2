@@ -19,15 +19,15 @@ namespace {
     detail::basic_atomic<std::size_t> counter(0);
 }
 
-mutex::mutex()
+D2_API mutex::mutex()
     : id_(counter++)
 { }
 
-void mutex::lock() {
+D2_API void mutex::lock() {
     notify_acquire(this_thread::get_id(), *this);
 }
 
-void mutex::unlock() {
+D2_API void mutex::unlock() {
     notify_release(this_thread::get_id(), *this);
 }
 

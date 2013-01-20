@@ -14,15 +14,15 @@
 namespace d2 {
 namespace mock {
 
-class D2_API mutex : boost::noncopyable {
+class mutex : boost::noncopyable {
     std::size_t id_;
 
 public:
-    mutex();
+    D2_API mutex();
 
-    void lock();
+    D2_API void lock();
 
-    void unlock();
+    D2_API void unlock();
 
     D2_API friend std::size_t unique_id(mutex const& self);
 };

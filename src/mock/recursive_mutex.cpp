@@ -4,6 +4,7 @@
 
 #define D2_SOURCE
 #include <d2/api.hpp>
+#include <d2/detail/config.hpp>
 #include <d2/mock/recursive_mutex.hpp>
 #include <d2/mock/this_thread.hpp>
 
@@ -11,11 +12,11 @@
 namespace d2 {
 namespace mock {
 
-void recursive_mutex::lock() {
+D2_API void recursive_mutex::lock() {
     notify_recursive_acquire(this_thread::get_id(), *this);
 }
 
-void recursive_mutex::unlock() {
+D2_API void recursive_mutex::unlock() {
     notify_recursive_release(this_thread::get_id(), *this);
 }
 

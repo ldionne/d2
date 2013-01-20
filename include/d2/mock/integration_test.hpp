@@ -46,7 +46,7 @@ struct Streak : boost::equality_comparable<Streak> {
     D2_API friend std::ostream& operator<<(std::ostream&, Streak const&);
 };
 
-struct D2_API Deadlock {
+struct Deadlock {
     std::vector<Streak> steps;
 
     Deadlock() { }
@@ -55,18 +55,19 @@ struct D2_API Deadlock {
         : steps(streaks)
     { }
 
-    bool is_equivalent_to(Deadlock other) const;
+    D2_API bool is_equivalent_to(Deadlock other) const;
 
     D2_API friend std::ostream& operator<<(std::ostream&, Deadlock const&);
 };
 } // end namespace detail
 
-struct D2_API integration_test {
-    integration_test(int argc, char const* argv[], std::string const& file);
+struct integration_test {
+    D2_API integration_test(int argc, char const* argv[],
+                            std::string const& file);
 
-    ~integration_test();
+    D2_API ~integration_test();
 
-    void
+    D2_API void
     verify_deadlocks(std::initializer_list<detail::Deadlock> const& expected);
 
 private:

@@ -2,12 +2,6 @@
  * Integration test to try using the library from C.
  */
 
-#include <d2/detail/config.hpp>
-#ifdef D2_WIN32
-/* Disable MSVC C4996: This function or variable may be unsafe. (tmpnam) */
-#   define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include <d2/api.h>
 
 #include <assert.h>

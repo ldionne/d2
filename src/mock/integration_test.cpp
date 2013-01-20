@@ -56,8 +56,8 @@ fs::path create_tmp_directory(fs::path const& test_source) {
  * @note If the setup fails, an exception will be thrown and the test will
  *       fail (unless the test catches the exception, which it should not).
  */
-integration_test::integration_test(int argc, char const* argv[],
-                                   std::string const& test_source) {
+D2_API integration_test::integration_test(int argc, char const* argv[],
+                                          std::string const& test_source) {
     repo_ = argc > 1 ? argv[1] : create_tmp_directory(test_source);
     if (set_log_repository(repo_.string()))
         throw std::runtime_error(boost::str(boost::format(
@@ -67,7 +67,7 @@ integration_test::integration_test(int argc, char const* argv[],
     enable_event_logging();
 }
 
-integration_test::~integration_test() {
+D2_API integration_test::~integration_test() {
     disable_event_logging();
 }
 
@@ -111,7 +111,7 @@ void verify_consume(std::vector<Deadlock> expected,
 }
 } // end namespace detail
 
-void integration_test::verify_deadlocks(
+D2_API void integration_test::verify_deadlocks(
                     std::initializer_list<detail::Deadlock> const& expected) {
     unset_log_repository();
     EventRepository<> events(repo_);
@@ -147,7 +147,7 @@ D2_API extern std::ostream& operator<<(std::ostream& os, Streak const& self) {
  *
  * @todo Instead of copying, rotate back the other deadlock.
  */
-bool Deadlock::is_equivalent_to(Deadlock other) const {
+D2_API bool Deadlock::is_equivalent_to(Deadlock other) const {
     typedef std::vector<Streak>::size_type size_type;
     for (size_type n = 0; n < this->steps.size(); ++n) {
         if (this->steps == other.steps)

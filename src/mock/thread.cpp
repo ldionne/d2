@@ -39,20 +39,20 @@ public:
 };
 } // end namespace detail
 
-bool thread::is_initialized() const {
+D2_API bool thread::is_initialized() const {
     return id_ && actual_;
 }
 
-thread::thread(boost::function<void()> const& f)
+D2_API thread::thread(boost::function<void()> const& f)
     : f_(detail::thread_functor_wrapper(f))
 { }
 
-thread::thread(BOOST_RV_REF(thread) other) : f_(boost::move(other.f_)) {
+D2_API thread::thread(BOOST_RV_REF(thread) other) : f_(boost::move(other.f_)) {
     boost::swap(actual_, other.actual_);
     boost::swap(id_, other.id_);
 }
 
-thread::id thread::get_id() const {
+D2_API thread::id thread::get_id() const {
     BOOST_ASSERT(is_initialized());
     return thread::id(actual_->get_id());
 }
@@ -63,14 +63,14 @@ D2_API extern void swap(thread& a, thread& b) {
     boost::swap(a.id_, b.id_);
 }
 
-void thread::start() {
+D2_API void thread::start() {
     BOOST_ASSERT_MSG(!is_initialized(),
         "starting a thread that is already started");
     actual_.reset(new boost::thread(f_));
     id_ = actual_->get_id();
 }
 
-void thread::join() {
+D2_API void thread::join() {
     BOOST_ASSERT_MSG(is_initialized(), "joining a thread that is not started");
     actual_->join();
 }
@@ -80,7 +80,7 @@ D2_API extern std::size_t unique_id(thread const& self) {
     return unique_id(*self.id_);
 }
 
-thread::id::id(boost::thread::id const& thread_id)
+D2_API thread::id::id(boost::thread::id const& thread_id)
     : id_(thread_id)
 { }
 

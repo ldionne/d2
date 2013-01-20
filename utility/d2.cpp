@@ -6,6 +6,12 @@
 #include <d2/event_repository.hpp>
 #include <d2/sandbox/sync_skeleton.hpp>
 
+// Disable MSVC warning C4512: assignment operator could not be generated
+#include <boost/config.hpp>
+#if defined(BOOST_MSVC)
+#   pragma warning(push)
+#   pragma warning(disable: 4512)
+#endif
 #include <boost/assert.hpp>
 #include <boost/assign.hpp>
 #include <boost/filesystem.hpp>
@@ -31,6 +37,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#if defined(BOOST_MSVC)
+#   pragma warning(pop)
+#endif
 
 
 static std::string const VERSION = "0.1a";

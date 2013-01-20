@@ -12,10 +12,10 @@
 namespace d2 {
 namespace mock {
 
-struct D2_API recursive_mutex : mutex {
-    void lock();
+struct recursive_mutex : mutex {
+    D2_API void lock();
 
-    void unlock();
+    D2_API void unlock();
 };
 
 } // end namespace mock

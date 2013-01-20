@@ -79,7 +79,9 @@ endif()
 if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
     add_definitions(-Wall -Wextra -pedantic -std=c++98)
 elseif(MSVC)
-    add_definitions(-W4) # -Wall on MSVC yields 1000s of warnings
+    add_definitions(-W3) # -W4 and above is just crazy
+    add_definitions(-D_SCL_SECURE_NO_WARNINGS
+                    -D_CRT_SECURE_NO_WARNINGS) # disable non standard MSVC warning bullshit
 endif()
 
 

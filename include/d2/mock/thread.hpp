@@ -18,34 +18,34 @@
 namespace d2 {
 namespace mock {
 
-struct D2_API thread {
-    class D2_API id {
+struct thread {
+    class id {
         boost::thread::id id_;
 
     public:
         id() : id_() { }
 
-        /* implicit */ id(boost::thread::id const& thread_id);
+        D2_API /* implicit */ id(boost::thread::id const& thread_id);
 
         D2_API friend std::size_t unique_id(id const& self);
     };
 
-    explicit thread(boost::function<void()> const& f);
+    D2_API explicit thread(boost::function<void()> const& f);
 
-    thread(BOOST_RV_REF(thread) other);
+    D2_API thread(BOOST_RV_REF(thread) other);
 
     D2_API friend void swap(thread& a, thread& b);
 
-    void start();
+    D2_API void start();
 
-    void join();
+    D2_API void join();
 
     D2_API friend std::size_t unique_id(thread const& self);
 
-    id get_id() const;
+    D2_API id get_id() const;
 
 private:
-    bool is_initialized() const;
+    D2_API bool is_initialized() const;
 
     boost::function<void()> f_;
     boost::scoped_ptr<boost::thread> actual_;
