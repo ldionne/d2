@@ -92,9 +92,7 @@ make_deadlock(sandbox::DeadlockDiagnostic const& diagnostic) {
 
 void integration_test::verify_deadlocks(
                             std::initializer_list<Deadlock> const& expected) {
-    if (!fs::exists(repo_))
-        throw std::logic_error(boost::str(boost::format(
-            "repository path %1% does not exist") % repo_));
+    unset_log_repository();
     EventRepository<> events(repo_);
     sandbox::SyncSkeleton<EventRepository<> > skeleton(events);
     std::vector<Deadlock> actual;
