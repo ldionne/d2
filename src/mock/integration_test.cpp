@@ -3,10 +3,10 @@
  */
 
 #define D2_SOURCE
+#include <d2/api.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/getter.hpp>
 #include <d2/event_repository.hpp>
-#include <d2/logging.hpp>
 #include <d2/mock/integration_test.hpp>
 #include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/sandbox/sync_skeleton.hpp>

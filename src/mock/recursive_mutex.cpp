@@ -3,7 +3,7 @@
  */
 
 #define D2_SOURCE
-#include <d2/logging.hpp>
+#include <d2/api.hpp>
 #include <d2/mock/recursive_mutex.hpp>
 #include <d2/mock/this_thread.hpp>
 

@@ -3,9 +3,9 @@
  */
 
 #define D2_SOURCE
+#include <d2/api.hpp>
 #include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/config.hpp>
-#include <d2/logging.hpp>
 #include <d2/mock/mutex.hpp>
 #include <d2/mock/this_thread.hpp>
 

@@ -8,7 +8,7 @@
 #   define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <d2/logging.h>
+#include <d2/api.h>
 
 #include <assert.h>
 #include <stddef.h>
