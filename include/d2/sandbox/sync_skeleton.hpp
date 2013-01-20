@@ -8,6 +8,7 @@
 #include <d2/lock_graph.hpp>
 #include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/segmentation_graph.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -108,12 +109,12 @@ public:
 
 private:
     typedef typename Repository::template
-                    const_key_view<Thread>::type unspecified_range_of_threads;
+                const_key_view<ThreadId>::type unspecified_range_of_threads;
     typedef std::vector<DeadlockDiagnostic> unspecified_range_of_diagnostics;
 
 public:
     unspecified_range_of_threads threads() const {
-        return repository_.template key_view<Thread>();
+        return repository_.template key_view<ThreadId>();
     }
 
     /**

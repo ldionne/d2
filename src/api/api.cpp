@@ -9,8 +9,8 @@
 #include <d2/detail/config.hpp>
 #include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <stddef.h>
 
@@ -49,7 +49,7 @@ D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled()) {
-        AcquireEvent event((SyncObject(lock_id)), Thread(thread_id));
+        AcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
                         // ignore current frame
         event.info.init_call_stack(1);
         dispatcher.dispatch(event);
@@ -61,7 +61,7 @@ D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled()) {
-        RecursiveAcquireEvent event((SyncObject(lock_id)), Thread(thread_id));
+        RecursiveAcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
                         // ignore current frame
         event.info.init_call_stack(1);
         dispatcher.dispatch(event);
@@ -72,8 +72,8 @@ D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled())
-        dispatcher.dispatch(ReleaseEvent((SyncObject(lock_id)),
-                                          Thread(thread_id)));
+        dispatcher.dispatch(ReleaseEvent((LockId(lock_id)),
+                                          ThreadId(thread_id)));
 }
 
 D2_API extern void d2_notify_recursive_release(size_t thread_id,
@@ -81,15 +81,15 @@ D2_API extern void d2_notify_recursive_release(size_t thread_id,
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled())
-        dispatcher.dispatch(RecursiveReleaseEvent((SyncObject(lock_id)),
-                                                  Thread(thread_id)));
+        dispatcher.dispatch(RecursiveReleaseEvent((LockId(lock_id)),
+                                                  ThreadId(thread_id)));
 }
 
 namespace d2 { namespace detail {
     // default initialized to the initial segment value
     static Segment current_segment;
     static basic_mutex segment_mutex;
-    static boost::unordered_map<Thread, Segment> segment_of;
+    static boost::unordered_map<ThreadId, Segment> segment_of;
 
     template <typename Value, typename Container>
     bool contains(Value const& v, Container const& c) {
@@ -101,7 +101,7 @@ D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled()) {
-        Thread parent(parent_id), child(child_id);
+        ThreadId parent(parent_id), child(child_id);
         Segment parent_segment, child_segment, new_parent_segment;
         {
             scoped_lock<basic_mutex> lock(segment_mutex);
@@ -135,7 +135,7 @@ D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
     using namespace d2;
     using namespace d2::detail;
     if (d2_is_enabled()) {
-        Thread parent(parent_id), child(child_id);
+        ThreadId parent(parent_id), child(child_id);
         Segment parent_segment, child_segment, new_parent_segment;
         {
             scoped_lock<basic_mutex> lock(segment_mutex);

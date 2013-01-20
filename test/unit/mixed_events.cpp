@@ -4,8 +4,8 @@
 
 #include <d2/events.hpp>
 #include <d2/segment.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <algorithm>
 #include <boost/assign.hpp>
@@ -50,8 +50,8 @@ struct MixedEventTest : ::testing::Test {
     typedef boost::make_variant_over<EventTypes>::type Event;
 
     std::stringstream stream;
-    std::vector<Thread> threads;
-    std::vector<SyncObject> locks;
+    std::vector<ThreadId> threads;
+    std::vector<LockId> locks;
     std::vector<Segment> segments;
 
     qi::typed_stream<AcquireEvent> acquire;
@@ -64,8 +64,8 @@ struct MixedEventTest : ::testing::Test {
 
     void SetUp() {
         for (unsigned int i = 0; i < 1000; ++i) {
-            threads.push_back(Thread(i));
-            locks.push_back(SyncObject(i));
+            threads.push_back(ThreadId(i));
+            locks.push_back(LockId(i));
             segments.push_back(Segment() + i);
         }
     }

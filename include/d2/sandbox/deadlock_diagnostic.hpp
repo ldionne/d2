@@ -5,8 +5,8 @@
 #ifndef D2_SANDBOX_DEADLOCK_DIAGNOSTIC_HPP
 #define D2_SANDBOX_DEADLOCK_DIAGNOSTIC_HPP
 
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/optional.hpp>
 #include <cstddef>
@@ -27,12 +27,7 @@ namespace sandbox {
  *           a performance critical part and the number of deadlock potentials
  *           is likely to be small.
  */
-class DeadlockDiagnostic {
-    // Those are misnamed in the rest of d2, this should be refactored.
-    typedef Thread ThreadId;
-    typedef SyncObject LockId;
-
-public:
+struct DeadlockDiagnostic {
     struct ThreadInformation {
         ThreadId thread_id;
         // the main thread has no parent

@@ -6,8 +6,8 @@
 #define D2_MOCK_INTEGRATION_TEST_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/move/move.hpp>
@@ -26,15 +26,15 @@ struct D2_API integration_test {
     ~integration_test();
 
     struct Streak : boost::equality_comparable<Streak> {
-        Thread thread_id;
-        std::vector<SyncObject> locks;
+        ThreadId thread_id;
+        std::vector<LockId> locks;
 
         Streak() : thread_id() { }
 
         template <typename Thread, typename ...Locks>
         Streak(Thread const& thread, Locks&& ...locks)
             : thread_id(thread),
-              locks{SyncObject(boost::forward<Locks>(locks))...}
+              locks{LockId(boost::forward<Locks>(locks))...}
         { }
 
         friend bool operator==(Streak const& self, Streak const& other) {

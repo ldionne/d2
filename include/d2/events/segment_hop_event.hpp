@@ -8,7 +8,7 @@
 #include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/segment.hpp>
-#include <d2/thread.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/operators.hpp>
 #include <iosfwd>
@@ -21,7 +21,7 @@ namespace d2 {
  * a thread starts a child thread or when a thread is a child thread itself.
  */
 struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
-    Thread thread;
+    ThreadId thread;
     Segment segment;
 
     /**
@@ -30,7 +30,7 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
      */
     SegmentHopEvent() { }
 
-    SegmentHopEvent(Thread const& thread, Segment const& segment)
+    SegmentHopEvent(ThreadId const& thread, Segment const& segment)
         : thread(thread), segment(segment)
     { }
 
@@ -43,7 +43,7 @@ struct SegmentHopEvent : boost::equality_comparable<SegmentHopEvent> {
         return a.thread == b.thread && a.segment == b.segment;
     }
 
-    friend Thread thread_of(SegmentHopEvent const& self) {
+    friend ThreadId thread_of(SegmentHopEvent const& self) {
         return self.thread;
     }
 

@@ -4,10 +4,10 @@
 
 #include <d2/events/acquire_event.hpp>
 #include <d2/events/start_event.hpp>
+#include <d2/lock_id.hpp>
 #include <d2/repository.hpp>
 #include <d2/segment.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/filesystem.hpp>
@@ -29,8 +29,8 @@ namespace d2 {
 namespace test {
 
 struct RepositoryTest : ::testing::Test {
-    std::vector<Thread> threads;
-    std::vector<SyncObject> locks;
+    std::vector<ThreadId> threads;
+    std::vector<LockId> locks;
     std::vector<Segment> segments;
     fs::path root;
 
@@ -59,16 +59,16 @@ struct RepositoryTest : ::testing::Test {
         { };
     };
 
-    typedef mpl::vector<Thread> ThreadKeys;
-    typedef mpl::vector<Thread, UnaryKey> MixedKeys;
+    typedef mpl::vector<ThreadId> ThreadKeys;
+    typedef mpl::vector<ThreadId, UnaryKey> MixedKeys;
 
     typedef Repository<ThreadKeys> ThreadRepository;
     typedef Repository<MixedKeys, MixedMappingPolicy> MixedRepository;
 
     void SetUp() {
         for (unsigned int i = 0; i < 100; ++i) {
-            threads.push_back(Thread(i));
-            locks.push_back(SyncObject(i));
+            threads.push_back(ThreadId(i));
+            locks.push_back(LockId(i));
             segments.push_back(Segment() + i);
         }
 
@@ -106,18 +106,18 @@ TEST_F(RepositoryTest, get_all_keys) {
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    ThreadRepository::key_view<Thread>::type
-        repo_threads = repository.keys<Thread>();
+    ThreadRepository::key_view<ThreadId>::type
+        repo_threads = repository.keys<ThreadId>();
 
     // Try getting a const view.
-    ThreadRepository::const_key_view<Thread>::type const_repo_threads =
-            const_cast<ThreadRepository const&>(repository).keys<Thread>();
+    ThreadRepository::const_key_view<ThreadId>::type const_repo_threads =
+            const_cast<ThreadRepository const&>(repository).keys<ThreadId>();
     (void)const_repo_threads;
 
     // We must do an unordered comparison.
-    boost::unordered_set<Thread>
-                        expected(threads.begin(), threads.end()),
-                        actual(repo_threads.begin(), repo_threads.end());
+    boost::unordered_set<ThreadId>
+                expected(boost::begin(threads), boost::end(threads)),
+                actual(boost::begin(repo_threads), boost::end(repo_threads));
     ASSERT_TRUE(expected == actual);
 }
 
@@ -128,12 +128,12 @@ TEST_F(RepositoryTest, get_all_streams_only) {
     for (unsigned int i = 0; i < threads.size(); ++i)
         repository[threads[i]] << i;
 
-    ThreadRepository::value_view<Thread>::type
-        sources_sinks = repository.values<Thread>();
+    ThreadRepository::value_view<ThreadId>::type
+        sources_sinks = repository.values<ThreadId>();
 
     // Try getting a const view.
-    ThreadRepository::const_value_view<Thread>::type const_sources_sinks =
-            const_cast<ThreadRepository const&>(repository).values<Thread>();
+    ThreadRepository::const_value_view<ThreadId>::type const_sources_sinks =
+            const_cast<ThreadRepository const&>(repository).values<ThreadId>();
     (void)const_sources_sinks;
 
     ASSERT_EQ(std::distance(boost::begin(sources_sinks),
@@ -145,11 +145,11 @@ TEST_F(RepositoryTest, get_all_streams_only) {
 TEST_F(RepositoryTest, get_non_const_reference_on_stream_from_view) {
     if (false) {
         ThreadRepository repository(root);
-        ThreadRepository::value_view<Thread>::type
-            sources_sinks = repository.values<Thread>();
+        ThreadRepository::value_view<ThreadId>::type
+            sources_sinks = repository.values<ThreadId>();
 
         // Try to acquire a non-const reference to one of the streams
-        std::istream& is = *sources_sinks.begin();
+        std::istream& is = *boost::begin(sources_sinks);
         (void)is;
     }
 }

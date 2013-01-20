@@ -6,8 +6,8 @@
 #define D2_EVENTS_RECURSIVE_ACQUIRE_EVENT_HPP
 
 #include <d2/events/acquire_event.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <iostream>
 
@@ -29,7 +29,7 @@ struct RecursiveAcquireEvent : AcquireEvent {
      */
     RecursiveAcquireEvent() { }
 
-    RecursiveAcquireEvent(SyncObject const& l, Thread const& t)
+    RecursiveAcquireEvent(LockId const& l, ThreadId const& t)
         : AcquireEvent(l, t)
     { }
 

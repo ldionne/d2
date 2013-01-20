@@ -6,8 +6,8 @@
 #define D2_EVENTS_RECURSIVE_RELEASE_EVENT_HPP
 
 #include <d2/events/release_event.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <iostream>
 
@@ -29,7 +29,7 @@ struct RecursiveReleaseEvent : ReleaseEvent {
      */
     RecursiveReleaseEvent() { }
 
-    RecursiveReleaseEvent(SyncObject const& l, Thread const& t)
+    RecursiveReleaseEvent(LockId const& l, ThreadId const& t)
         : ReleaseEvent(l, t)
     { }
 

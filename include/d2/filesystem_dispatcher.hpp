@@ -8,7 +8,6 @@
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/event_repository.hpp>
-#include <d2/thread.hpp>
 
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>

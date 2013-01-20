@@ -5,7 +5,7 @@
 #include "../serialization_test.hpp"
 #include <d2/events/segment_hop_event.hpp>
 #include <d2/segment.hpp>
-#include <d2/thread.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
@@ -23,7 +23,7 @@ struct SegmentHopEventTest {
         // Thread ids are in [0, 10000]
         // Segment values are [initial segment, initial segment + 10000]
         boost::random::uniform_int_distribution<unsigned> dist(0, 10000);
-        return value_type(Thread(dist(gen)), Segment() + dist(gen));
+        return value_type(ThreadId(dist(gen)), Segment() + dist(gen));
     }
 };
 

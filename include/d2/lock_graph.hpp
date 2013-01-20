@@ -13,9 +13,9 @@
 #include <d2/events/recursive_release_event.hpp>
 #include <d2/events/release_event.hpp>
 #include <d2/events/segment_hop_event.hpp>
+#include <d2/lock_id.hpp>
 #include <d2/segment.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/assert.hpp>
@@ -62,8 +62,8 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
 
     LockGraphLabel(detail::LockDebugInfo const& l1_info,
                    Segment s1,
-                   Thread t,
-                   boost::unordered_set<SyncObject> const& g,
+                   ThreadId t,
+                   boost::unordered_set<LockId> const& g,
                    Segment s2,
                    detail::LockDebugInfo const& l2_info)
         : l1_info(l1_info), s1(s1), t(t), g(g), s2(s2), l2_info(l2_info)
@@ -71,8 +71,8 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
 
     detail::LockDebugInfo l1_info;
     Segment s1;
-    Thread t;
-    boost::unordered_set<SyncObject> g;
+    ThreadId t;
+    boost::unordered_set<LockId> g;
     Segment s2;
     detail::LockDebugInfo l2_info;
 };
@@ -82,7 +82,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
  * were acquired by threads.
  */
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-                                        SyncObject, LockGraphLabel> LockGraph;
+                                            LockId, LockGraphLabel> LockGraph;
 
 /**
  * Exception thrown when a lock is released and we were not expecting it.
@@ -125,27 +125,27 @@ namespace exception_tag {
 }
 
 typedef boost::error_info<
-            exception_tag::expected_thread, Thread
+            exception_tag::expected_thread, ThreadId
         > ExpectedThread;
 
 typedef boost::error_info<
-            exception_tag::actual_thread, Thread
+            exception_tag::actual_thread, ThreadId
         > ActualThread;
 
 typedef boost::error_info<
-            exception_tag::releasing_thread, Thread
+            exception_tag::releasing_thread, ThreadId
         > ReleasingThread;
 
 typedef boost::error_info<
-            exception_tag::released_lock, SyncObject
+            exception_tag::released_lock, LockId
         > ReleasedLock;
 
 typedef boost::error_info<
-            exception_tag::current_thread, Thread
+            exception_tag::current_thread, ThreadId
         > CurrentThread;
 
 typedef boost::error_info<
-            exception_tag::overflowing_lock, SyncObject
+            exception_tag::overflowing_lock, LockId
         > OverflowingLock;
 
 /**
@@ -167,11 +167,11 @@ class build_lock_graph {
      * locks, such as the call stack.
      */
     struct CurrentlyHeldLock : boost::equality_comparable<CurrentlyHeldLock> {
-        SyncObject lock;
+        LockId lock;
         Segment segment;
         detail::LockDebugInfo info;
 
-        CurrentlyHeldLock(SyncObject const& l, Segment const& s,
+        CurrentlyHeldLock(LockId const& l, Segment const& s,
                           detail::LockDebugInfo const& i)
             : lock(l), segment(s), info(i)
         { }
@@ -215,9 +215,9 @@ class build_lock_graph {
     struct EventVisitor : boost::static_visitor<void> {
         LockGraph& graph;
         HeldLocks& held_locks;
-        Thread& this_thread;
+        ThreadId& this_thread;
         Segment current_segment;
-        boost::unordered_map<SyncObject, std::size_t> recursive_lock_count;
+        boost::unordered_map<LockId, std::size_t> recursive_lock_count;
 
         // Note:
         // There are two possible cases for the current_segment:
@@ -228,7 +228,7 @@ class build_lock_graph {
         //          SegmentHopEvent, and the current_segment is set to its
         //          initial value (default constructed) until we encounter a
         //          SegmentHopEvent.
-        EventVisitor(LockGraph& lg, HeldLocks& hl, Thread& this_thread)
+        EventVisitor(LockGraph& lg, HeldLocks& hl, ThreadId& this_thread)
             : graph(lg), held_locks(hl), this_thread(this_thread)
         { }
 
@@ -253,9 +253,9 @@ class build_lock_graph {
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
                             << ActualThread(e.thread));
-            Thread t(e.thread);
+            ThreadId t(e.thread);
             Segment s2(current_segment);
-            SyncObject l2(e.lock);
+            LockId l2(e.lock);
 
             // Each lock has only one vertex in the lock graph. Normally, we
             // should add a vertex only if a vertex representing the newly
@@ -267,14 +267,14 @@ class build_lock_graph {
 
             // Compute the gatelock set, i.e. the set of locks currently
             // held by this thread.
-            boost::unordered_set<SyncObject> g;
+            boost::unordered_set<LockId> g;
             BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks)
                 g.insert(l.lock);
 
             // Add an edge from every lock l1 already held by
             // this thread to l2.
             BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks) {
-                SyncObject l1(l.lock);
+                LockId l1(l.lock);
                 Segment s1(l.segment);
                 LockGraphLabel label(l.info, s1, t, g, s2, e.info);
                 // We don't add an edge if there is already an edge that is
@@ -341,8 +341,8 @@ class build_lock_graph {
                             << ExpectedThread(this_thread)
                             << ActualThread(e.thread));
 
-            Thread t(e.thread);
-            SyncObject l(e.lock);
+            ThreadId t(e.thread);
+            LockId l(e.lock);
 
             //Release the lock; remove all locks equal to it from the context.
             typename HeldLocks::const_iterator it(boost::begin(held_locks)),
@@ -363,24 +363,24 @@ class build_lock_graph {
         }
     };
 
-    struct DeduceThisThread : boost::static_visitor<Thread> {
+    struct DeduceThisThread : boost::static_visitor<ThreadId> {
         template <typename Event>
-        Thread operator()(Event const& event) const {
+        ThreadId operator()(Event const& event) const {
             D2_THROW(EventTypeException()
                         << ExpectedType("AcquireEvent or "
                                         "RecursiveAcquireEvent or "
                                         "SegmentHopEvent")
                         << ActualType(typeid(event).name()));
-            return Thread(); // never reached.
+            return ThreadId(); // never reached.
         }
 
-        Thread operator()(RecursiveAcquireEvent const& e) const
+        ThreadId operator()(RecursiveAcquireEvent const& e) const
         { return e.thread; }
 
-        Thread operator()(AcquireEvent const& e) const
+        ThreadId operator()(AcquireEvent const& e) const
         { return e.thread; }
 
-        Thread operator()(SegmentHopEvent const& e) const
+        ThreadId operator()(SegmentHopEvent const& e) const
         { return e.thread; }
     };
 
@@ -415,7 +415,7 @@ public:
         // The only case where the first event is not a SegmentHopEvent is
         // for the main thread, in which case it can be an AcquireEvent too.
         // We deduce the thread we're processing from the first event.
-        Thread this_thread = boost::apply_visitor(DeduceThisThread(), *first);
+        ThreadId this_thread=boost::apply_visitor(DeduceThisThread(), *first);
 
         EventVisitor<LockGraph> visitor(graph, held_locks, this_thread);
         for (; first != last; ++first)
@@ -434,9 +434,9 @@ namespace boost {
 namespace graph {
 
 // This is to be able to refer to a vertex in the lock graph using the
-// SyncObject associated to it.
-template <> struct internal_vertex_name<d2::SyncObject> {
-    typedef multi_index::identity<d2::SyncObject> type;
+// LockId associated to it.
+template <> struct internal_vertex_name<d2::LockId> {
+    typedef multi_index::identity<d2::LockId> type;
 };
 
 } // end namespace graph

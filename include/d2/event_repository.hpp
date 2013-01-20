@@ -7,7 +7,7 @@
 
 #include <d2/detail/basic_mutex.hpp>
 #include <d2/repository.hpp>
-#include <d2/thread.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/config.hpp>
 #include <boost/mpl/apply.hpp>
@@ -34,7 +34,7 @@ struct ProcessWideTag {
     }
 };
 
-typedef boost::mpl::vector<Thread, ProcessWideTag> EventKeys;
+typedef boost::mpl::vector<ThreadId, ProcessWideTag> EventKeys;
 
 /**
  * Mapping policy to decide what data structure is used to log the different
@@ -43,11 +43,11 @@ typedef boost::mpl::vector<Thread, ProcessWideTag> EventKeys;
 struct EventMapping {
     template <typename Key, typename Stream> struct apply;
 
-    // Each thread has its own sink. Threads are mapped to their sink using
+    // Each thread has its own sink. ThreadIds are mapped to their sink using
     // a boost::unordered_map.
     template <typename Stream>
-    struct apply<Thread, Stream>
-        : boost::mpl::apply<boost_unordered_map, Thread, Stream>
+    struct apply<ThreadId, Stream>
+        : boost::mpl::apply<boost_unordered_map, ThreadId, Stream>
     { };
 
     // Process-wide events are all logged into the same sink. A dummy map
@@ -69,7 +69,7 @@ struct NamingPolicy {
 };
 
 template <>
-inline char const* NamingPolicy::category_path<Thread>() {
+inline char const* NamingPolicy::category_path<ThreadId>() {
     return "thread_events";
 }
 
@@ -124,13 +124,13 @@ struct EventRepository
 #if !defined(BOOST_MSVC)
     EventRepository::template
 #endif
-    value_view<Thread>::type thread_stream_range;
+    value_view<ThreadId>::type thread_stream_range;
 
     typedef typename
 #if !defined(BOOST_MSVC)
     EventRepository::template
 #endif
-    const_value_view<Thread>::type const_thread_stream_range;
+    const_value_view<ThreadId>::type const_thread_stream_range;
 
     /**
      * Type of the stream used for thread events.
@@ -141,11 +141,11 @@ struct EventRepository
      * Return a range containing the thread streams.
      */
     thread_stream_range thread_streams() {
-        return this->template values<Thread>();
+        return this->template values<ThreadId>();
     }
 
     const_thread_stream_range thread_streams() const {
-        return this->template values<Thread>();
+        return this->template values<ThreadId>();
     }
 };
 

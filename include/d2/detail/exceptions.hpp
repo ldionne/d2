@@ -5,8 +5,6 @@
 #ifndef D2_DETAIL_EXCEPTIONS_HPP
 #define D2_DETAIL_EXCEPTIONS_HPP
 
-#include <d2/thread.hpp>
-
 #include <boost/exception/all.hpp>
 #include <boost/throw_exception.hpp>
 #include <exception>
@@ -17,7 +15,7 @@ namespace d2 {
 #define D2_THROW(e) BOOST_THROW_EXCEPTION(e)
 
 /**
- * Base class for exceptions in `d2`.
+ * Base class for exceptions in _d2_.
  */
 struct Exception : virtual boost::exception, virtual std::exception {
     virtual char const* what() const throw() {

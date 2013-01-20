@@ -4,8 +4,8 @@
 
 #include "../serialization_test.hpp"
 #include <d2/events/acquire_event.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
@@ -21,7 +21,7 @@ namespace detail {
 struct MockAcquireEvent : AcquireEvent {
     MockAcquireEvent() { }
 
-    MockAcquireEvent(SyncObject const& lock, Thread const& thread)
+    MockAcquireEvent(LockId const& lock, ThreadId const& thread)
         : AcquireEvent(lock, thread)
     { }
 
@@ -41,7 +41,7 @@ struct AcquireEventWithoutInfoTest {
     static value_type get_random_object() {
         // Lock and thread ids are in the range [0, 10000]
         boost::random::uniform_int_distribution<unsigned> dist(0, 10000);
-        return value_type(SyncObject(dist(gen)), Thread(dist(gen)));
+        return value_type(LockId(dist(gen)), ThreadId(dist(gen)));
     }
 };
 

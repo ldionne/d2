@@ -8,8 +8,8 @@
 #include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/operators.hpp>
 #include <iosfwd>
@@ -22,8 +22,8 @@ namespace d2 {
  * object in a given thread.
  */
 struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
-    Thread thread;
-    SyncObject lock;
+    ThreadId thread;
+    LockId lock;
     detail::LockDebugInfo info;
 
     /**
@@ -32,7 +32,7 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
      */
     AcquireEvent() { }
 
-    AcquireEvent(SyncObject const& l, Thread const& t)
+    AcquireEvent(LockId const& l, ThreadId const& t)
         : thread(t), lock(l)
     { }
 
@@ -44,7 +44,7 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
         return a.lock == b.lock && a.thread == b.thread;
     }
 
-    friend Thread thread_of(AcquireEvent const& self) {
+    friend ThreadId thread_of(AcquireEvent const& self) {
         return self.thread;
     }
 

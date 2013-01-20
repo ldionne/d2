@@ -6,10 +6,10 @@
 #include <d2/analysis.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
+#include <d2/lock_id.hpp>
 #include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/sandbox/sync_skeleton.hpp>
 #include <d2/segmentation_graph.hpp>
-#include <d2/thread.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -91,8 +91,8 @@ public:
         std::vector<DeadlockDiagnostic::AcquireStreak> streaks;
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             Edge const& edge_label = graph[edge_desc];
-            SyncObject const& l1 = graph[source(edge_desc, graph)];
-            SyncObject const& l2 = graph[target(edge_desc, graph)];
+            LockId const& l1 = graph[source(edge_desc, graph)];
+            LockId const& l2 = graph[target(edge_desc, graph)];
             streaks.push_back(
                 DeadlockDiagnostic::AcquireStreak(edge_label.t, l1, l2));
         }

@@ -7,8 +7,8 @@
 
 #include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/sync_object.hpp>
-#include <d2/thread.hpp>
+#include <d2/lock_id.hpp>
+#include <d2/thread_id.hpp>
 
 #include <boost/operators.hpp>
 #include <iosfwd>
@@ -21,8 +21,8 @@ namespace d2 {
  * object in a given thread.
  */
 struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
-    Thread thread;
-    SyncObject lock;
+    ThreadId thread;
+    LockId lock;
 
     /**
      * This constructor must only be used when serializing events.
@@ -30,7 +30,7 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
      */
     ReleaseEvent() { }
 
-    ReleaseEvent(SyncObject const& l, Thread const& t)
+    ReleaseEvent(LockId const& l, ThreadId const& t)
         : thread(t), lock(l)
     { }
 
@@ -42,7 +42,7 @@ struct ReleaseEvent : boost::equality_comparable<ReleaseEvent> {
         return a.lock == b.lock && a.thread == b.thread;
     }
 
-    friend Thread thread_of(ReleaseEvent const& self) {
+    friend ThreadId thread_of(ReleaseEvent const& self) {
         return self.thread;
     }
 
