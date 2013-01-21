@@ -66,18 +66,6 @@ class SyncSkeleton {
             detail::parse_and_build_lock_graph(*thread, lg);
     }
 
-#if 0
-    /**
-     * Structure holding the necessary information to locate a single event
-     * within the execution of a program.
-     */
-    struct Coordinates {
-        Process process;
-        Thread thread;
-        Segment segment;
-    };
-#endif
-
 public:
     /**
      * Construct a skeleton from the data stored in a repository.
@@ -127,17 +115,6 @@ public:
     unspecified_range_of_diagnostics deadlocks() const {
         return detail::analyze_lock_ordering(lock_graph_, segmentation_graph_);
     }
-
-    // template <typename Something, typename SomethingElse>
-    // bool happens_before(Something const& a, SomethingElse const& b) const {
-    //     Segment s1 = segment_of(a), s2 = segment_of(b);
-    //     return happens_before(s1, s2);
-    // }
-
-    // bool happens_before(Segment a, Segment b) const {
-    //     // Ask the segmentation graph.
-    //     return happens_before(a, b, this->segmentation_graph);
-    // }
 };
 
 } // end namespace sandbox
