@@ -4,12 +4,12 @@
 
 #define D2_SOURCE
 #include <d2/analysis.hpp>
+#include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
 #include <d2/lock_id.hpp>
-#include <d2/sandbox/deadlock_diagnostic.hpp>
-#include <d2/sandbox/sync_skeleton.hpp>
 #include <d2/segmentation_graph.hpp>
+#include <d2/sync_skeleton.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -26,7 +26,6 @@
 
 
 namespace d2 {
-namespace sandbox {
 namespace detail {
 
 void parse_and_build_seg_graph(std::istream& is, SegmentationGraph& graph) {
@@ -116,5 +115,4 @@ analyze_lock_ordering(LockGraph const& lg, SegmentationGraph const& sg) {
 }
 
 } // end namespace detail
-} // end namespace sandbox
 } // end namespace d2

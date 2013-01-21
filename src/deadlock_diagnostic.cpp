@@ -3,7 +3,7 @@
  */
 
 #define D2_SOURCE
-#include <d2/sandbox/deadlock_diagnostic.hpp>
+#include <d2/deadlock_diagnostic.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/format.hpp>
@@ -14,7 +14,6 @@
 
 
 namespace d2 {
-namespace sandbox {
 
 std::string DeadlockDiagnostic::format_step(AcquireStreak const& streak) {
     BOOST_ASSERT_MSG(streak.locks.size() == 2,
@@ -51,5 +50,4 @@ std::ostream& operator<<(std::ostream& os, DeadlockDiagnostic const& self) {
     return os;
 }
 
-} // end namespace sandbox
 } // end namespace d2

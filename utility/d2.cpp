@@ -4,7 +4,7 @@
  */
 
 #include <d2/event_repository.hpp>
-#include <d2/sandbox/sync_skeleton.hpp>
+#include <d2/sync_skeleton.hpp>
 
 // Disable MSVC warning C4512: assignment operator could not be generated
 #include <boost/config.hpp>
@@ -49,60 +49,6 @@ namespace kma = boost::spirit::karma;
 namespace phx = boost::phoenix;
 namespace po = boost::program_options;
 
-namespace {
-
-// Statistic gathering
-template <typename LockGraph, typename SegmentationGraph>
-struct Statistics {
-    Statistics(LockGraph const& lg, SegmentationGraph const&)
-        : number_of_lock_graph_vertices(num_vertices(lg)),
-          number_of_lock_graph_edges(num_edges(lg))
-    { }
-
-    std::size_t number_of_lock_graph_vertices;
-    std::size_t number_of_lock_graph_edges;
-    boost::optional<std::size_t> number_of_distinct_cycles;
-
-    template <typename Ostream>
-    friend Ostream& operator<<(Ostream& os, Statistics const& self) {
-        os << "number of vertices in the lock graph: " << self.number_of_lock_graph_vertices << '\n'
-           << "number of edges in the lock graph: " << self.number_of_lock_graph_edges << '\n'
-           << "number of distinct cycles in the lock graph: ";
-
-        if (self.number_of_distinct_cycles)
-            os << *self.number_of_distinct_cycles;
-        else
-            os << "not computed";
-
-        return os;
-    }
-};
-
-template <typename Stats>
-class StatisticGatherer {
-    Stats& stats_;
-
-    // Silence MSVC warning C4512: assignment operator could not be generated
-    StatisticGatherer& operator=(StatisticGatherer const&) /*= delete*/;
-
-public:
-    explicit StatisticGatherer(Stats& stats) : stats_(stats) {
-        BOOST_ASSERT_MSG(!stats_.number_of_distinct_cycles,
-        "gathering statistics on a statistic object that was already filled");
-        stats_.number_of_distinct_cycles = 0;
-    }
-
-    template <typename EdgePath, typename LockGraph>
-    void operator()(EdgePath const&, LockGraph const&) const {
-        ++*stats_.number_of_distinct_cycles;
-    }
-};
-
-template <typename Stats>
-StatisticGatherer<Stats> gather_stats(Stats& stats) {
-    return StatisticGatherer<Stats>(stats);
-}
-
 template <typename ErrorTag, typename Exception>
 std::string get_error_info(Exception const& e,
                            std::string const& default_ = "\"unavailable\"") {
@@ -110,8 +56,6 @@ std::string get_error_info(Exception const& e,
                                         boost::get_error_info<ErrorTag>(e);
     return info ? boost::lexical_cast<std::string>(*info) : default_;
 }
-
-} // end anonymous namespace
 
 
 int main(int argc, char const* argv[]) {
@@ -222,7 +166,7 @@ int main(int argc, char const* argv[]) {
     std::ostream& output = args.count("output-file") ? output_ofs : std::cout;
 
     // Create the skeleton of the program from the repository.
-    typedef d2::sandbox::SyncSkeleton<Repository> Skeleton;
+    typedef d2::SyncSkeleton<Repository> Skeleton;
     boost::scoped_ptr<Skeleton> skeleton;
     try {
         skeleton.reset(new Skeleton(*repository));

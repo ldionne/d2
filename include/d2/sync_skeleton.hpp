@@ -2,11 +2,11 @@
  * This file defines the `SyncSkeleton` class.
  */
 
-#ifndef D2_SANDBOX_SYNC_SKELETON_HPP
-#define D2_SANDBOX_SYNC_SKELETON_HPP
+#ifndef D2_SYNC_SKELETON_HPP
+#define D2_SYNC_SKELETON_HPP
 
+#include <d2/deadlock_diagnostic.hpp>
 #include <d2/lock_graph.hpp>
-#include <d2/sandbox/deadlock_diagnostic.hpp>
 #include <d2/segmentation_graph.hpp>
 #include <d2/thread_id.hpp>
 
@@ -21,7 +21,6 @@
 
 
 namespace d2 {
-namespace sandbox {
 
 namespace detail {
     void parse_and_build_seg_graph(std::istream&, SegmentationGraph&);
@@ -117,7 +116,6 @@ public:
     }
 };
 
-} // end namespace sandbox
 } // end namespace d2
 
-#endif // !D2_SANDBOX_SYNC_SKELETON_HPP
+#endif // !D2_SYNC_SKELETON_HPP

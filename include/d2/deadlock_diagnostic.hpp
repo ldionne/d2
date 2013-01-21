@@ -2,8 +2,8 @@
  * This file defines classes to present deadlock potential diagnostics.
  */
 
-#ifndef D2_SANDBOX_DEADLOCK_DIAGNOSTIC_HPP
-#define D2_SANDBOX_DEADLOCK_DIAGNOSTIC_HPP
+#ifndef D2_DEADLOCK_DIAGNOSTIC_HPP
+#define D2_DEADLOCK_DIAGNOSTIC_HPP
 
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
@@ -17,7 +17,6 @@
 
 
 namespace d2 {
-namespace sandbox {
 
 /**
  * Class representing the diagnostic of a deadlock potential.
@@ -118,7 +117,6 @@ public:
     friend std::ostream& operator<<(std::ostream&, DeadlockDiagnostic const&);
 };
 
-} // end namespace sandbox
 } // end namespace d2
 
-#endif // !D2_SANDBOX_DEADLOCK_DIAGNOSTIC_HPP
+#endif // !D2_DEADLOCK_DIAGNOSTIC_HPP

@@ -4,12 +4,12 @@
 
 #define D2_SOURCE
 #include <d2/api.hpp>
+#include <d2/deadlock_diagnostic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/getter.hpp>
 #include <d2/event_repository.hpp>
 #include <d2/mock/integration_test.hpp>
-#include <d2/sandbox/deadlock_diagnostic.hpp>
-#include <d2/sandbox/sync_skeleton.hpp>
+#include <d2/sync_skeleton.hpp>
 
 #include <algorithm>
 #include <boost/algorithm/cxx11/all_of.hpp>
@@ -72,18 +72,18 @@ D2_API integration_test::~integration_test() {
 }
 
 namespace detail {
-Streak make_streak(sandbox::DeadlockDiagnostic::AcquireStreak const& step) {
+Streak make_streak(DeadlockDiagnostic::AcquireStreak const& step) {
     Streak streak;
     streak.thread_id = step.thread.thread_id;
-    typedef sandbox::DeadlockDiagnostic::LockInformation LockInfo;
+    typedef DeadlockDiagnostic::LockInformation LockInfo;
     BOOST_FOREACH(LockInfo const& lock_info, step.locks)
         streak.locks.push_back(lock_info.lock_id);
     return streak;
 }
 
-Deadlock make_deadlock(sandbox::DeadlockDiagnostic const& diagnostic) {
+Deadlock make_deadlock(DeadlockDiagnostic const& diagnostic) {
     Deadlock deadlock;
-    BOOST_FOREACH(sandbox::DeadlockDiagnostic::AcquireStreak const& streak,
+    BOOST_FOREACH(DeadlockDiagnostic::AcquireStreak const& streak,
                                                         diagnostic.steps())
         deadlock.steps.push_back(make_streak(streak));
     return deadlock;
@@ -115,10 +115,9 @@ D2_API void integration_test::verify_deadlocks(
                     std::initializer_list<detail::Deadlock> const& expected) {
     unset_log_repository();
     EventRepository<> events(repo_);
-    sandbox::SyncSkeleton<EventRepository<> > skeleton(events);
+    SyncSkeleton<EventRepository<> > skeleton(events);
     std::vector<detail::Deadlock> actual;
-    BOOST_FOREACH(sandbox::DeadlockDiagnostic const& diagnostic,
-                                                        skeleton.deadlocks())
+    BOOST_FOREACH(DeadlockDiagnostic const& diagnostic, skeleton.deadlocks())
         actual.push_back(detail::make_deadlock(diagnostic));
 
     std::vector<detail::Deadlock> not_found, unexpected;
