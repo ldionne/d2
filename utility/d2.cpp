@@ -48,44 +48,8 @@ namespace fs = boost::filesystem;
 namespace kma = boost::spirit::karma;
 namespace phx = boost::phoenix;
 namespace po = boost::program_options;
-using phx::arg_names::_1;
 
 namespace {
-
-// Dot rendering
-template <typename LockGraph>
-class LockGraphWriter {
-    typedef typename boost::graph_traits<LockGraph>::edge_descriptor
-                                                            EdgeDescriptor;
-    typedef typename boost::graph_traits<LockGraph>::vertex_descriptor
-                                                            VertexDescriptor;
-    LockGraph const& graph_;
-
-    // Silence MSVC warning C4512: assignment operator could not be generated
-    LockGraphWriter& operator=(LockGraphWriter const&) /*= delete*/;
-
-public:
-    explicit LockGraphWriter(LockGraph const& lg) : graph_(lg) { }
-
-    template <typename Ostream>
-    void operator()(Ostream& os, EdgeDescriptor edge) const {
-        os << "[label=\""
-           << "from " << graph_[edge].l1_info.call_stack[0].function
-
-           << " to " << graph_[edge].l2_info.call_stack[0].function
-           << "\"]";
-    }
-
-    template <typename Ostream>
-    void operator()(Ostream&, VertexDescriptor) const {
-
-    }
-};
-
-template <typename LockGraph>
-LockGraphWriter<LockGraph> render_dot(LockGraph const& lg) {
-    return LockGraphWriter<LockGraph>(lg);
-}
 
 // Statistic gathering
 template <typename LockGraph, typename SegmentationGraph>
@@ -163,8 +127,6 @@ int main(int argc, char const* argv[]) {
     )(
         "analyze", "perform the analysis for deadlocks"
     )(
-        "dot", "produce a dot representation of the lock graph used during the analysis"
-    )(
         "stats", "produce statistics about the usage of locks and threads"
     )
     ;
@@ -179,12 +141,10 @@ int main(int argc, char const* argv[]) {
 
     po::options_description analysis("Analysis options");
 
-    po::options_description dot("Dot rendering options");
-
     po::options_description statistics("Statistics options");
 
     po::options_description allowed;
-    allowed.add(global).add(analysis).add(dot).add(statistics);
+    allowed.add(global).add(analysis).add(statistics);
 
     po::options_description all;
     all.add(allowed).add(hidden);
@@ -292,22 +252,17 @@ int main(int argc, char const* argv[]) {
     BOOST_ASSERT(skeleton);
 
     // Main switch dispatching to the right action to perform.
-    if (args.count("analyze") || (!args.count("dot") && !args.count("stats"))) {
+    if (args.count("analyze") || !args.count("stats")) {
         output << kma::format(
             kma::stream % ('\n' << kma::repeat(80)['-'] << '\n') << '\n'
         , skeleton->deadlocks());
     }
-    else if (args.count("dot")) {
-        std::cout << "option not supported right now\n";
-        // boost::write_graphviz(output, lg, render_dot(lg), render_dot(lg));
-        return EXIT_FAILURE;
-    }
     else if (args.count("stats")) {
-        std::cout << "option not supported right now\n";
-        // Statistics<d2::LockGraph, d2::SegmentationGraph> stats(lg, sg);
-        // d2::analyze(lg, sg, gather_stats(stats));
-        // output << stats << std::endl;
-        return EXIT_FAILURE;
+        output << boost::format(
+            "number of threads: %1%\n"
+            "number of distinct locks: %2%\n")
+            % skeleton->number_of_threads()
+            % skeleton->number_of_locks();
     }
     return EXIT_SUCCESS;
 
