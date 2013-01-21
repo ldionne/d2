@@ -95,8 +95,7 @@ public:
      * captured by the skeleton.
      */
     std::size_t number_of_threads() const {
-        return std::distance(boost::begin(repository_.threads()),
-                             boost::end(repository_.threads()));
+        return std::distance(boost::begin(threads()), boost::end(threads()));
     }
 
     /**
@@ -114,7 +113,7 @@ private:
 
 public:
     unspecified_range_of_threads threads() const {
-        return repository_.template key_view<ThreadId>();
+        return repository_.template keys<ThreadId>();
     }
 
     /**
