@@ -77,7 +77,7 @@ if(${D2_WE_ARE_ON_CLANG})
     list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
 endif()
 if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
-    add_definitions(-Wall -Wextra -pedantic -std=c++98)
+    add_definitions(-Wall -Wextra -pedantic -std=c++03)
 elseif(MSVC)
     add_definitions(-W3) # -W4 and above is just crazy
     add_definitions(-D_SCL_SECURE_NO_WARNINGS
