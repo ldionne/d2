@@ -1,1 +1,1 @@
-# d2 - a minimalistic deadlock detection library based on dynamic analysis
+# d2 - a minimalistic deadlock detection library using dynamic analysis
