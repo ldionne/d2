@@ -5,25 +5,34 @@
 #ifndef D2_EVENTS_ACQUIRE_EVENT_HPP
 #define D2_EVENTS_ACQUIRE_EVENT_HPP
 
+#include <boost/fusion/include/pair.hpp>
+#include <boost/fusion/include/vector.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
+#include <d2/event.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
 
-#include <boost/operators.hpp>
 #include <iosfwd>
 
 
 namespace d2 {
 
+namespace acquire_event_detail {
+    struct thread { };
+    struct lock { };
+    typedef boost::fusion::vector<
+                boost::fusion::pair<thread, ThreadId>,
+                boost::fusion::pair<lock, LockId>
+            > members;
+} // end namespace acquire_event_detail
+
 /**
  * Represents the acquisition of a resource guarded by a synchronization
  * object in a given thread.
  */
-struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
-    ThreadId thread;
-    LockId lock;
+struct AcquireEvent : Event<AcquireEvent, acquire_event_detail::members> {
     detail::LockDebugInfo info;
 
     /**
@@ -32,20 +41,25 @@ struct AcquireEvent : boost::equality_comparable<AcquireEvent> {
      */
     AcquireEvent() { }
 
-    AcquireEvent(LockId const& l, ThreadId const& t)
-        : thread(t), lock(l)
-    { }
-
-    /**
-     * Return whether two `AcquireEvent`s represent the same synchronization
-     * object acquired by the same thread.
-     */
-    friend bool operator==(AcquireEvent const& a, AcquireEvent const& b) {
-        return a.lock == b.lock && a.thread == b.thread;
+    AcquireEvent(LockId const& l, ThreadId const& t) {
+        lock_of(*this) = l;
+        thread_of(*this) = t;
     }
 
-    friend ThreadId thread_of(AcquireEvent const& self) {
-        return self.thread;
+    friend ThreadId const& thread_of(AcquireEvent const& self) {
+        return get(acquire_event_detail::thread(), self);
+    }
+
+    friend ThreadId& thread_of(AcquireEvent& self) {
+        return get(acquire_event_detail::thread(), self);
+    }
+
+    friend LockId const& lock_of(AcquireEvent const& self) {
+        return get(acquire_event_detail::lock(), self);
+    }
+
+    friend LockId& lock_of(AcquireEvent& self) {
+        return get(acquire_event_detail::lock(), self);
     }
 
     D2_API friend std::istream& operator>>(std::istream&, AcquireEvent&);

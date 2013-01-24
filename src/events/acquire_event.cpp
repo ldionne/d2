@@ -25,14 +25,14 @@ namespace d2 {
 
 D2_API extern std::ostream& operator<<(std::ostream& os,
                                        AcquireEvent const& self) {
-    os << self.thread << '?' << self.lock << '?' << self.info;
+    os << thread_of(self) << '?' << lock_of(self) << '?' << self.info;
     return os;
 }
 
 D2_API extern std::istream& operator>>(std::istream& is, AcquireEvent& self) {
     using namespace boost::spirit::qi;
 
-    is >> match(ulong_ >> '?' >> ulong_ >> '?', self.thread, self.lock)
+    is >> match(ulong_ >> '?' >> ulong_ >> '?', thread_of(self), lock_of(self))
        >> self.info;
     return is;
 }

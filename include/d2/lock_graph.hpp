@@ -249,13 +249,13 @@ class build_lock_graph {
         }
 
         void operator()(AcquireEvent const& e) {
-            if (e.thread != this_thread)
+            if (thread_of(e) != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(e.thread));
-            ThreadId t(e.thread);
+                            << ActualThread(thread_of(e)));
+            ThreadId t(thread_of(e));
             Segment s2(current_segment);
-            LockId l2(e.lock);
+            LockId l2(lock_of(e));
 
             // Each lock has only one vertex in the lock graph. Normally, we
             // should add a vertex only if a vertex representing the newly
@@ -294,55 +294,55 @@ class build_lock_graph {
         }
 
         void operator()(RecursiveAcquireEvent const& e) {
-            if (e.thread != this_thread)
+            if (thread_of(e) != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(e.thread));
+                            << ActualThread(thread_of(e)));
 
-            std::size_t& lock_count = recursive_lock_count[e.lock];
+            std::size_t& lock_count = recursive_lock_count[lock_of(e)];
             // This is very unlikely, but it *could* happen and we *must*
             // handle it gracefully.
             if (lock_count == ::boost::integer_traits<std::size_t>::const_max)
                 D2_THROW(RecursiveLockOverflowException()
                             << CurrentThread(this_thread)
-                            << OverflowingLock(e.lock));
+                            << OverflowingLock(lock_of(e)));
             // If this is the first time its being locked, then we must
             // signal an acquire event. In all cases, we increment the
             // number of times this lock has been locked.
             if (lock_count++ == 0) {
-                AcquireEvent acquire_event(e.lock, e.thread);
+                AcquireEvent acquire_event(lock_of(e), thread_of(e));
                 acquire_event.info = e.info;
                 (*this)(acquire_event);
             }
         }
 
         void operator()(RecursiveReleaseEvent const& e) {
-            if (e.thread != this_thread)
+            if (thread_of(e) != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(e.thread));
+                            << ActualThread(thread_of(e)));
 
-            std::size_t& lock_count = recursive_lock_count[e.lock];
+            std::size_t& lock_count = recursive_lock_count[lock_of(e)];
             if (lock_count == 0)
                 D2_THROW(UnexpectedReleaseException()
                             << ReleasingThread(this_thread)
-                            << ReleasedLock(e.lock));
+                            << ReleasedLock(lock_of(e)));
 
             // If this is a top level release, i.e. the thread does not hold
             // the lock at all anymore after this release, then we really
             // signal a release event.
             if (--lock_count == 0)
-                (*this)(ReleaseEvent(e.lock, e.thread));
+                (*this)(ReleaseEvent(lock_of(e), thread_of(e)));
         }
 
         void operator()(ReleaseEvent const& e) {
-            if (e.thread != this_thread)
+            if (thread_of(e) != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(e.thread));
+                            << ActualThread(thread_of(e)));
 
-            ThreadId t(e.thread);
-            LockId l(e.lock);
+            ThreadId t(thread_of(e));
+            LockId l(lock_of(e));
 
             //Release the lock; remove all locks equal to it from the context.
             typename HeldLocks::const_iterator it(boost::begin(held_locks)),
@@ -375,10 +375,10 @@ class build_lock_graph {
         }
 
         ThreadId operator()(RecursiveAcquireEvent const& e) const
-        { return e.thread; }
+        { return thread_of(e); }
 
         ThreadId operator()(AcquireEvent const& e) const
-        { return e.thread; }
+        { return thread_of(e); }
 
         ThreadId operator()(SegmentHopEvent const& e) const
         { return e.thread; }
