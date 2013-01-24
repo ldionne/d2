@@ -6,6 +6,7 @@
 #define D2_SEGMENT_HPP
 
 #include <boost/operators.hpp>
+#include <boost/serialization/access.hpp>
 #include <cstddef>
 #include <iostream>
 
@@ -69,6 +70,12 @@ struct Segment : boost::totally_ordered<Segment,
     }
 
 private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & value_;
+    }
+
     std::size_t value_;
 };
 

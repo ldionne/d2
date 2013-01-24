@@ -10,6 +10,7 @@
 #include <boost/concept/assert.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
+#include <boost/serialization/access.hpp>
 #include <cstddef>
 #include <iostream>
 
@@ -21,6 +22,12 @@ namespace d2 {
  */
 class LockId : public boost::equality_comparable<LockId> {
     std::size_t id_;
+
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & id_;
+    }
 
 public:
     /**

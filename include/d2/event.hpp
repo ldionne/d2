@@ -7,6 +7,7 @@
 
 #include <boost/functional/hash.hpp>
 #include <boost/fusion/include/at_key.hpp>
+#include <boost/fusion/include/equal_to.hpp>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/map.hpp>
 #include <boost/fusion/include/pair.hpp>
