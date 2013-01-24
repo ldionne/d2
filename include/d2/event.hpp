@@ -18,7 +18,7 @@
 
 
 namespace d2 {
-
+#if 0 // This is not used right now.
 namespace event_detail {
 template <typename Event>
 struct EventIndex {
@@ -63,6 +63,7 @@ struct is_registered
     }}                                                                      \
 /**/
 } // end namespace event_detail
+#endif
 
 /**
  * Mixin used to generate event types.
