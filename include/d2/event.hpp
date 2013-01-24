@@ -7,6 +7,7 @@
 
 #include <boost/functional/hash.hpp>
 #include <boost/fusion/include/at_key.hpp>
+#include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/map.hpp>
 #include <boost/fusion/include/pair.hpp>
 #include <boost/fusion/include/vector.hpp>
@@ -88,6 +89,18 @@ class Event : boost::equality_comparable<Derived> {
         derived().do_serialize(ar, version);
     }
 
+    template <typename Archive>
+    struct serialize_value {
+        Archive& ar_;
+        explicit serialize_value(Archive& ar) : ar_(ar) { }
+
+        template <typename T>
+        void operator()(T const& t) const { ar_ & t.second; }
+
+        template <typename T>
+        void operator()(T& t) const { ar_ & t.second; }
+    };
+
 protected:
     /**
      * Provide serialization to the derived class. We make this method
@@ -95,7 +108,7 @@ protected:
      */
     template <typename Archive>
     void do_serialize(Archive& ar, unsigned int const) {
-        ar & members_;
+        boost::fusion::for_each(members_, serialize_value<Archive>(ar));
     }
 
     //! Convenience typedef for derived classes.
