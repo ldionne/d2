@@ -21,6 +21,7 @@
 #include <boost/assert.hpp>
 #include <boost/concept/assert.hpp>
 #include <boost/concept_check.hpp>
+#include <boost/flyweight.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -38,6 +39,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/variant.hpp>
 #include <cstddef>
+#include <set>
 #include <typeinfo>
 
 
@@ -63,7 +65,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
     LockGraphLabel(detail::LockDebugInfo const& l1_info,
                    Segment s1,
                    ThreadId t,
-                   boost::unordered_set<LockId> const& g,
+                   std::set<LockId> const& g,
                    Segment s2,
                    detail::LockDebugInfo const& l2_info)
         : l1_info(l1_info), s1(s1), t(t), g(g), s2(s2), l2_info(l2_info)
@@ -72,7 +74,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
     detail::LockDebugInfo l1_info;
     Segment s1;
     ThreadId t;
-    boost::unordered_set<LockId> g;
+    boost::flyweight<std::set<LockId> > g;
     Segment s2;
     detail::LockDebugInfo l2_info;
 };
@@ -267,7 +269,7 @@ class build_lock_graph {
 
             // Compute the gatelock set, i.e. the set of locks currently
             // held by this thread.
-            boost::unordered_set<LockId> g;
+            std::set<LockId> g;
             BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks)
                 g.insert(l.lock);
 

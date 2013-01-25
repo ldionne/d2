@@ -84,7 +84,8 @@ public:
                     labels[e1].t != labels[e2].t &&
 
                     // The guard sets must not overlap.
-                    !unordered_intersects(labels[e1].g, labels[e2].g) &&
+                    !unordered_intersects(labels[e1].g.get(),
+                                          labels[e2].g.get()) &&
 
                     // The segments must not be ordered.
                     !happens_before(labels[e1].s2, labels[e2].s1, sg_)
