@@ -81,11 +81,11 @@ public:
                 else if (!(
 
                     // The threads must differ.
-                    labels[e1].t != labels[e2].t &&
+                    thread_of(labels[e1]) != thread_of(labels[e2]) &&
 
                     // The guard sets must not overlap.
-                    !unordered_intersects(labels[e1].g.get(),
-                                          labels[e2].g.get()) &&
+                    !unordered_intersects(gatelocks_of(labels[e1]),
+                                          gatelocks_of(labels[e2])) &&
 
                     // The segments must not be ordered.
                     !happens_before(labels[e1].s2, labels[e2].s1, sg_)

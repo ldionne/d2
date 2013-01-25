@@ -49,34 +49,41 @@ namespace d2 {
  * Label present on the edges of a lock graph.
  */
 struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
+    LockGraphLabel() { }
+
+    LockGraphLabel(detail::LockDebugInfo const& l1_info, Segment s1,
+                   ThreadId thread,
+                   std::set<LockId> const& gatelocks,
+                   Segment s2, detail::LockDebugInfo const& l2_info)
+        : l1_info(l1_info), l2_info(l2_info), s1(s1), s2(s2),
+          thread_(thread), gatelocks_(gatelocks)
+    { }
+
+    detail::LockDebugInfo l1_info, l2_info;
+    Segment s1, s2;
+
+    friend std::set<LockId> const& gatelocks_of(LockGraphLabel const& self) {
+        return self.gatelocks_;
+    }
+
+    friend ThreadId const& thread_of(LockGraphLabel const& self) {
+        return self.thread_;
+    }
+
     friend bool operator==(LockGraphLabel const& a, LockGraphLabel const& b) {
         // Note: We test the easiest first, i.e. the threads and segments,
         //       which are susceptible of being similar to integers.
         return a.s1 == b.s1 &&
-               a.t == b.t &&
                a.s2 == b.s2 &&
+               thread_of(a) == thread_of(b) &&
                a.l1_info == b.l1_info &&
                a.l2_info == b.l2_info &&
-               a.g == b.g;
+               gatelocks_of(a) == gatelocks_of(b);
     }
 
-    LockGraphLabel() { }
-
-    LockGraphLabel(detail::LockDebugInfo const& l1_info,
-                   Segment s1,
-                   ThreadId t,
-                   std::set<LockId> const& g,
-                   Segment s2,
-                   detail::LockDebugInfo const& l2_info)
-        : l1_info(l1_info), s1(s1), t(t), g(g), s2(s2), l2_info(l2_info)
-    { }
-
-    detail::LockDebugInfo l1_info;
-    Segment s1;
-    ThreadId t;
-    boost::flyweight<std::set<LockId> > g;
-    Segment s2;
-    detail::LockDebugInfo l2_info;
+private:
+    ThreadId thread_;
+    boost::flyweight<std::set<LockId> > gatelocks_;
 };
 
 /**

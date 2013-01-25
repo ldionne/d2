@@ -93,7 +93,8 @@ public:
             LockId const& l1 = graph[source(edge_desc, graph)];
             LockId const& l2 = graph[target(edge_desc, graph)];
             streaks.push_back(
-                DeadlockDiagnostic::AcquireStreak(edge_label.t, l1, l2));
+                DeadlockDiagnostic::AcquireStreak(
+                    thread_of(edge_label), l1, l2));
         }
 
         *out_++ = DeadlockDiagnostic(boost::begin(streaks),
