@@ -5,6 +5,7 @@
 #ifndef D2_REPOSITORY_HPP
 #define D2_REPOSITORY_HPP
 
+#include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/exceptions.hpp>
 #include <d2/sandbox/container_view.hpp>
 
@@ -506,26 +507,6 @@ private:
     }
 
     /**
-     * Simple helper class that will call the `lock` method of an object
-     * on construction and call its `unlock` method on destruction.
-     *
-     * This _very_ important to make sure the locks are released if an
-     * exception is thrown.
-     */
-    template <typename Lock>
-    struct ScopedLock : boost::noncopyable {
-        Lock& lock_;
-
-        explicit ScopedLock(Lock& lock) : lock_(lock) {
-            lock_.lock();
-        }
-
-        ~ScopedLock() {
-            lock_.unlock();
-        }
-    };
-
-    /**
      * Fetch a stream into its category, perform some action on it and then
      * return a reference to it. Accesses to shared structures is synchronized
      * using the different locking policies. See below for details.
@@ -552,7 +533,7 @@ private:
         //       initialize the reference inside the scope of the scoped lock.
         StreamBundle* stream_bundle_ptr = NULL;
         {
-            ScopedLock<CategoryLocker> lock(category_locker);
+            detail::scoped_lock<CategoryLocker> lock(category_locker);
             stream_bundle_ptr = &streams[category];
         }
         BOOST_ASSERT(stream_bundle_ptr != NULL);
@@ -565,7 +546,7 @@ private:
         // perfectly possible (and okay) if other threads access other streams
         // in the same category (or in other categories).
         {
-            ScopedLock<StreamLocker> lock(stream_locker);
+            detail::scoped_lock<StreamLocker> lock(stream_locker);
             if (!stream.is_open())
                 open_stream(stream, category);
             // Perform some action on the stream while it's synchronized.
