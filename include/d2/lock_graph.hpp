@@ -241,11 +241,11 @@ class build_lock_graph {
         }
 
         void operator()(SegmentHopEvent const& e) {
-            if (e.thread != this_thread)
+            if (thread_of(e) != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(e.thread));
-            current_segment = e.segment;
+                            << ActualThread(thread_of(e)));
+            current_segment = segment_of(e);
         }
 
         void operator()(AcquireEvent const& e) {
@@ -381,7 +381,7 @@ class build_lock_graph {
         { return thread_of(e); }
 
         ThreadId operator()(SegmentHopEvent const& e) const
-        { return e.thread; }
+        { return thread_of(e); }
     };
 
 public:

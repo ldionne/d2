@@ -25,7 +25,7 @@ namespace d2 {
 
 D2_API extern std::ostream& operator<<(std::ostream& os,
                                        JoinEvent const& self) {
-    os << self.parent << '^' << self.new_parent << '^' << self.child << '^';
+    os << parent_of(self) << '^' << new_parent_of(self) << '^' << child_of(self) << '^';
     return os;
 }
 
@@ -36,9 +36,9 @@ D2_API extern std::istream& operator>>(std::istream& is, JoinEvent& self) {
     is >> match(ulong_ >> '^' >> ulong_ >> '^' >> ulong_ >> '^',
                 parent, new_parent, child);
     self = JoinEvent();
-    self.parent += parent;
-    self.new_parent += new_parent;
-    self.child += child;
+    parent_of(self) += parent;
+    new_parent_of(self) += new_parent;
+    child_of(self) += child;
     return is;
 }
 

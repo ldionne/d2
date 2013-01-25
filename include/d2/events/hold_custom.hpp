@@ -36,7 +36,7 @@ typename ::boost::enable_if<                                                \
     ::d2::has_member<key, Event>,                                           \
 typename ::boost::add_lvalue_reference<value>::type>::type                  \
 accessor(Event& event) {                                                    \
-    return get((key)(), event);                                             \
+    return get(key(), event);                                               \
 }                                                                           \
                                                                             \
 template <typename Event>                                                   \
@@ -45,7 +45,7 @@ typename ::boost::enable_if<                                                \
 typename ::boost::add_lvalue_reference<                                     \
     typename ::boost::add_const<value>::type                                \
 >::type>::type accessor(Event const& event) {                               \
-    return get((key)(), event);                                             \
+    return get(key(), event);                                               \
 }                                                                           \
 /**/
 

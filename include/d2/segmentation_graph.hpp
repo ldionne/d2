@@ -84,9 +84,9 @@ class build_segmentation_graph {
         }
 
         void operator()(StartEvent const& event) {
-            Segment parent_segment = event.parent;
-            Segment child_segment = event.child;
-            Segment new_parent_segment = event.new_parent;
+            Segment parent_segment = parent_of(event);
+            Segment child_segment = child_of(event);
+            Segment new_parent_segment = new_parent_of(event);
 
             // Segments:      parent     new_parent  child
             // Parent thread:   o____________o
@@ -98,9 +98,9 @@ class build_segmentation_graph {
         }
 
         void operator()(JoinEvent const& event) {
-            Segment parent_segment = event.parent;
-            Segment child_segment = event.child;
-            Segment new_parent_segment = event.new_parent;
+            Segment parent_segment = parent_of(event);
+            Segment child_segment = child_of(event);
+            Segment new_parent_segment = new_parent_of(event);
 
             // Segments:      parent    child       new_parent
             // Parent thread:   o______________________o
@@ -150,7 +150,7 @@ public:
             D2_THROW(EventTypeException()
                         << ExpectedType("StartEvent")
                         << ActualType(typeid(first_event).name()));
-        add_vertex(initial_event->parent, graph);
+        add_vertex(parent_of(*initial_event), graph);
 
         EventVisitor<SegmentationGraph, Segment> visitor(graph);
         do {

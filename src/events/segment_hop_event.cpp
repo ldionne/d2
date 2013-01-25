@@ -25,7 +25,7 @@ namespace d2 {
 
 D2_API extern std::ostream& operator<<(std::ostream& os,
                                        SegmentHopEvent const& self){
-    os << self.thread << '>' << self.segment << '>';
+    os << thread_of(self) << '>' << segment_of(self) << '>';
     return os;
 }
 
@@ -35,8 +35,8 @@ D2_API extern std::istream& operator>>(std::istream& is,
 
     unsigned long segment;
     self = SegmentHopEvent();
-    is >> match(ulong_ >> '>' >> ulong_ >> '>', self.thread, segment);
-    self.segment += segment;
+    is >> match(ulong_ >> '>' >> ulong_ >> '>', thread_of(self), segment);
+    segment_of(self) += segment;
     return is;
 }
 

@@ -7,23 +7,33 @@
 
 #include <d2/detail/config.hpp>
 #include <d2/event_traits.hpp>
+#include <d2/events/hold_custom.hpp>
 #include <d2/segment.hpp>
 
-#include <boost/operators.hpp>
-#include <boost/serialization/access.hpp>
 #include <iosfwd>
 
 
 namespace d2 {
 
+namespace start_event_detail {
+    struct parent { };
+    struct new_parent { };
+    struct child { };
+    D2_DEFINE_CUSTOM_HOLDER(hold_parent, parent, Segment, parent_of)
+    D2_DEFINE_CUSTOM_HOLDER(hold_new_parent, new_parent, Segment,new_parent_of)
+    D2_DEFINE_CUSTOM_HOLDER(hold_child, child, Segment, child_of)
+}
+
 /**
  * Represents the start of a child thread from a parent thread.
  */
-struct StartEvent : boost::equality_comparable<StartEvent> {
-    Segment parent;
-    Segment new_parent;
-    Segment child;
-
+struct StartEvent
+    : start_event_detail::hold_parent<
+        start_event_detail::hold_new_parent<
+            start_event_detail::hold_child<>
+        >
+    >
+{
     /**
      * This constructor must only be used when serializing events.
      * The object is in an invalid state once default-constructed.
@@ -31,18 +41,10 @@ struct StartEvent : boost::equality_comparable<StartEvent> {
     StartEvent() { }
 
     StartEvent(Segment const& parent, Segment const& new_parent,
-                                                        Segment const& child)
-        : parent(parent), new_parent(new_parent), child(child)
-    { }
-
-    /**
-     * Return whether two `StartEvent`s represent the same parent thread
-     * starting the same child thread.
-     */
-    friend bool operator==(StartEvent const& a, StartEvent const& b) {
-        return a.parent == b.parent &&
-               a.new_parent == b.new_parent &&
-               a.child == b.child;
+                                      Segment const& child) {
+        parent_of(*this) = parent;
+        new_parent_of(*this) = new_parent;
+        child_of(*this) = child;
     }
 
     D2_API friend std::istream& operator>>(std::istream&, StartEvent&);
