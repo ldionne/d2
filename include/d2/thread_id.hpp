@@ -20,7 +20,8 @@ namespace d2 {
 /**
  * Unique id identifying a thread in the analyzed program.
  */
-class ThreadId : public boost::equality_comparable<ThreadId> {
+class ThreadId : public boost::equality_comparable<ThreadId,
+                        boost::less_than_comparable<ThreadId> > {
     std::size_t id_;
 
     friend class boost::serialization::access;
@@ -77,6 +78,14 @@ public:
     friend std::size_t hash_value(ThreadId const& self) {
         using boost::hash_value;
         return hash_value(self.id_);
+    }
+
+    friend bool operator<(ThreadId const& self, ThreadId const& other) {
+        return self.id_ < other.id_;
+    }
+
+    friend bool operator>(ThreadId const& self, ThreadId const& other) {
+        return self.id_ > other.id_;
     }
 
     /**

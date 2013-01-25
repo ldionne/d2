@@ -20,7 +20,8 @@ namespace d2 {
 /**
  * Unique id representing a synchronization object in the analyzed program.
  */
-class LockId : public boost::equality_comparable<LockId> {
+class LockId : public boost::equality_comparable<LockId,
+                      boost::less_than_comparable<LockId> > {
     std::size_t id_;
 
     friend class boost::serialization::access;
@@ -77,6 +78,14 @@ public:
     friend std::size_t hash_value(LockId const& self) {
         using boost::hash_value;
         return hash_value(self.id_);
+    }
+
+    friend bool operator<(LockId const& self, LockId const& other) {
+        return self.id_ < other.id_;
+    }
+
+    friend bool operator>(LockId const& self, LockId const& other) {
+        return self.id_ > other.id_;
     }
 
     /**
