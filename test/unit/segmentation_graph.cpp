@@ -2,6 +2,7 @@
  * This file contains unit tests for the segmentation graph construction.
  */
 
+#include <d2/build_segmentation_graph.hpp>
 #include <d2/events/acquire_event.hpp>
 #include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>

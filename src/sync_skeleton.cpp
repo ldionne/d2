@@ -4,6 +4,7 @@
 
 #define D2_SOURCE
 #include <d2/analysis.hpp>
+#include <d2/build_segmentation_graph.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
