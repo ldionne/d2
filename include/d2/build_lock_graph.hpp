@@ -28,6 +28,7 @@
 #include <boost/graph/named_graph.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/move/move.hpp>
+#include <boost/mpl/assert.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
@@ -38,6 +39,7 @@
 #include <boost/variant/static_visitor.hpp>
 #include <cstddef>
 #include <typeinfo>
+#include <utility>
 
 
 namespace d2 {
@@ -108,9 +110,9 @@ class build_lock_graph {
         Segment segment;
         detail::LockDebugInfo info;
 
-        CurrentlyHeldLock(LockId const& l, Segment const& s,
-                          detail::LockDebugInfo const& i)
-            : lock(l), segment(s), info(i)
+        CurrentlyHeldLock(LockId const& lock, Segment const& segment,
+                          detail::LockDebugInfo const& info)
+            : lock(lock), segment(segment), info(info)
         { }
 
         friend bool operator==(CurrentlyHeldLock const& a,
@@ -137,8 +139,10 @@ class build_lock_graph {
         Segment current_segment;
         boost::unordered_map<LockId, std::size_t> recursive_lock_count;
 
+        typedef typename boost::edge_property_type<Graph>::type EdgeLabel;
         typedef boost::graph_traits<Graph> Traits;
         typedef typename Traits::vertex_descriptor VertexDescriptor;
+        typedef typename Traits::edge_descriptor EdgeDescriptor;
 
         // Note:
         // There are two possible cases for the current_segment:
@@ -161,22 +165,23 @@ class build_lock_graph {
             << ActualType(typeid(event).name()));
         }
 
-        void operator()(SegmentHopEvent const& e) {
-            if (thread_of(e) != this_thread)
+        void operator()(SegmentHopEvent const& event) {
+            ThreadId thread(thread_of(event));
+            if (thread != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(thread_of(e)));
-            current_segment = segment_of(e);
+                            << ActualThread(thread));
+            current_segment = segment_of(event);
         }
 
-        void operator()(AcquireEvent const& e) {
-            if (thread_of(e) != this_thread)
+        void operator()(AcquireEvent const& event) {
+            ThreadId t(thread_of(event));
+            if (t != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(thread_of(e)));
-            ThreadId t(thread_of(e));
+                            << ActualThread(t));
             Segment s2(current_segment);
-            LockId l2(lock_of(e));
+            LockId l2(lock_of(event));
 
             // Each lock has only one vertex in the lock graph. Normally, we
             // should add a vertex only if a vertex representing the newly
@@ -198,7 +203,7 @@ class build_lock_graph {
             BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks) {
                 LockId l1(l.lock);
                 Segment s1(l.segment);
-                LockGraphLabel label(l.info, s1, t, g, s2, e.info);
+                EdgeLabel label(l.info, s1, t, g, s2, event.info);
 
                 boost::optional<VertexDescriptor>
                     l1_vertex_maybe = find_vertex(l1, graph);
@@ -216,69 +221,78 @@ class build_lock_graph {
                 // place in the code, we would still want to detect a
                 // different deadlock during the analysis. See the
                 // simple_ABBA_redudant_diff_functions test for more info.
-                if (!detail::is_adjacent(graph, l1_vertex, l2_vertex, label))
-                    add_edge(l1_vertex, l2_vertex, label, graph);
+                if (!detail::is_adjacent(graph, l1_vertex, l2_vertex, label)) {
+                    std::pair<EdgeDescriptor, bool> added_edge =
+                                add_edge(l1_vertex, l2_vertex, label, graph);
+
+                    BOOST_ASSERT_MSG(added_edge.second,
+                        "two vertices that are not adjacent via an edge with "
+                        "the current label could not be connected");
+                }
             }
-            held_locks.insert(CurrentlyHeldLock(l2, s2, e.info));
+            held_locks.insert(CurrentlyHeldLock(l2, s2, event.info));
         }
 
-        void operator()(RecursiveAcquireEvent const& e) {
-            if (thread_of(e) != this_thread)
+        void operator()(RecursiveAcquireEvent const& event) {
+            ThreadId thread(thread_of(event));
+            LockId lock(lock_of(event));
+            if (thread != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(thread_of(e)));
+                            << ActualThread(thread));
 
-            std::size_t& lock_count = recursive_lock_count[lock_of(e)];
+            std::size_t& lock_count = recursive_lock_count[lock];
             // This is very unlikely, but it *could* happen and we *must*
             // handle it gracefully.
             if (lock_count == ::boost::integer_traits<std::size_t>::const_max)
                 D2_THROW(RecursiveLockOverflowException()
                             << CurrentThread(this_thread)
-                            << OverflowingLock(lock_of(e)));
+                            << OverflowingLock(lock));
             // If this is the first time its being locked, then we must
             // signal an acquire event. In all cases, we increment the
             // number of times this lock has been locked.
             if (lock_count++ == 0) {
-                AcquireEvent acquire_event(lock_of(e), thread_of(e));
-                acquire_event.info = e.info;
+                AcquireEvent acquire_event(lock, thread);
+                acquire_event.info = event.info;
                 (*this)(acquire_event);
             }
         }
 
-        void operator()(RecursiveReleaseEvent const& e) {
-            if (thread_of(e) != this_thread)
+        void operator()(RecursiveReleaseEvent const& event) {
+            ThreadId thread(thread_of(event));
+            LockId lock(lock_of(event));
+            if (thread != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(thread_of(e)));
+                            << ActualThread(thread));
 
-            std::size_t& lock_count = recursive_lock_count[lock_of(e)];
+            std::size_t& lock_count = recursive_lock_count[lock];
             if (lock_count == 0)
                 D2_THROW(UnexpectedReleaseException()
                             << ReleasingThread(this_thread)
-                            << ReleasedLock(lock_of(e)));
+                            << ReleasedLock(lock));
 
             // If this is a top level release, i.e. the thread does not hold
             // the lock at all anymore after this release, then we really
             // signal a release event.
             if (--lock_count == 0)
-                (*this)(ReleaseEvent(lock_of(e), thread_of(e)));
+                (*this)(ReleaseEvent(lock, thread));
         }
 
-        void operator()(ReleaseEvent const& e) {
-            if (thread_of(e) != this_thread)
+        void operator()(ReleaseEvent const& event) {
+            ThreadId thread(thread_of(event));
+            LockId lock(lock_of(event));
+            if (thread != this_thread)
                 D2_THROW(EventThreadException()
                             << ExpectedThread(this_thread)
-                            << ActualThread(thread_of(e)));
-
-            ThreadId t(thread_of(e));
-            LockId l(lock_of(e));
+                            << ActualThread(thread));
 
             //Release the lock; remove all locks equal to it from the context.
             typename HeldLocks::const_iterator it(boost::begin(held_locks)),
                                                last(boost::end(held_locks));
             bool l_is_owned_by_this_thread = false;
             while (it != last) {
-                if (it->lock == l) {
+                if (it->lock == lock) {
                     held_locks.erase(it++);
                     l_is_owned_by_this_thread = true;
                 }
@@ -288,7 +302,7 @@ class build_lock_graph {
             if (!l_is_owned_by_this_thread)
                 D2_THROW(UnexpectedReleaseException()
                             << ReleasingThread(this_thread)
-                            << ReleasedLock(l));
+                            << ReleasedLock(lock));
         }
     };
 
@@ -303,14 +317,14 @@ class build_lock_graph {
             return ThreadId(); // never reached.
         }
 
-        ThreadId operator()(RecursiveAcquireEvent const& e) const
-        { return thread_of(e); }
+        ThreadId operator()(RecursiveAcquireEvent const& event) const
+        { return thread_of(event); }
 
-        ThreadId operator()(AcquireEvent const& e) const
-        { return thread_of(e); }
+        ThreadId operator()(AcquireEvent const& event) const
+        { return thread_of(event); }
 
-        ThreadId operator()(SegmentHopEvent const& e) const
-        { return thread_of(e); }
+        ThreadId operator()(SegmentHopEvent const& event) const
+        { return thread_of(event); }
     };
 
 public:
@@ -320,13 +334,13 @@ public:
     result_type operator()(Iterator first, Iterator last, Graph& graph) const {
         // We must be able to add new vertices/edges and to set their
         // respective properties to build the lock graph.
-        // Note: See the note in segmentation_graph.hpp to know why these
-        //       concept checks are disabled. It applies to Graph too.
+        // Note: See the note in build_segmentation_graph.hpp to know why
+        //       these concept checks are disabled.
 #if 0
         BOOST_CONCEPT_ASSERT((boost::VertexMutablePropertyGraphConcept<Graph>));
         BOOST_CONCEPT_ASSERT((boost::EdgeMutablePropertyGraphConcept<Graph>));
 #endif
-
+        BOOST_MPL_ASSERT((boost::is_multigraph<Graph>));
         BOOST_CONCEPT_ASSERT((boost::InputIteratorConcept<Iterator>));
 
         if (first == last)

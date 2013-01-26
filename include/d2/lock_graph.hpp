@@ -81,8 +81,6 @@ typedef shared_set<boost::unordered_set<LockId> > Gatelocks;
  * Label stored on each edge of a lock graph.
  */
 struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
-    LockGraphLabel() { }
-
     LockGraphLabel(detail::LockDebugInfo const& l1_info, Segment s1,
                    ThreadId thread,
                    detail::Gatelocks const& gatelocks,
