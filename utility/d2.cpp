@@ -4,6 +4,7 @@
  */
 
 #include <d2/event_repository.hpp>
+#include <d2/events/exceptions.hpp>
 #include <d2/sync_skeleton.hpp>
 
 // Disable MSVC warning C4512: assignment operator could not be generated
