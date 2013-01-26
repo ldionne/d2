@@ -213,6 +213,49 @@ typedef boost::error_info<
             exception_tag::overflowing_lock, LockId
         > OverflowingLock;
 
+namespace detail {
+/**
+ * Return whether `v` is adjacent to `u` using an edge with the given property.
+ */
+template <typename Graph, typename EdgeProperty>
+bool is_adjacent(Graph const& graph,
+                 typename boost::graph_traits<Graph>::vertex_descriptor u,
+                 typename boost::graph_traits<Graph>::vertex_descriptor v,
+                 EdgeProperty const& property) {
+    typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
+    BOOST_FOREACH(Edge e, out_edges(u, graph))
+        if (target(e, graph) == v && graph[e] == property)
+            return true;
+    return false;
+}
+
+template <typename Graph, typename EdgeProperty>
+bool is_adjacent(Graph const& graph,
+                 typename boost::graph_traits<Graph>::vertex_descriptor u,
+                 typename Graph::vertex_name_type const& v_,
+                 EdgeProperty const& property) {
+    boost::optional<typename boost::graph_traits<Graph>::vertex_descriptor>
+        v = find_vertex(v_, graph);
+    BOOST_ASSERT_MSG(v, "trying to find an edge between two vertices using "
+        "their vertex name but the destination vertex name has no associated "
+        "vertex in the graph");
+    return is_adjacent(graph, u, *v, property);
+}
+
+template <typename Vertex, typename EdgeProperty, typename Graph>
+bool is_adjacent(Graph const& graph,
+                  typename Graph::vertex_name_type const& u_,
+                  Vertex const& v_,
+                  EdgeProperty const& property) {
+    boost::optional<typename boost::graph_traits<Graph>::vertex_descriptor>
+        u = find_vertex(u_, graph);
+    BOOST_ASSERT_MSG(u, "trying to find an edge between two vertices using "
+        "their vertex name but the source vertex name has no associated "
+        "vertex in the graph");
+    return is_adjacent(graph, *u, v_, property);
+}
+} // end namespace detail
+
 /**
  * Function object used to build the lock graph from a range of events.
  * The events should be `SegmentHopEvent`s, `AcquireEvent`s, and
@@ -256,25 +299,6 @@ class build_lock_graph {
 
     // Set of locks held by a thread at any given time.
     typedef boost::unordered_set<CurrentlyHeldLock> HeldLocks;
-
-    template <typename VertexName, typename EdgeProperty, typename Graph>
-    static bool are_connected(VertexName const& u_, VertexName const& v_,
-                              EdgeProperty const& prop, Graph const& graph) {
-        typedef typename boost::graph_traits<
-                                Graph>::edge_descriptor EdgeDescriptor;
-        typedef typename boost::graph_traits<
-                            Graph>::vertex_descriptor VertexDescriptor;
-
-        boost::optional<VertexDescriptor> u = find_vertex(u_, graph),
-                                          v = find_vertex(v_, graph);
-        BOOST_ASSERT_MSG(u && v,
-            "trying to find an edge between two synchronization objects of "
-            "which at least one has no associated vertex in the lock graph.");
-        BOOST_FOREACH(EdgeDescriptor e, out_edges(*u, graph))
-            if (target(e, graph) == *v && graph[e] == prop)
-                return true;
-        return false;
-    }
 
     template <typename LockGraph>
     struct EventVisitor : boost::static_visitor<void> {
@@ -352,8 +376,8 @@ class build_lock_graph {
                 // an edge, because if the acquisition happened at a different
                 // place in the code, we would still want to detect a
                 // different deadlock during the analysis. See the
-                // simple_ABBA_redudant_diff_functions test for an example.
-                if (!are_connected(l1, l2, label, graph))
+                // simple_ABBA_redudant_diff_functions test for more info.
+                if (!detail::is_adjacent(graph, l1, l2, label))
                     add_edge(l1, l2, label, graph);
             }
             held_locks.insert(CurrentlyHeldLock(l2, s2, e.info));
