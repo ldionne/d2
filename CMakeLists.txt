@@ -97,7 +97,8 @@ else()
     link_directories(${Boost_LIBRARY_DIRS})
     add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3
                     -DBOOST_ALL_NO_LIB
-                    -DBOOST_ALL_DYN_LINK)
+                    -DBOOST_ALL_DYN_LINK
+                    -DBOOST_UNORDERED_USE_MOVE)
 endif()
 
 

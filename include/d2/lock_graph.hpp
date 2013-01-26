@@ -21,7 +21,7 @@
 #include <boost/assert.hpp>
 #include <boost/concept/assert.hpp>
 #include <boost/concept_check.hpp>
-#include <boost/flyweight.hpp>
+#include <boost/container/set.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -30,30 +30,85 @@
 #include <boost/graph/named_graph.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/move/move.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/variant.hpp>
 #include <cstddef>
-#include <set>
 #include <typeinfo>
 
 
 namespace d2 {
 
+namespace detail {
 /**
- * Label present on the edges of a lock graph.
+ * Set whose underlying representation can be shared by several owners.
+ *
+ * @note This structure is optimized so that several duplicated read-only
+ *       copies of it are space efficient.
+ */
+template <typename Set>
+struct shared_set {
+    typedef Set underlying_set_type;
+
+    //! Construct an empty set.
+    shared_set()
+        : set_(new underlying_set_type())
+    { }
+
+    //! Construct a shared set sharing its underlying set with `other`.
+    /*implicit*/ shared_set(shared_set const& other)
+        : set_(other.set_)
+    { }
+
+    //! Construct a shared set with an underlying set equal to `other`.
+    explicit shared_set(BOOST_RV_REF(underlying_set_type) other)
+        : set_(new underlying_set_type(boost::move(other)))
+    { }
+
+    //! Return a constant reference to the underlying set of `*this`.
+    operator underlying_set_type const&() const {
+        BOOST_ASSERT_MSG(set_, "invariant broken: the shared_ptr of a "
+                               "shared set instance is invalid");
+        return *set_;
+    }
+
+private:
+    boost::shared_ptr<underlying_set_type const> set_;
+};
+
+/**
+ * Set of locks held by a thread.
+ *
+ * @note We use a `shared_set` because an instance of `Gatelocks` is stored
+ *       on each edge of the lock graph. We could use a `flyweight` too, but
+ *       benchmarking shows that the current solution offers a better
+ *       space/time tradeoff.
+ *       The main differences between the two approaches are:
+ *       - `flyweight` requires the set to be hashed everytime, which is
+ *         more CPU intensive.
+ *       - Using a `shared_set` is suboptimal because there may be some
+ *         repetition of the gatelocks in the lock graph when the gatelocks
+ *         are the same on different events.
+ */
+typedef shared_set<boost::unordered_set<LockId> > Gatelocks;
+} // end namespace detail
+
+/**
+ * Label stored on each edge of a lock graph.
  */
 struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
     LockGraphLabel() { }
 
     LockGraphLabel(detail::LockDebugInfo const& l1_info, Segment s1,
                    ThreadId thread,
-                   std::set<LockId> const& gatelocks,
+                   detail::Gatelocks const& gatelocks,
                    Segment s2, detail::LockDebugInfo const& l2_info)
         : l1_info(l1_info), l2_info(l2_info), s1(s1), s2(s2),
           thread_(thread), gatelocks_(gatelocks)
@@ -62,7 +117,8 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
     detail::LockDebugInfo l1_info, l2_info;
     Segment s1, s2;
 
-    friend std::set<LockId> const& gatelocks_of(LockGraphLabel const& self) {
+    friend detail::Gatelocks::underlying_set_type const&
+    gatelocks_of(LockGraphLabel const& self) {
         return self.gatelocks_;
     }
 
@@ -83,7 +139,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
 
 private:
     ThreadId thread_;
-    boost::flyweight<std::set<LockId> > gatelocks_;
+    detail::Gatelocks gatelocks_;
 };
 
 /**
@@ -276,9 +332,10 @@ class build_lock_graph {
 
             // Compute the gatelock set, i.e. the set of locks currently
             // held by this thread.
-            std::set<LockId> g;
+            detail::Gatelocks::underlying_set_type g_tmp;
             BOOST_FOREACH(CurrentlyHeldLock const& l, held_locks)
-                g.insert(l.lock);
+                g_tmp.insert(l.lock);
+            detail::Gatelocks g(boost::move(g_tmp));
 
             // Add an edge from every lock l1 already held by
             // this thread to l2.
