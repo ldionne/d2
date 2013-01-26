@@ -1,80 +1,27 @@
 /**
- * This file implements the `d2/sandbox/sync_skeleton.hpp` header.
+ * This file implements the graph analysis algorithm.
  */
 
 #define D2_SOURCE
 #include <d2/analysis.hpp>
-#include <d2/build_lock_graph.hpp>
-#include <d2/build_segmentation_graph.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/segmentation_graph.hpp>
-#include <d2/sync_skeleton.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/qi_match.hpp>
 #include <boost/variant.hpp>
-#include <iostream>
 #include <iterator>
-#include <string>
 #include <vector>
 
 
 namespace d2 {
 namespace detail {
-
-void parse_and_build_seg_graph(std::istream& is, SegmentationGraph& graph) {
-    namespace qi = boost::spirit::qi;
-
-    typedef boost::variant<StartEvent, JoinEvent> Event;
-
-    is.unsetf(std::ios_base::skipws);
-    std::string source((std::istream_iterator<char>(is)),
-                        std::istream_iterator<char>());
-
-    qi::typed_stream<StartEvent> start;
-    qi::typed_stream<JoinEvent> join;
-
-    std::vector<Event> events;
-    qi::parse(source.begin(), source.end(), *(start | join), events);
-
-    build_segmentation_graph<>()(events, graph);
-}
-
-void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
-    namespace qi = boost::spirit::qi;
-
-    typedef boost::variant<
-                AcquireEvent, ReleaseEvent,
-                RecursiveAcquireEvent, RecursiveReleaseEvent,
-                SegmentHopEvent
-            > Event;
-
-    is.unsetf(std::ios_base::skipws);
-    std::string source((std::istream_iterator<char>(is)),
-                        std::istream_iterator<char>());
-
-    qi::typed_stream<AcquireEvent> acquire;
-    qi::typed_stream<ReleaseEvent> release;
-    qi::typed_stream<RecursiveAcquireEvent> rec_acquire;
-    qi::typed_stream<RecursiveReleaseEvent> rec_release;
-    qi::typed_stream<SegmentHopEvent> hop;
-
-    std::vector<Event> events;
-    qi::parse(source.begin(), source.end(),
-        *(acquire | release | rec_acquire | rec_release | hop)
-    , events);
-
-    build_lock_graph<>()(events, graph);
-}
-
 
 template <typename OutputIterator>
 class DiagnosticGatherer {
@@ -110,7 +57,7 @@ gather_diagnostics(OutputIterator const& out) {
     return DiagnosticGatherer<OutputIterator>(out);
 }
 
-std::vector<DeadlockDiagnostic>
+extern std::vector<DeadlockDiagnostic>
 analyze_lock_ordering(LockGraph const& lg, SegmentationGraph const& sg) {
     std::vector<DeadlockDiagnostic> diagnostics;
     analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));

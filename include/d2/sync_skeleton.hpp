@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <iosfwd>
 #include <iterator>
-#include <set>
 #include <vector>
 #include <string>
 
@@ -23,9 +22,9 @@
 namespace d2 {
 
 namespace detail {
-    void parse_and_build_seg_graph(std::istream&, SegmentationGraph&);
-    void parse_and_build_lock_graph(std::istream&, LockGraph&);
-    std::vector<DeadlockDiagnostic>
+    extern void parse_and_build_seg_graph(std::istream&, SegmentationGraph&);
+    extern void parse_and_build_lock_graph(std::istream&, LockGraph&);
+    extern std::vector<DeadlockDiagnostic>
     analyze_lock_ordering(LockGraph const&, SegmentationGraph const&);
 } // end namespace detail
 
@@ -54,7 +53,7 @@ class SyncSkeleton {
      * a repository.
      */
     static void build_graphs(Repository& repo, LockGraph& lg,
-                                                    SegmentationGraph& sg) {
+                                               SegmentationGraph& sg) {
         detail::parse_and_build_seg_graph(repo[Repository::process_wide], sg);
 
         typedef typename Repository::thread_stream_range ThreadStreams;
