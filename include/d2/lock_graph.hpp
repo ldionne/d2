@@ -308,6 +308,9 @@ class build_lock_graph {
         Segment current_segment;
         boost::unordered_map<LockId, std::size_t> recursive_lock_count;
 
+        typedef boost::graph_traits<LockGraph> Traits;
+        typedef typename Traits::vertex_descriptor VertexDescriptor;
+
         // Note:
         // There are two possible cases for the current_segment:
         //      - this_thread is not the main thread, the first event is a
@@ -352,7 +355,7 @@ class build_lock_graph {
             // lock_graph is a named_graph, this is already handled when we
             // use the lock_graph's vertex_name to add the vertex instead of
             // its vertex_descriptor.
-            add_vertex(l2, graph);
+            VertexDescriptor l2_vertex = add_vertex(l2, graph);
 
             // Compute the gatelock set, i.e. the set of locks currently
             // held by this thread.
@@ -367,6 +370,13 @@ class build_lock_graph {
                 LockId l1(l.lock);
                 Segment s1(l.segment);
                 LockGraphLabel label(l.info, s1, t, g, s2, e.info);
+
+                boost::optional<VertexDescriptor>
+                    l1_vertex_maybe = find_vertex(l1, graph);
+                BOOST_ASSERT_MSG(l1_vertex_maybe, "a lock this thread is "
+                    "holding has no associated vertex in the lock graph");
+                VertexDescriptor l1_vertex = *l1_vertex_maybe;
+
                 // We don't add an edge if there is already an edge that is
                 // exactly the same, since this would only create redundancy
                 // in the graph. Multiple equal parallel edges would happen
@@ -377,8 +387,8 @@ class build_lock_graph {
                 // place in the code, we would still want to detect a
                 // different deadlock during the analysis. See the
                 // simple_ABBA_redudant_diff_functions test for more info.
-                if (!detail::is_adjacent(graph, l1, l2, label))
-                    add_edge(l1, l2, label, graph);
+                if (!detail::is_adjacent(graph, l1_vertex, l2_vertex, label))
+                    add_edge(l1_vertex, l2_vertex, label, graph);
             }
             held_locks.insert(CurrentlyHeldLock(l2, s2, e.info));
         }
