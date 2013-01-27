@@ -5,12 +5,14 @@
 #ifndef D2_MOCK_THREAD_HPP
 #define D2_MOCK_THREAD_HPP
 
+#include <d2/detail/basic_atomic.hpp>
 #include <d2/detail/config.hpp>
 
 #include <boost/function.hpp>
 #include <boost/move/move.hpp>
-#include <boost/optional.hpp>
+#include <boost/operators.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
 
@@ -19,7 +21,7 @@ namespace d2 {
 namespace mock {
 
 struct thread {
-    class id {
+    class id : boost::equality_comparable<id> {
         boost::thread::id id_;
 
     public:
@@ -28,11 +30,15 @@ struct thread {
         D2_API /* implicit */ id(boost::thread::id const& thread_id);
 
         D2_API friend std::size_t unique_id(id const& self);
+
+        D2_API friend bool operator==(id const& self, id const& other);
     };
 
     D2_API explicit thread(boost::function<void()> const& f);
 
     D2_API thread(BOOST_RV_REF(thread) other);
+
+    D2_API ~thread();
 
     D2_API friend void swap(thread& a, thread& b);
 
@@ -45,11 +51,12 @@ struct thread {
     D2_API id get_id() const;
 
 private:
-    D2_API bool is_initialized() const;
+    D2_API bool has_id() const;
+    D2_API bool was_started() const;
 
     boost::function<void()> f_;
     boost::scoped_ptr<boost::thread> actual_;
-    boost::optional<id> id_;
+    boost::shared_ptr<detail::basic_atomic<id> > id_;
 };
 
 } // end namespace mock

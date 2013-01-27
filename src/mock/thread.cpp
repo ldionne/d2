@@ -20,41 +20,31 @@
 namespace d2 {
 namespace mock {
 
-namespace detail {
-class thread_functor_wrapper {
-    thread::id parent_;
-    boost::function<void()> f_;
+static thread::id const NOT_A_THREAD = thread::id();
 
-public:
-    explicit thread_functor_wrapper(boost::function<void()> const& f)
-        : parent_(this_thread::get_id()), f_(f)
-    { }
+D2_API bool thread::was_started() const {
+    return actual_ != NULL;
+}
 
-    void operator()() const {
-        thread::id child = this_thread::get_id();
-        notify_start(parent_, child);
-        f_();
-        notify_join(parent_, child);
-    }
-};
-} // end namespace detail
-
-D2_API bool thread::is_initialized() const {
-    return id_ && actual_;
+D2_API bool thread::has_id() const {
+    return *id_ != NOT_A_THREAD;
 }
 
 D2_API thread::thread(boost::function<void()> const& f)
-    : f_(detail::thread_functor_wrapper(f))
+    : f_(f), actual_(), id_(new detail::basic_atomic<thread::id>(NOT_A_THREAD))
 { }
 
-D2_API thread::thread(BOOST_RV_REF(thread) other) : f_(boost::move(other.f_)) {
-    boost::swap(actual_, other.actual_);
-    boost::swap(id_, other.id_);
+D2_API thread::thread(BOOST_RV_REF(thread) other) {
+    swap(*this, other);
+}
+
+D2_API thread::~thread() {
+    join();
 }
 
 D2_API thread::id thread::get_id() const {
-    BOOST_ASSERT(is_initialized());
-    return thread::id(actual_->get_id());
+    BOOST_ASSERT(has_id());
+    return *id_;
 }
 
 D2_API extern void swap(thread& a, thread& b) {
@@ -64,21 +54,33 @@ D2_API extern void swap(thread& a, thread& b) {
 }
 
 D2_API void thread::start() {
-    BOOST_ASSERT_MSG(!is_initialized(),
-        "starting a thread that is already started");
-    actual_.reset(new boost::thread(f_));
-    id_ = actual_->get_id();
+    BOOST_ASSERT_MSG(!was_started(),
+        "starting a thread that was already started");
+
+    thread::id parent = this_thread::get_id();
+    boost::shared_ptr<detail::basic_atomic<id> > child = this->id_;
+    boost::function<void()> f = this->f_;
+    actual_.reset(new boost::thread([f, parent, child] {
+        *child = this_thread::get_id(); // initialize the child thread's id
+                            // atomic cast to thread::id
+        notify_start(parent, static_cast<thread::id>(*child));
+        f();
+    }));
 }
 
 D2_API void thread::join() {
-    BOOST_ASSERT_MSG(is_initialized(), "joining a thread that is not started");
+    BOOST_ASSERT(was_started());
+    // Running actual_ initializes our thread id. Before we call
+    // actual_->join(), we may or may not have a thread id, depending
+    // on the thread scheduling.
     actual_->join();
+    notify_join(this_thread::get_id(), get_id());
 }
 
 D2_API extern std::size_t unique_id(thread const& self) {
-    BOOST_ASSERT(self.is_initialized());
-    return unique_id(*self.id_);
+    return unique_id(self.get_id());
 }
+
 
 D2_API thread::id::id(boost::thread::id const& thread_id)
     : id_(thread_id)
@@ -87,6 +89,10 @@ D2_API thread::id::id(boost::thread::id const& thread_id)
 D2_API extern std::size_t unique_id(thread::id const& self) {
     using boost::hash_value;
     return hash_value(self.id_);
+}
+
+D2_API extern bool operator==(thread::id const& self, thread::id const& other){
+    return self.id_ == other.id_;
 }
 
 } // end namespace mock
