@@ -124,14 +124,23 @@ D2_API void integration_test::verify_deadlocks(
     detail::verify_consume(expected, actual, std::back_inserter(not_found));
     detail::verify_consume(actual, expected, std::back_inserter(unexpected));
 
-    BOOST_FOREACH(detail::Deadlock const& dl, not_found)
-        std::cout << "did not find expected deadlock:\n" << dl << '\n';
+    if (!unexpected.empty() || !not_found.empty()) {
+        std::cout << "Expected deadlocks:\n";
+        BOOST_FOREACH(detail::Deadlock const& dl, expected)
+            std::cout << dl << "\n";
 
-    BOOST_FOREACH(detail::Deadlock const& dl, unexpected)
-        std::cout << "found unexpected deadlock:\n" << dl << '\n';
+        std::cout << "Actual deadlocks:\n";
+        BOOST_FOREACH(detail::Deadlock const& dl, actual)
+            std::cout << dl << "\n";
 
-    if (!unexpected.empty() || !not_found.empty())
+        BOOST_FOREACH(detail::Deadlock const& dl, not_found)
+            std::cout << "did not find expected deadlock:\n" << dl << '\n';
+
+        BOOST_FOREACH(detail::Deadlock const& dl, unexpected)
+            std::cout << "found unexpected deadlock:\n" << dl << '\n';
+
         throw std::logic_error("failed integration test");
+    }
 }
 
 namespace detail {
