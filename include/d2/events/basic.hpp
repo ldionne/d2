@@ -48,7 +48,7 @@ private:
 
     friend class boost::serialization::access;
     template <typename Archive>
-    void serialize(Archive& ar, unsigned int const version) {
+    void serialize(Archive& ar, unsigned int const /*version*/) {
         boost::fusion::for_each(members_, ar & boost::phoenix::arg_names::_1);
     }
 
