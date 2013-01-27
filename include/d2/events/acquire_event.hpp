@@ -33,7 +33,16 @@ struct AcquireEvent
         acquire_event_detail::hold_thread<>
     >
 {
-    detail::LockDebugInfo info;
+    typedef detail::LockDebugInfo aux_info_type;
+    aux_info_type info;
+
+    friend aux_info_type const& aux_info_of(AcquireEvent const& self) {
+        return self.info;
+    }
+
+    friend aux_info_type& aux_info_of(AcquireEvent& self) {
+        return self.info;
+    }
 
     /**
      * This constructor must only be used when serializing events.

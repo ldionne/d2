@@ -64,7 +64,7 @@ extern void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
         *(acquire | release | rec_acquire | rec_release | hop)
     , events);
 
-    build_lock_graph<true>()(events, graph);
+    build_lock_graph<true>(events, graph);
 }
 
 } // end namespace detail
