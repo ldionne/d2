@@ -56,17 +56,29 @@ class dispatch_policy_impl
 
     typedef boost::proto::_void nothing;
 
-    typedef typename arg<tag::stream_factory>::type StreamFactory;
-    typedef typename arg<
-                tag::synchronize_locally_with, null_scoped_lock
-            >::type ScopedLock;
-    typedef typename arg<tag::before_writing, nothing>::type BeforeWriting;
-    typedef typename arg<tag::write_with, left_shift>::type Write;
-    typedef typename arg<tag::after_writing, nothing>::type AfterWriting;
-
 public:
     template <typename Expr, typename State, typename Data>
     struct impl : boost::proto::transform_impl<Expr, State, Data> {
+
+        typedef boost::proto::call<
+                    typename arg<tag::stream_factory>::type
+                > StreamFactory;
+
+        typedef typename arg<
+                    tag::synchronize_locally_with, null_scoped_lock
+                >::type ScopedLock;
+
+        typedef boost::proto::call<
+                    typename arg<tag::before_writing, nothing>::type
+                > BeforeWriting;
+
+        typedef boost::proto::call<
+                    typename arg<tag::write_with, left_shift>::type
+                > Write;
+
+        typedef boost::proto::call<
+                    typename arg<tag::after_writing, nothing>::type
+                > AfterWriting;
 
         typedef void result_type;
         result_type operator()(typename impl::expr_param event,
