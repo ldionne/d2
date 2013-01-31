@@ -5,9 +5,10 @@
 #ifndef D2_SANDBOX_EVENT_HPP
 #define D2_SANDBOX_EVENT_HPP
 
+#include <d2/sandbox/parameter.hpp>
+
 #include <boost/mpl/remove.hpp>
 #include <boost/mpl/vector.hpp>
-#include <boost/parameter.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_params_with_a_default.hpp>
 #include <boost/proto/proto.hpp>
@@ -17,20 +18,19 @@ namespace d2 {
 namespace sandbox {
 
 namespace event_detail {
-BOOST_PARAMETER_TEMPLATE_KEYWORD(scope)
+D2_PARAMETER_TEMPLATE_KEYWORD(scope)
 namespace tag { struct members; }
-
-#define D2_MAX_EVENT_MEMBERS 10
 
 namespace members_detail { struct not_used; }
 
+#define D2_MAX_EVENT_MEMBERS 10
 template <
     BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(
         D2_MAX_EVENT_MEMBERS, typename A, members_detail::not_used
     )
 >
 struct members
-    : boost::parameter::template_keyword<
+    : parameter_template_keyword<
         tag::members,
         boost::mpl::remove<
             boost::mpl::vector<BOOST_PP_ENUM_PARAMS(D2_MAX_EVENT_MEMBERS, A)>,
@@ -48,7 +48,7 @@ template <typename Args>
 class event_impl {
     template <typename Tag, typename Default = boost::parameter::void_>
     struct arg
-        : boost::parameter::value_type<Args, Tag, Default>
+        : parameter_value_type<Args, Tag, Default>
     { };
 
     typedef typename arg<tag::members, members<> >::type Members;

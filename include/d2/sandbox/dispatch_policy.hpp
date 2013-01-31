@@ -5,7 +5,8 @@
 #ifndef D2_SANDBOX_DISPATCH_POLICY_HPP
 #define D2_SANDBOX_DISPATCH_POLICY_HPP
 
-#include <boost/parameter.hpp>
+#include <d2/sandbox/parameter.hpp>
+
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_params_with_a_default.hpp>
 #include <boost/proto/proto.hpp>
@@ -19,11 +20,11 @@ BOOST_PROTO_DEFINE_ENV_VAR(stream_type, stream_);
 BOOST_PROTO_DEFINE_ENV_VAR(event_type, event_);
 
 namespace dispatch_policy_detail {
-BOOST_PARAMETER_TEMPLATE_KEYWORD(stream_factory)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(synchronize_locally_with)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(before_writing)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(write_with)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(after_writing)
+D2_PARAMETER_TEMPLATE_KEYWORD(stream_factory)
+D2_PARAMETER_TEMPLATE_KEYWORD(synchronize_locally_with)
+D2_PARAMETER_TEMPLATE_KEYWORD(before_writing)
+D2_PARAMETER_TEMPLATE_KEYWORD(write_with)
+D2_PARAMETER_TEMPLATE_KEYWORD(after_writing)
 
 typedef boost::parameter::parameters<
             boost::parameter::required<tag::stream_factory>
@@ -39,7 +40,7 @@ class dispatch_policy_impl
 {
     template <typename Tag, typename Default = boost::parameter::void_>
     struct arg
-        : boost::parameter::value_type<Args, Tag, Default>
+        : parameter_value_type<Args, Tag, Default>
     { };
 
     struct left_shift {
@@ -127,7 +128,7 @@ using dispatch_policy_detail::after_writing;
 
 template <
     typename A0,
-    BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(4, typename B,boost::parameter::void_)
+    BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(4, typename B, boost::parameter::void_)
 >
 struct dispatch_policy
     : dispatch_policy_detail::dispatch_policy_impl<
