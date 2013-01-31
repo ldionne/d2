@@ -9,6 +9,7 @@ endfunction()
 d2_add_standalone_unit_test(concepts unit/concepts.cpp)
 d2_add_standalone_unit_test(event_dispatcher unit/sandbox/event_dispatcher.cpp)
 d2_add_standalone_unit_test(event_traits unit/event_traits.cpp)
+d2_add_standalone_unit_test(partition_by_index unit/detail/partition_by_index.cpp)
 
 d2_add_standalone_unit_test(c_compiler integration/c_compiler.c)
 d2_target_link_libraries(c_compiler_exe d2log)
