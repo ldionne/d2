@@ -6,6 +6,8 @@
 #ifndef D2_EVENT_TRAITS_HPP
 #define D2_EVENT_TRAITS_HPP
 
+#include <d2/detail/evaluate_args.hpp>
+
 #include <boost/exception/detail/is_output_streamable.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/back.hpp>
@@ -112,23 +114,6 @@ struct is_output_streamable
         ::boost::is_output_streamable<T>::value
     >
 { };
-
-/**
- * Adapts a metafunction by evaluating its parameters before forwarding
- * to the original metafunction.
- */
-template <typename F>
-struct evaluate_args;
-
-template <template <typename> class F, typename A1>
-struct evaluate_args<F<A1> > {
-    typedef typename F<typename A1::type>::type type;
-};
-
-template <template <typename, typename> class F, typename A1, typename A2>
-struct evaluate_args<F<A1, A2> > {
-    typedef typename F<typename A1::type, typename A2::type>::type type;
-};
 } // end namespace detail
 
 /**
