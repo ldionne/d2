@@ -14,16 +14,26 @@
 namespace d2 {
 namespace sandbox {
 
+typedef boost::proto::_expr _event;
+using boost::proto::_;
+using boost::proto::_data;
+using boost::proto::_state;
+using boost::proto::and_;
+using boost::proto::if_;
+using boost::proto::matches;
+using boost::proto::not_;
+using boost::proto::or_;
+using boost::proto::when;
+
 #define D2_MAX_DISPATCH_RULES_ARITY BOOST_PROTO_MAX_LOGICAL_ARITY
 
 template <
     BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(
-        D2_MAX_DISPATCH_RULES_ARITY,
-        typename A, boost::proto::not_<boost::proto::_>
+        D2_MAX_DISPATCH_RULES_ARITY, typename A, not_<_>
     )
 >
 struct dispatch_rules
-    : boost::proto::or_<
+    : or_<
         BOOST_PP_ENUM_PARAMS(D2_MAX_DISPATCH_RULES_ARITY, A)
     >
 { };
