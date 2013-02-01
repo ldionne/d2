@@ -12,6 +12,8 @@
 #include <boost/fusion/include/at_key.hpp>
 #include <boost/fusion/include/equal_to.hpp>
 #include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/include/pair.hpp>
+#include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/remove.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/operators.hpp>
@@ -34,7 +36,8 @@ struct unused;
 template <typename Members>
 struct sanitize_members
     : detail::pair_adjacent<
-        typename boost::mpl::remove<Members, unused>::type
+        typename boost::mpl::remove<Members, unused>::type,
+        boost::fusion::pair<boost::mpl::_1, boost::mpl::_2>
     >
 { };
 

@@ -5,6 +5,7 @@
 #ifndef D2_DETAIL_PAIR_ADJACENT_HPP
 #define D2_DETAIL_PAIR_ADJACENT_HPP
 
+#include <boost/mpl/apply.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/begin.hpp>
 #include <boost/mpl/bool.hpp>
@@ -20,11 +21,22 @@
 namespace d2 {
 namespace detail {
 
+namespace pair_adjacent_detail {
+    template <template <typename T1, typename T2> class Pair>
+    struct make {
+        template <typename T1, typename T2>
+        struct apply {
+            typedef Pair<T1, T2> type;
+        };
+    };
+}
+
 /**
  * Metafunction returning a sequence of pairs of the elements that were
  * adjacent in the original sequence.
  */
-template <typename Sequence>
+template <typename Sequence,
+          typename MakePair = pair_adjacent_detail::make<boost::mpl::pair> >
 class pair_adjacent {
     template <typename T>
     struct is_even
@@ -39,7 +51,8 @@ class pair_adjacent {
         typedef typename boost::mpl::deref<Next>::type Value;
 
         typedef typename boost::mpl::push_back<
-                    OutSequence, boost::mpl::pair<Key, Value>
+                    OutSequence,
+                    typename boost::mpl::apply<MakePair, Key, Value>::type
                 >::type NewOutSequence;
 
         typedef typename populate<
