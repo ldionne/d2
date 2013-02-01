@@ -5,8 +5,10 @@
 #ifndef D2_SANDBOX_DISPATCH_POLICY_HPP
 #define D2_SANDBOX_DISPATCH_POLICY_HPP
 
+#include <d2/sandbox/event_traits.hpp>
 #include <d2/sandbox/parameter.hpp>
 
+#include <boost/mpl/assert.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_params_with_a_default.hpp>
 #include <boost/proto/proto.hpp>
@@ -85,6 +87,7 @@ public:
         result_type operator()(typename impl::expr_param event,
                                typename impl::state_param state,
                                typename impl::data_param data) const {
+            BOOST_MPL_ASSERT((is_event<typename impl::expr>));
 
             // Make sure `data_param` is an environment.
             typedef typename boost::proto::result_of::as_env<
