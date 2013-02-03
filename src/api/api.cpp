@@ -85,6 +85,14 @@ D2_API extern void d2_notify_recursive_release(size_t thread_id,
                                                   ThreadId(thread_id)));
 }
 
+namespace {
+    static d2::detail::basic_atomic<std::size_t> lock_id_counter(0);
+}
+
+D2_API extern size_t d2_get_lock_id(void) {
+    return lock_id_counter++;
+}
+
 namespace d2 { namespace detail {
     // default initialized to the initial segment value
     static Segment current_segment;

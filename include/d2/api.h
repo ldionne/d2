@@ -112,6 +112,18 @@ D2_API extern void d2_notify_start(size_t parent_id, size_t child_id);
  */
 D2_API extern void d2_notify_join(size_t parent_id, size_t child_id);
 
+/**
+ * Return an identifier able to uniquely identify a single synchronization
+ * object with the framework.
+ *
+ * @note If this function is not used to retrieve unique identifiers for
+ *       synchronization objects, one must make sure every synchronization
+ *       object has a different identifier with whatever technique is used
+ *       to get identifiers.
+ * @note This function can be considered atomic.
+ */
+D2_API extern size_t d2_get_lock_id(void);
+
 #ifdef __cplusplus
 }
 #endif

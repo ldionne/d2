@@ -5,8 +5,8 @@
 #ifndef D2_API_HPP
 #define D2_API_HPP
 
-#include <d2/detail/api_detail.hpp>
 #include <d2/api.h>
+#include <d2/api/api_detail.hpp>
 
 #include <cstddef>
 #include <string>
@@ -151,6 +151,40 @@ void notify_join(Thread const& parent, Thread const& child) {
     d2_notify_join(api_detail::unique_id_impl(parent),
                    api_detail::unique_id_impl(child));
 }
+
+/**
+ * Forwards to `d2_get_lock_id`.
+ *
+ * @see `d2_get_lock_id`
+ */
+inline std::size_t get_lock_id() {
+    return d2_get_lock_id();
+}
+
+/**
+ * Class used to ease the integration of the framework with existing
+ * synchronization object classes.
+ *
+ * Using this as a base class will make the `Derived` class model the
+ * `UniquelyIdentifiable` concept. In other words, the `Derived` will be
+ * compatible with the `notify_*` calls from the API.
+ *
+ * @note Public inheritance must be used.
+ * @see `UniquelyIdentifiable`
+ */
+template <typename Derived>
+class deadlock_detectable {
+    std::size_t id_;
+
+public:
+    deadlock_detectable()
+        : id_(get_lock_id())
+    { }
+
+    friend std::size_t unique_id(deadlock_detectable const& self) {
+        return self.id_;
+    }
+};
 
 } // end namespace d2
 
