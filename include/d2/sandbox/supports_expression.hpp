@@ -19,7 +19,7 @@ class name {                                                                \
     struct no { char size[2]; };                                            \
                                                                             \
     template <typename_param>                                               \
-    static yes test(char[sizeof(expression)]);                              \
+    static yes test(char(*)[sizeof(expression)]);                           \
                                                                             \
     template <typename_param>                                               \
     static no test(...);                                                    \
