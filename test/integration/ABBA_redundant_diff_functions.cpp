@@ -19,25 +19,24 @@ int main(int argc, char const* argv[]) {
             B.lock();
             B.unlock();
         A.unlock();
+
+        // redundancy, but in a different function.
+        [&] {
+            A.lock();
+                B.lock();
+                B.unlock();
+            A.unlock();
+        }();
     };
 
     auto g = [&] {
-        A.lock();
-            B.lock();
-            B.unlock();
-        A.unlock();
-
-        f(); // redundancy, but in a different function.
-    };
-
-    auto h = [&] {
         B.lock();
             A.lock();
             A.unlock();
         B.unlock();
     };
 
-    d2::mock::thread t0(h), t1(g);
+    d2::mock::thread t0(f), t1(g);
 
     d2::mock::integration_test integration_test(argc, argv, __FILE__);
 
