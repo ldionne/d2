@@ -1,7 +1,7 @@
 /**
  * This file defines alternative machinery to declare named template
  * parameters because of a bug in Boost.Parameter that might take a while
- * before its fixed.
+ * before it is fixed.
  *
  * @see https://svn.boost.org/trac/boost/ticket/2793
  */
