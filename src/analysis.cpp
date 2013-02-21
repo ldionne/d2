@@ -36,14 +36,13 @@ public:
                                                             EdgeDescriptor;
         typedef typename boost::edge_property_type<LockGraph>::type Edge;
 
-        std::vector<DeadlockDiagnostic::AcquireStreak> streaks;
+        std::vector<AcquireStreak> streaks;
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             Edge const& edge_label = graph[edge_desc];
-            LockId const& l1 = graph[source(edge_desc, graph)];
-            LockId const& l2 = graph[target(edge_desc, graph)];
+            LockId l1_l2[] = {graph[source(edge_desc, graph)],
+                              graph[target(edge_desc, graph)]};
             streaks.push_back(
-                DeadlockDiagnostic::AcquireStreak(
-                    thread_of(edge_label), l1, l2));
+                AcquireStreak(thread_of(edge_label), &l1_l2[0], &l1_l2[2]));
         }
 
         *out_++ = DeadlockDiagnostic(boost::begin(streaks),

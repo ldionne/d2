@@ -72,19 +72,17 @@ D2_API integration_test::~integration_test() {
 }
 
 namespace detail {
-Streak make_streak(DeadlockDiagnostic::AcquireStreak const& step) {
+Streak make_streak(AcquireStreak const& step) {
     Streak streak;
-    streak.thread_id = step.thread.thread_id;
-    typedef DeadlockDiagnostic::LockInformation LockInfo;
-    BOOST_FOREACH(LockInfo const& lock_info, step.locks)
-        streak.locks.push_back(lock_info.lock_id);
+    streak.thread_id = step.thread;
+    BOOST_FOREACH(LockId const& lock, step.locks)
+        streak.locks.push_back(lock);
     return streak;
 }
 
 Deadlock make_deadlock(DeadlockDiagnostic const& diagnostic) {
     Deadlock deadlock;
-    BOOST_FOREACH(DeadlockDiagnostic::AcquireStreak const& streak,
-                                                        diagnostic.steps())
+    BOOST_FOREACH(AcquireStreak const& streak, diagnostic.steps())
         deadlock.steps.push_back(make_streak(streak));
     return deadlock;
 }

@@ -19,6 +19,22 @@
 namespace d2 {
 
 /**
+ * Class representing a sequence of lock acquisitions by a single thread.
+ */
+struct AcquireStreak {
+    template <typename Iterator>
+    AcquireStreak(ThreadId thread, Iterator first_lock, Iterator last_lock)
+        : thread(thread), locks(first_lock, last_lock)
+    { }
+
+    friend std::ostream& operator<<(std::ostream&, AcquireStreak const&);
+
+    ThreadId thread;
+    // sorted in order of acquisition
+    std::vector<LockId> locks;
+};
+
+/**
  * Class representing the diagnostic of a deadlock potential.
  *
  * @internal This class is not very optimized (sets created by some getters,
@@ -27,44 +43,10 @@ namespace d2 {
  *           is likely to be small.
  */
 struct DeadlockDiagnostic {
-    struct ThreadInformation {
-        ThreadId thread_id;
-        // the main thread has no parent
-        boost::optional<ThreadInformation&> parent;
-    };
-
-    struct LockInformation {
-        LockId lock_id;
-        // Call stack, etc..
-    };
-
-    /**
-     * Class representing a sequence of lock acquisitions by a single thread.
-     */
-    struct AcquireStreak {
-        // Note: This solution is temporary until we find a better way to
-        //       attach arbitrary data to graph edges.
-        AcquireStreak(ThreadId thread, LockId lock1, LockId lock2) {
-            LockInformation l1 = {lock1}, l2 = {lock2};
-            locks.push_back(l1);
-            locks.push_back(l2);
-            this->thread.thread_id = thread;
-        }
-
-        ThreadInformation thread;
-        // sorted in order of acquisition
-        std::vector<LockInformation> locks;
-    };
-
     template <typename Iterator>
     DeadlockDiagnostic(Iterator first_streak, Iterator last_streak)
         : steps_(first_streak, last_streak)
     { }
-
-    std::size_t number_of_involved_threads() const;
-    std::size_t number_of_involved_locks() const;
-    std::set<ThreadInformation> involved_threads() const;
-    std::set<LockInformation> involved_locks() const;
 
     typedef std::vector<AcquireStreak> Steps;
 
@@ -96,9 +78,6 @@ struct DeadlockDiagnostic {
 
 private:
     Steps steps_;
-
-    static std::string format_step(AcquireStreak const& streak);
-    static std::string format_explanation(AcquireStreak const& streak);
 
 public:
     /**
