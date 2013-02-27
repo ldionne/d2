@@ -5,6 +5,7 @@
 #ifndef D2_BASIC_LOCKABLE_HPP
 #define D2_BASIC_LOCKABLE_HPP
 
+#include <d2/detail/inherit_constructors.hpp>
 #include <d2/trackable_sync_object.hpp>
 
 #include <boost/config.hpp>
@@ -32,10 +33,7 @@ template <typename BasicLockable>
 struct basic_lockable
     : BasicLockable, trackable_sync_object<basic_lockable<BasicLockable> >
 {
-
-#   define D2_BASE_CLASS BasicLockable
-#   define D2_DERIVED_CLASS basic_lockable
-#   include <d2/detail/inherit_constructors.hpp>
+    D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
     /**
      * Call the `lock()` method of `BasicLockable` and notify `d2` of the

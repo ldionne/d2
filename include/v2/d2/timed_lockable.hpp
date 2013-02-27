@@ -5,6 +5,7 @@
 #ifndef D2_TIMED_LOCKABLE_HPP
 #define D2_TIMED_LOCKABLE_HPP
 
+#include <d2/detail/inherit_constructors.hpp>
 #include <d2/lockable.hpp>
 
 #include <boost/config.hpp>
@@ -22,9 +23,7 @@ namespace d2 {
 template <typename TimedLockable>
 struct timed_lockable : lockable<TimedLockable> {
 
-#   define D2_BASE_CLASS lockable<TimedLockable>
-#   define D2_DERIVED_CLASS timed_lockable
-#   include <d2/detail/inherit_constructors.hpp>
+    D2_INHERIT_CONSTRUCTORS(timed_lockable, lockable<TimedLockable>)
 
     /**
      * Call the `try_lock_for()` method of `TimedLockable` and notify `d2`

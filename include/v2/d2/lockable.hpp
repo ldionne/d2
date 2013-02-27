@@ -6,6 +6,7 @@
 #define D2_LOCKABLE_HPP
 
 #include <d2/basic_lockable.hpp>
+#include <d2/detail/inherit_constructors.hpp>
 
 #include <boost/config.hpp>
 #include <boost/mpl/bool.hpp>
@@ -23,9 +24,7 @@ namespace d2 {
 template <typename Lockable>
 struct lockable : basic_lockable<Lockable> {
 
-#   define D2_BASE_CLASS basic_lockable<Lockable>
-#   define D2_DERIVED_CLASS lockable
-#   include <d2/detail/inherit_constructors.hpp>
+    D2_INHERIT_CONSTRUCTORS(lockable, basic_lockable<Lockable>)
 
     /**
      * Call the `try_lock()` method of `Lockable` and notify `d2` of the
