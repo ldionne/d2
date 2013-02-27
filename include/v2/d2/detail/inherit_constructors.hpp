@@ -10,7 +10,9 @@
 
 
 // If we have inherited constructors
-#if !defined(BOOST_NO_CXX11_INHERITED_CONSTRUCTORS)
+// Note: BOOST_NO_CXX11_INHERITED_CONSTRUCTORS does not currently exist,
+//       so we always disable this.
+#if !defined(BOOST_NO_CXX11_INHERITED_CONSTRUCTORS) && 0
 
 #   define D2_INHERIT_CONSTRUCTORS(DERIVED, BASE)                           \
         using D2_BASE_CLASS::D2_BASE_CLASS;                                 \
