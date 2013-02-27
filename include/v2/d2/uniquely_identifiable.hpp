@@ -7,10 +7,98 @@
 
 #include <d2/detail/decl.hpp>
 
+#include <boost/concept/usage.hpp>
+#include <boost/concept_archetype.hpp>
+#include <boost/move/utility.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/assert.hpp>
+#include <boost/type_traits/is_integral.hpp>
+#include <boost/type_traits/is_unsigned.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <cstddef>
 
 
 namespace d2 {
+/**
+ * Overload of `unique_id` for unsigned integral types. For these types,
+ * `unique_id` is the identity function.
+ */
+template <typename T>
+typename boost::enable_if<
+    boost::mpl::and_<boost::is_integral<T>, boost::is_unsigned<T> >,
+BOOST_FWD_REF(T)>::type unique_id(BOOST_FWD_REF(T) t) {
+    return boost::forward<T>(t);
+}
+
+
+
+/**
+ * Specification of the `UniquelyIdentifiable` concept.
+ *
+ * A type is `UniquelyIdentifiable` iff it is possible to obtain an unsigned
+ * integral identifier that is unique for any two distinct objects. This is
+ * much like being able to hash an object, but the hash has to be perfect.
+ */
+template <typename T>
+struct UniquelyIdentifiable {
+    BOOST_CONCEPT_USAGE(UniquelyIdentifiable) {
+        using ::d2::unique_id;
+        assert_unsigned_integral(unique_id(val));
+    }
+
+private:
+    T& val;
+
+    template <typename U>
+    static void assert_unsigned_integral(U const&) {
+        BOOST_MPL_ASSERT((
+            boost::mpl::and_<
+                boost::is_integral<U>, boost::is_unsigned<U>
+            >
+        ));
+    }
+
+    // Silence MSVC warning C4610: ... user defined constructor required
+    UniquelyIdentifiable() /*= delete*/;
+
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    UniquelyIdentifiable& operator=(UniquelyIdentifiable const&) /*= delete*/;
+};
+
+
+
+namespace uniquely_identifiable_detail {
+    /**
+     * Archetype modeling no concept.
+     *
+     * @note This is an improvement over `boost::null_archetype<>`, which has
+     *       a destructor even though the archetype should not necessarily be
+     *       destructible.
+     */
+    template <typename T = int>
+    class null_archetype : public boost::null_archetype<T> {
+        ~null_archetype() /*= delete*/;
+    };
+} // end namespace uniquely_identifiable_detail
+
+//! Archetype for the `UniquelyIdentifiable` concept.
+template <typename Base = uniquely_identifiable_detail::null_archetype<> >
+struct uniquely_identifiable_archetype : Base {
+
+    friend any_unsigned_integral_type
+    unique_id(uniquely_identifiable_archetype const&) {
+        return static_cast<any_unsigned_integral_type>(0);
+    }
+
+private:
+    typedef unsigned int any_unsigned_integral_type;
+
+    // Silence MSVC warning C4624: destructor could not be generated
+    ~uniquely_identifiable_archetype() /*= delete*/;
+};
+
+
+
 namespace uniquely_identifiable_detail {
     /**
      * Unsigned integral type used to hold unique identifiers.
