@@ -1,6 +1,5 @@
 /**
- * This file implements the `timed_lockable` wrapper for the `TimedLockable`
- * concept.
+ * This file implements the `timed_lockable` class.
  */
 
 #ifndef D2_TIMED_LOCKABLE_HPP
@@ -13,12 +12,26 @@
 
 
 namespace d2 {
+/**
+ * Wrapper over a synchronization object modeling the `TimedLockable` concept.
+ *
+ * This wrapper augments the behavior of `lockable` with the following:
+ *  - When any one of `try_lock_for()` and `try_lock_until()` is called and
+ *    successfully acquires `*this`, `d2` is notified automatically.
+ */
 template <typename TimedLockable>
 struct timed_lockable : lockable<TimedLockable> {
+
 #   define D2_BASE_CLASS lockable<TimedLockable>
 #   define D2_DERIVED_CLASS timed_lockable
 #   include <d2/detail/inherit_constructors.hpp>
 
+    /**
+     * Call the `try_lock_for()` method of `TimedLockable` and notify `d2`
+     * of the acquisition if and only if it succeeded.
+     *
+     * @return Whether the acquisition succeeded.
+     */
     template <typename Duration>
     bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {
         if (lockable<TimedLockable>::try_lock_for(
@@ -29,6 +42,12 @@ struct timed_lockable : lockable<TimedLockable> {
         return false;
     }
 
+    /**
+     * Call the `try_lock_until()` method of `TimedLockable` and notify `d2`
+     * of the acquisition if and only if it succeeded.
+     *
+     * @return Whether the acquisition succeeded.
+     */
     template <typename TimePoint>
     bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT {
         if (lockable<TimedLockable>::try_lock_until(

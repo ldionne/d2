@@ -1,5 +1,5 @@
 /**
- * This file implements the `lockable` wrapper for the `Lockable` concept.
+ * This file implements the `lockable` class.
  */
 
 #ifndef D2_LOCKABLE_HPP
@@ -13,12 +13,26 @@
 
 
 namespace d2 {
+/**
+ * Wrapper over a synchronization object modeling the `Lockable` concept.
+ *
+ * This wrapper augments the behavior of `basic_lockable` with the following:
+ *  - When the `*this` is `try_lock()`ed successfully, `d2` is notified
+ *    automatically.
+ */
 template <typename Lockable>
 struct lockable : basic_lockable<Lockable> {
+
 #   define D2_BASE_CLASS basic_lockable<Lockable>
 #   define D2_DERIVED_CLASS lockable
 #   include <d2/detail/inherit_constructors.hpp>
 
+    /**
+     * Call the `try_lock()` method of `Lockable` and notify `d2` of the
+     * acquisition of `*this` if and only if the acquisition succeeded.
+     *
+     * @return Whether the acquisition succeeded.
+     */
     bool try_lock() BOOST_NOEXCEPT {
         if (basic_lockable<Lockable>::try_lock()) {
             notify_lock();
