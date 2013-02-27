@@ -3,8 +3,8 @@
  */
 
 #define D2_SOURCE
-#include <d2/config.hpp>
 #include <d2/detail/atomic.hpp>
+#include <d2/detail/decl.hpp>
 #include <d2/uniquely_identifiable.hpp>
 
 

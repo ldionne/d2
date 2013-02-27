@@ -5,7 +5,7 @@
 #ifndef D2_UNIQUELY_IDENTIFIABLE_HPP
 #define D2_UNIQUELY_IDENTIFIABLE_HPP
 
-#include <d2/detail/config.hpp>
+#include <d2/detail/decl.hpp>
 
 #include <cstddef>
 
