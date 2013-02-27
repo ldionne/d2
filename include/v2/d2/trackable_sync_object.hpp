@@ -26,7 +26,7 @@ protected:
      * current thread.
      */
     void notify_lock() const BOOST_NOEXCEPT {
-
+        int implement_me;
     }
 
     /**
@@ -34,7 +34,7 @@ protected:
      * current thread.
      */
     void notify_unlock() const BOOST_NOEXCEPT {
-
+        int implement_me;
     }
 };
 } // end namespace d2
