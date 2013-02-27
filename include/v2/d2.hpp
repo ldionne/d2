@@ -9,5 +9,6 @@
 #include <d2/lockable.hpp>
 #include <d2/timed_lockable.hpp>
 #include <d2/trackable_sync_object.hpp>
+#include <d2/uniquely_identifiable.hpp>
 
 #endif // !D2_HPP
