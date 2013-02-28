@@ -1,10 +1,10 @@
 /**
- * This file defines the `all_cycles` graph algorithm to find all the
+ * This file defines the `all_cycles` algorithm to find all the
  * cycles in a directed graph.
  */
 
-#ifndef D2_DETAIL_ALL_CYCLES_HPP
-#define D2_DETAIL_ALL_CYCLES_HPP
+#ifndef D2_CORE_ALL_CYCLES_HPP
+#define D2_CORE_ALL_CYCLES_HPP
 
 #include <boost/assert.hpp>
 #include <boost/concept/assert.hpp>
@@ -24,12 +24,11 @@
 
 
 namespace d2 {
-namespace detail {
-
+namespace all_cycles_detail {
 // Note: You can enable/disable this to debug the algorithm. Some information
 //       will be printed to stdout.
-#define D2_DEBUG_ALL_CYCLES(statement) do { } while (false)
-// #define D2_DEBUG_ALL_CYCLES(statement) do { statement; } while (false)
+#define D2_IMPL_DEBUG_ALL_CYCLES(statement) do { } while (false)
+// #define D2_IMPL_DEBUG_ALL_CYCLES(statement) do { statement; } while (false)
 
 /**
  * Wrapper visitor for use within the `all_cycles` algorithm.
@@ -60,14 +59,14 @@ public:
     { }
 
     void tree_edge(Edge e, Graph const& g) {
-        D2_DEBUG_ALL_CYCLES(std::cout <<
+        D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
             "tree edge: " << e << '\n' <<
             "set predecessor of " << target(e, g) << " to " << e << '\n');
         predecessors_[target(e, g)] =  e;
     }
 
     void back_edge(Edge e, Graph const& g) {
-        D2_DEBUG_ALL_CYCLES(std::cout <<
+        D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
             "back edge: " << e << '\n' <<
             "making sure " << source(e, g) << " has a predecessor\n");
         BOOST_ASSERT_MSG(
@@ -95,7 +94,7 @@ public:
         // graph, we must make sure we do not call the visitor with redundant
         // cycles that were already found in a previous search.
         if (seen_cycles.insert(cycle).second) {
-            D2_DEBUG_ALL_CYCLES(
+            D2_IMPL_DEBUG_ALL_CYCLES(
                 std::cout << "Found cycle: ";
                 std::copy(boost::begin(cycle), boost::end(cycle),
                     std::ostream_iterator<Edge>(std::cout, " "));
@@ -125,7 +124,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     typedef typename boost::graph_traits<Graph>::edge_descriptor Edge;
     typedef std::deque<Edge> Cycle;
 
-    D2_DEBUG_ALL_CYCLES(std::cout <<
+    D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
         "starting the all_cycles algorithm\n"
     <<  "    graph has " << num_vertices(g) << " vertices\n");
 
@@ -141,7 +140,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     boost::depth_first_search(g,
         boost::root_vertex(first_vertex).visitor(wrapper));
 
-    D2_DEBUG_ALL_CYCLES(std::cout <<
+    D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
         "first dfs done\n"
     <<  "    found " << seen_cycles.size() << " cycles\n");
 
@@ -153,7 +152,7 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
             vertices_in_a_cycle.insert(target(edge, g));
     }
 
-    D2_DEBUG_ALL_CYCLES(std::cout <<
+    D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
     "    involving " << vertices_in_a_cycle.size() << " different vertices\n");
 
     // Start over a depth-first search at every vertex involved in a cycle.
@@ -164,8 +163,12 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     BOOST_FOREACH(Vertex v, vertices_in_a_cycle)
         boost::depth_first_search(g, boost::root_vertex(v).visitor(wrapper));
 }
+#undef D2_IMPL_DEBUG_ALL_CYCLES
+} // end namespace all_cycles_detail
 
-} // end namespace detail
+namespace core {
+    using all_cycles_detail::all_cycles;
+}
 } // end namespace d2
 
-#endif // !D2_DETAIL_ALL_CYCLES_HPP
+#endif // !D2_CORE_ALL_CYCLES_HPP

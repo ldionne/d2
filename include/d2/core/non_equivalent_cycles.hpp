@@ -3,8 +3,8 @@
  * in a directed graph.
  */
 
-#ifndef D2_DETAIL_NON_EQUIVALENT_CYCLES_HPP
-#define D2_DETAIL_NON_EQUIVALENT_CYCLES_HPP
+#ifndef D2_CORE_NON_EQUIVALENT_CYCLES_HPP
+#define D2_CORE_NON_EQUIVALENT_CYCLES_HPP
 
 #include <boost/concept/assert.hpp>
 #include <boost/concept_check.hpp>
@@ -17,9 +17,7 @@
 
 
 namespace d2 {
-namespace detail {
-
-namespace non_equ_cycles_detail {
+namespace non_equivalent_cycles_detail {
 template <typename Visitor, typename Graph, typename Cycle>
 class Wrapper : public boost::dfs_visitor<> {
     Visitor visitor_;
@@ -59,13 +57,12 @@ public:
         visitor_.cycle(cycle, g);
     }
 };
-} // end namespace non_equ_cycles_detail
 
 /**
  * Algorithm to compute all the non-equivalent cycles in a graph.
  *
- * @note Two cycles are equivalent iff one is equal to some rotation of the
- *       other.
+ * Two cycles are equivalent if and only if one is equal to some rotation
+ * of the other.
  */
 template <typename Graph, typename Visitor>
 void non_equivalent_cycles(Graph const& g, Visitor const& visitor) {
@@ -76,15 +73,16 @@ void non_equivalent_cycles(Graph const& g, Visitor const& visitor) {
     if (num_vertices(g) == 0)
         return;
 
-    typedef non_equ_cycles_detail::Wrapper<Visitor, Graph, Cycle> Wrapper;
-    Wrapper wrapper(visitor, g);
-
+    Wrapper<Visitor, Graph, Cycle> wrapper(visitor, g);
     Vertex first_vertex = *vertices(g).first;
     boost::depth_first_search(g,
         boost::root_vertex(first_vertex).visitor(wrapper));
 }
+} // end namespace non_equivalent_cycles_detail
 
-} // end namespace detail
+namespace core {
+    using non_equivalent_cycles_detail::non_equivalent_cycles;
+}
 } // end namespace d2
 
-#endif // !D2_DETAIL_NON_EQUIVALENT_CYCLES_HPP
+#endif // !D2_CORE_NON_EQUIVALENT_CYCLES_HPP
