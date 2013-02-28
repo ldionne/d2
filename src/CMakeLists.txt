@@ -1,5 +1,5 @@
 # Add the d2support static library.
-file(GLOB d2support_sources events/*.cpp detail/*.cpp sandbox/*.cpp *.cpp)
+file(GLOB d2support_sources events/*.cpp detail/*.cpp *.cpp)
 add_library(d2support STATIC ${d2support_sources})
 d2_target_link_libraries(d2support dbg)
 

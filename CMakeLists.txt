@@ -72,10 +72,6 @@ endif()
 
 
 # Add some custom compiler flags.
-if(${D2_WE_ARE_ON_CLANG})
-    add_definitions(-stdlib=libc++)
-    list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++")
-endif()
 if(${CMAKE_COMPILER_IS_GNUCXX})
     add_definitions(-Wno-unused-local-typedefs)
 endif()

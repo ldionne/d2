@@ -83,18 +83,17 @@ namespace uniquely_identifiable_detail {
 
 //! Archetype for the `UniquelyIdentifiable` concept.
 template <typename Base = uniquely_identifiable_detail::null_archetype<> >
-struct uniquely_identifiable_archetype : Base {
-
-    friend any_unsigned_integral_type
-    unique_id(uniquely_identifiable_archetype const&) {
-        return static_cast<any_unsigned_integral_type>(0);
-    }
-
-private:
+class uniquely_identifiable_archetype : public Base {
     typedef unsigned int any_unsigned_integral_type;
 
     // Silence MSVC warning C4624: destructor could not be generated
     ~uniquely_identifiable_archetype() /*= delete*/;
+
+public:
+    friend any_unsigned_integral_type
+    unique_id(uniquely_identifiable_archetype const&) {
+        return static_cast<any_unsigned_integral_type>(0);
+    }
 };
 
 
