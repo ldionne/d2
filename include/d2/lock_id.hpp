@@ -5,7 +5,7 @@
 #ifndef D2_LOCK_ID_HPP
 #define D2_LOCK_ID_HPP
 
-#include <d2/concepts.hpp>
+#include <d2/uniquely_identifiable.hpp>
 
 #include <boost/concept/assert.hpp>
 #include <boost/functional/hash.hpp>
