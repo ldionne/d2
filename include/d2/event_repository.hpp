@@ -5,7 +5,6 @@
 #ifndef D2_EVENT_REPOSITORY_HPP
 #define D2_EVENT_REPOSITORY_HPP
 
-#include <d2/detail/basic_mutex.hpp>
 #include <d2/repository.hpp>
 #include <d2/thread_id.hpp>
 

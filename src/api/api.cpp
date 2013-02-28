@@ -4,9 +4,9 @@
 
 #define D2_SOURCE
 #include <d2/api.h>
-#include <d2/detail/basic_atomic.hpp>
-#include <d2/detail/basic_mutex.hpp>
+#include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
+#include <d2/detail/mutex.hpp>
 #include <d2/events.hpp>
 #include <d2/filesystem_dispatcher.hpp>
 #include <d2/lock_id.hpp>
@@ -15,21 +15,21 @@
 #include <stddef.h>
 
 
-namespace d2 { namespace detail {
+namespace d2 { namespace api_detail {
     static FilesystemDispatcher dispatcher;
-    static basic_atomic<bool> event_logging_enabled(false);
+    static detail::atomic<bool> event_logging_enabled(false);
 }}
 
 D2_API extern void d2_disable_event_logging(void) {
-    d2::detail::event_logging_enabled = false;
+    d2::api_detail::event_logging_enabled = false;
 }
 
 D2_API extern void d2_enable_event_logging(void) {
-    d2::detail::event_logging_enabled = true;
+    d2::api_detail::event_logging_enabled = true;
 }
 
 D2_API extern int d2_is_enabled(void) {
-    return d2::detail::event_logging_enabled ? 1 : 0;
+    return d2::api_detail::event_logging_enabled ? 1 : 0;
 }
 
 D2_API extern int d2_is_disabled(void) {
@@ -38,16 +38,16 @@ D2_API extern int d2_is_disabled(void) {
 
 D2_API extern int d2_set_log_repository(char const* path) {
     // Note: 0 for success and anything else but 0 for failure.
-    return d2::detail::dispatcher.set_repository_noexcept(path) ? 0 : 1;
+    return d2::api_detail::dispatcher.set_repository_noexcept(path) ? 0 : 1;
 }
 
 D2_API extern void d2_unset_log_repository(void) {
-    d2::detail::dispatcher.unset_repository();
+    d2::api_detail::dispatcher.unset_repository();
 }
 
 D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled()) {
         AcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
                         // ignore current frame
@@ -59,7 +59,7 @@ D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
 D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
                                                size_t lock_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled()) {
         RecursiveAcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
                         // ignore current frame
@@ -70,7 +70,7 @@ D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
 
 D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled())
         dispatcher.dispatch(ReleaseEvent((LockId(lock_id)),
                                           ThreadId(thread_id)));
@@ -79,24 +79,24 @@ D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
 D2_API extern void d2_notify_recursive_release(size_t thread_id,
                                                size_t lock_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled())
         dispatcher.dispatch(RecursiveReleaseEvent((LockId(lock_id)),
                                                   ThreadId(thread_id)));
 }
 
-namespace {
-    static d2::detail::basic_atomic<std::size_t> lock_id_counter(0);
-}
+namespace d2 { namespace api_detail {
+    static detail::atomic<std::size_t> lock_id_counter(0);
+}}
 
 D2_API extern size_t d2_get_lock_id(void) {
-    return lock_id_counter++;
+    return d2::api_detail::lock_id_counter++;
 }
 
-namespace d2 { namespace detail {
+namespace d2 { namespace api_detail {
     // default initialized to the initial segment value
     static Segment current_segment;
-    static basic_mutex segment_mutex;
+    static detail::mutex segment_mutex;
     static boost::unordered_map<ThreadId, Segment> segment_of;
 
     template <typename Value, typename Container>
@@ -107,12 +107,12 @@ namespace d2 { namespace detail {
 
 D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled()) {
         ThreadId parent(parent_id), child(child_id);
         Segment parent_segment, child_segment, new_parent_segment;
         {
-            scoped_lock<basic_mutex> lock(segment_mutex);
+            detail::scoped_lock<detail::mutex> lock(segment_mutex);
             BOOST_ASSERT_MSG(parent != child, "thread starting itself");
             BOOST_ASSERT_MSG(segment_of.empty() || contains(parent,segment_of),
         "starting a thread from another thread that has not been created yet");
@@ -141,12 +141,12 @@ D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
 
 D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
     using namespace d2;
-    using namespace d2::detail;
+    using namespace d2::api_detail;
     if (d2_is_enabled()) {
         ThreadId parent(parent_id), child(child_id);
         Segment parent_segment, child_segment, new_parent_segment;
         {
-            scoped_lock<basic_mutex> lock(segment_mutex);
+            detail::scoped_lock<detail::mutex> lock(segment_mutex);
             BOOST_ASSERT_MSG(parent != child, "thread joining itself");
             BOOST_ASSERT_MSG(contains(parent, segment_of),
         "joining a thread into another thread that has not been created yet");

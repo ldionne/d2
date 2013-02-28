@@ -5,7 +5,7 @@
 #ifndef D2_FILESYSTEM_DISPATCHER_HPP
 #define D2_FILESYSTEM_DISPATCHER_HPP
 
-#include <d2/detail/basic_mutex.hpp>
+#include <d2/detail/mutex.hpp>
 #include <d2/event_traits.hpp>
 #include <d2/event_repository.hpp>
 
@@ -24,10 +24,10 @@ namespace d2 {
  */
 class FilesystemDispatcher {
     // Lock the mapping from thread to stream (and the dummy mapping to the
-    // process-wide stream) using a basic_mutex.
-    typedef synchronize_with<detail::basic_mutex> EventCategoryLockingPolicy;
+    // process-wide stream) using a mutex.
+    typedef synchronize_with<detail::mutex> EventCategoryLockingPolicy;
 
-    // We lock the access to each stream using a basic_mutex.
+    // We lock the access to each stream using a mutex.
     //
     // Locking the process-wide stream is necessary because several
     // threads may need to write to it at the same time.
@@ -35,7 +35,7 @@ class FilesystemDispatcher {
     // Locking the per-thread streams is also necessary, because threads may
     // emit cross-thread events, i.e. events that go from a thread to another
     // thread's stream (this is currently the case for SegmentHopEvents).
-    typedef synchronize_with<detail::basic_mutex> StreamLockingPolicy;
+    typedef synchronize_with<detail::mutex> StreamLockingPolicy;
 
     typedef EventRepository<
                 EventCategoryLockingPolicy, StreamLockingPolicy
@@ -52,8 +52,8 @@ class FilesystemDispatcher {
     // released automatically if the repository is not referenced anymore
     // because a call to `set_repository` happened.
     boost::shared_ptr<Repository> repository_;
-    detail::basic_mutex mutable repository_lock_;
-    typedef detail::scoped_lock<detail::basic_mutex> scoped_lock;
+    detail::mutex mutable repository_lock_;
+    typedef detail::scoped_lock<detail::mutex> scoped_lock;
 
     boost::shared_ptr<Repository> get_repository() {
         scoped_lock lock(repository_lock_);

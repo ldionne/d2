@@ -5,8 +5,8 @@
 #ifndef D2_REPOSITORY_HPP
 #define D2_REPOSITORY_HPP
 
-#include <d2/detail/basic_mutex.hpp>
 #include <d2/detail/exceptions.hpp>
+#include <d2/detail/mutex.hpp>
 #include <d2/sandbox/container_view.hpp>
 
 #include <boost/config.hpp>

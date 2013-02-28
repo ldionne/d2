@@ -14,7 +14,7 @@ namespace d2 {
 namespace detail {
 /**
  * Basic atomic class relying only on `mutex`. We can't use `Boost.Atomic`
- * it relies on locks right now. If Boost used this library, we would be
+ * it relies on locks right now. If `Boost` used this library, we would be
  * in trouble.
  */
 template <typename T>

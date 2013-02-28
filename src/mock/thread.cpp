@@ -4,6 +4,7 @@
 
 #define D2_SOURCE
 #include <d2/api.hpp>
+#include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/mock/this_thread.hpp>
 #include <d2/mock/thread.hpp>
@@ -31,7 +32,7 @@ D2_API bool thread::has_id() const {
 }
 
 D2_API thread::thread(boost::function<void()> const& f)
-    : f_(f), actual_(), id_(new detail::basic_atomic<thread::id>(NOT_A_THREAD))
+    : f_(f), actual_(), id_(new detail::atomic<thread::id>(NOT_A_THREAD))
 { }
 
 D2_API thread::thread(BOOST_RV_REF(thread) other) {
@@ -58,7 +59,7 @@ D2_API void thread::start() {
         "starting a thread that was already started");
 
     thread::id parent = this_thread::get_id();
-    boost::shared_ptr<detail::basic_atomic<id> > child = this->id_;
+    boost::shared_ptr<detail::atomic<id> > child = this->id_;
     boost::function<void()> f = this->f_;
     actual_.reset(new boost::thread([f, parent, child] {
         *child = this_thread::get_id(); // initialize the child thread's id

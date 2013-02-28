@@ -5,7 +5,7 @@
 #ifndef D2_MOCK_THREAD_HPP
 #define D2_MOCK_THREAD_HPP
 
-#include <d2/detail/basic_atomic.hpp>
+#include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
 
 #include <boost/function.hpp>
@@ -56,7 +56,7 @@ private:
 
     boost::function<void()> f_;
     boost::scoped_ptr<boost::thread> actual_;
-    boost::shared_ptr<detail::basic_atomic<id> > id_;
+    boost::shared_ptr<detail::atomic<id> > id_;
 };
 
 } // end namespace mock
