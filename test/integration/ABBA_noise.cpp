@@ -1,5 +1,5 @@
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 #include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
@@ -12,26 +12,26 @@
 
 static std::size_t const NOISE_THREADS = 10;
 static std::size_t const MUTEXES_PER_NOISE_THREAD = 100;
-typedef boost::shared_ptr<d2::mock::thread> ThreadPtr;
+typedef boost::shared_ptr<d2mock::thread> ThreadPtr;
 
 int main(int argc, char const* argv[]) {
     auto noise = [&] {
-        std::vector<d2::mock::mutex> mutexes(MUTEXES_PER_NOISE_THREAD);
-        boost::for_each(mutexes, [](d2::mock::mutex& m) { m.lock(); });
+        std::vector<d2mock::mutex> mutexes(MUTEXES_PER_NOISE_THREAD);
+        boost::for_each(mutexes, [](d2mock::mutex& m) { m.lock(); });
         boost::for_each(mutexes | boost::adaptors::reversed,
-                                    [](d2::mock::mutex& m) { m.unlock(); });
+                                    [](d2mock::mutex& m) { m.unlock(); });
     };
 
-    d2::mock::mutex A, B;
+    d2mock::mutex A, B;
 
-    ThreadPtr t0(new d2::mock::thread([&] {
+    ThreadPtr t0(new d2mock::thread([&] {
         A.lock();
             B.lock();
             B.unlock();
         A.unlock();
     }));
 
-    ThreadPtr t1(new d2::mock::thread([&] {
+    ThreadPtr t1(new d2mock::thread([&] {
         B.lock();
             A.lock();
             A.unlock();
@@ -41,12 +41,12 @@ int main(int argc, char const* argv[]) {
     std::vector<ThreadPtr> threads;
     threads.push_back(t0); threads.push_back(t1);
     std::generate_n(std::back_inserter(threads), NOISE_THREADS, [&] {
-        return ThreadPtr(new d2::mock::thread(noise));
+        return ThreadPtr(new d2mock::thread(noise));
     });
     boost::random_shuffle(threads);
 
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     boost::for_each(threads, [](ThreadPtr t) { t->start(); });
     boost::for_each(threads, [](ThreadPtr t) { t->join(); });

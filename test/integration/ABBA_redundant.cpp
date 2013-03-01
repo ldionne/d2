@@ -5,7 +5,7 @@
  * pattern leading to a deadlock is encountered 100 times in each thread.
  */
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 #include <cstddef>
 
@@ -13,9 +13,9 @@
 int main(int argc, char const* argv[]) {
     static std::size_t const REPETITIONS = 100;
 
-    d2::mock::mutex A, B;
+    d2mock::mutex A, B;
 
-    d2::mock::thread t0([&] {
+    d2mock::thread t0([&] {
         for (std::size_t i = 0; i < REPETITIONS; ++i) {
             A.lock();
                 B.lock();
@@ -24,7 +24,7 @@ int main(int argc, char const* argv[]) {
         }
     });
 
-    d2::mock::thread t1([&] {
+    d2mock::thread t1([&] {
         for (std::size_t i = 0; i < REPETITIONS; ++i) {
             B.lock();
                 A.lock();
@@ -33,7 +33,7 @@ int main(int argc, char const* argv[]) {
         }
     });
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();

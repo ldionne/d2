@@ -8,13 +8,13 @@
  * B lock because there is a DIRECT edge from A to C.
  */
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
-    d2::mock::mutex A, B, C;
+    d2mock::mutex A, B, C;
 
-    d2::mock::thread t0([&] {
+    d2mock::thread t0([&] {
         A.lock();
             B.lock();
                 C.lock();
@@ -23,14 +23,14 @@ int main(int argc, char const* argv[]) {
         A.unlock();
     });
 
-    d2::mock::thread t1([&] {
+    d2mock::thread t1([&] {
         C.lock();
             A.lock();
             A.unlock();
         C.unlock();
     });
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();

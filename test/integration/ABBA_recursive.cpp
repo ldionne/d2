@@ -1,11 +1,11 @@
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
-    d2::mock::recursive_mutex A, B;
+    d2mock::recursive_mutex A, B;
 
-    d2::mock::thread t0([&] {
+    d2mock::thread t0([&] {
         A.lock();
         A.lock();
         A.lock();
@@ -18,7 +18,7 @@ int main(int argc, char const* argv[]) {
         A.unlock();
     });
 
-    d2::mock::thread t1([&] {
+    d2mock::thread t1([&] {
         B.lock();
         B.lock();
         B.lock();
@@ -35,7 +35,7 @@ int main(int argc, char const* argv[]) {
         B.unlock();
     });
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();

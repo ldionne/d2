@@ -57,11 +57,11 @@ if(${CMAKE_COMPILER_IS_GNUCXX})
     add_definitions(-Wno-unused-local-typedefs)
 endif()
 if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
-    add_definitions(-Wall -Wextra -pedantic -std=c++03)
+    add_definitions(-Wall -Wextra -pedantic)
 elseif(MSVC)
-    add_definitions(-W3) # -W4 and above is just crazy
-    add_definitions(-D_SCL_SECURE_NO_WARNINGS
-                    -D_CRT_SECURE_NO_WARNINGS) # disable non standard MSVC warning bullshit
+    add_definitions(-W3 # -W4 and above is just crazy
+                    -D _SCL_SECURE_NO_WARNINGS  # disable non standard MSVC
+                    -D _CRT_SECURE_NO_WARNINGS) # warnings
 endif()
 
 
@@ -75,10 +75,10 @@ if(NOT Boost_INCLUDE_DIR)
 else()
     include_directories(${Boost_INCLUDE_DIR})
     link_directories(${Boost_LIBRARY_DIRS})
-    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3
-                    -DBOOST_ALL_NO_LIB
-                    -DBOOST_ALL_DYN_LINK
-                    -DBOOST_UNORDERED_USE_MOVE)
+    add_definitions(-D BOOST_SPIRIT_USE_PHOENIX_V3
+                    -D BOOST_ALL_NO_LIB
+                    -D BOOST_ALL_DYN_LINK
+                    -D BOOST_UNORDERED_USE_MOVE)
 endif()
 
 
@@ -91,19 +91,11 @@ include_directories(ext/dbg/include)
 find_package(GTest 1.50.0)
 if(${GTEST_FOUND})
     include_directories(${GTEST_INCLUDE_DIRS})
-    add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+    add_definitions(-D GTEST_HAS_TR1_TUPLE=0)
 endif()
 
 
 include_directories(include)
 add_subdirectory(src)
 add_subdirectory(test)
-
-
-# Add the d2 command line utility.
-if(TARGET d2support)
-    d2_add_executable(d2 utility/d2.cpp graph program_options filesystem system)
-    target_link_libraries(d2 d2support dbg)
-else()
-    message("Missing d2support library: d2 command line utility will be unavailable.")
-endif()
+add_subdirectory(utility)

@@ -8,11 +8,11 @@
  * deadlock potentials because it may be non obvious in real code.
  */
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
-    d2::mock::mutex A, B;
+    d2mock::mutex A, B;
 
     auto f = [&] {
         A.lock();
@@ -36,9 +36,9 @@ int main(int argc, char const* argv[]) {
         B.unlock();
     };
 
-    d2::mock::thread t0(f), t1(g);
+    d2mock::thread t0(f), t1(g);
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();

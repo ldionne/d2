@@ -1,0 +1,27 @@
+
+include_directories(../d2mock/include)
+
+add_custom_target(integration)
+function(d2_add_integration_test name)
+    add_executable(${name}_exe ${name}.cpp)
+    target_link_libraries(${name}_exe d2mock)
+    add_dependencies(integration ${name}_exe)
+    add_test(NAME ${name} COMMAND ${name}_exe)
+    set_target_properties(${name}_exe PROPERTIES COMPILE_FLAGS -std=c++11)
+endfunction()
+
+d2_add_integration_test(ABBA)
+d2_add_integration_test(ABBA_false_middle_gate)
+d2_add_integration_test(ABBA_noise)
+d2_add_integration_test(ABBA_recursive)
+d2_add_integration_test(ABBA_redundant)
+d2_add_integration_test(ABBA_redundant_diff_functions)
+d2_add_integration_test(ABBA_segmented)
+d2_add_integration_test(ABC)
+d2_add_integration_test(ABC_segmented)
+d2_add_integration_test(miss_unless_transitive_closure)
+
+add_executable(c_compiler_exe c_compiler.c)
+target_link_libraries(c_compiler_exe d2mock)
+add_dependencies(integration c_compiler_exe)
+add_test(NAME $c_compiler COMMAND c_compiler_exe)

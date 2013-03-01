@@ -5,13 +5,13 @@
  * t1 holds B (other scenarios are possible), then t0 and t1 are deadlocked.
  */
 
-#include <d2/mock.hpp>
+#include <d2mock.hpp>
 
 
 int main(int argc, char const* argv[]) {
-    d2::mock::mutex A, B, G;
+    d2mock::mutex A, B, G;
 
-    d2::mock::thread t0([&] {
+    d2mock::thread t0([&] {
         A.lock();
             G.lock();
                 B.lock();
@@ -20,7 +20,7 @@ int main(int argc, char const* argv[]) {
         A.unlock();
     });
 
-    d2::mock::thread t1([&] {
+    d2mock::thread t1([&] {
         B.lock();
             G.lock();
                 A.lock();
@@ -29,7 +29,7 @@ int main(int argc, char const* argv[]) {
         B.unlock();
     });
 
-    d2::mock::integration_test integration_test(argc, argv, __FILE__);
+    d2mock::integration_test integration_test(argc, argv, __FILE__);
 
     t0.start();
     t1.start();
