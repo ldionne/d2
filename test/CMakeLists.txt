@@ -12,6 +12,7 @@ d2_add_standalone_unit_test(uniquely_identifiable unit/test_uniquely_identifiabl
 
 d2_add_standalone_unit_test(c_compiler integration/c_compiler.c)
 d2_target_link_libraries(c_compiler_exe d2log)
+set_target_properties(c_compiler_exe PROPERTIES COMPILE_FLAGS -std=c89)
 
 
 # Add unit tests requiring Google test and d2support.
