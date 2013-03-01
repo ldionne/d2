@@ -2,8 +2,8 @@
  * This file defines the core graph analysis algorithm.
  */
 
-#ifndef D2_ANALYSIS_HPP
-#define D2_ANALYSIS_HPP
+#ifndef D2_CORE_ANALYSIS_HPP
+#define D2_CORE_ANALYSIS_HPP
 
 #include <d2/build_segmentation_graph.hpp> // for happens_before
 #include <d2/core/non_equivalent_cycles.hpp>
@@ -16,8 +16,7 @@
 
 
 namespace d2 {
-namespace detail {
-
+namespace analysis_detail {
 /**
  * Return whether two unordered containers have a non-empty intersection.
  */
@@ -99,22 +98,24 @@ public:
     }
 };
 
-} // end namespace detail
-
 /**
  * Analyze the lock graph and the segmentation graph to determine whether the
  * program execution represented by them contains a deadlock. `f` is called
  * whenever a potential deadlock is detected.
  *
- * @see `detail::CycleVisitor` for more details.
+ * @see `CycleVisitor` for more details.
  */
 template <typename LockGraph, typename SegmentationGraph, typename Function>
 void analyze(LockGraph const& lg, SegmentationGraph const& sg,
-             Function const& f) {
-    detail::CycleVisitor<LockGraph, SegmentationGraph, Function> vis(sg, f);
-    core::non_equivalent_cycles(lg, vis);
+                                                        Function const& f) {
+    CycleVisitor<LockGraph, SegmentationGraph, Function> visitor(sg, f);
+    core::non_equivalent_cycles(lg, visitor);
 }
+} // end namespace analysis_detail
 
+namespace core {
+    using analysis_detail::analyze;
+}
 } // end namespace d2
 
-#endif // !D2_ANALYSIS_HPP
+#endif // !D2_CORE_ANALYSIS_HPP

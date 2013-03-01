@@ -3,7 +3,7 @@
  */
 
 #define D2_SOURCE
-#include <d2/analysis.hpp>
+#include <d2/core/analysis.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
@@ -59,7 +59,7 @@ gather_diagnostics(OutputIterator const& out) {
 extern std::vector<DeadlockDiagnostic>
 analyze_lock_ordering(LockGraph const& lg, SegmentationGraph const& sg) {
     std::vector<DeadlockDiagnostic> diagnostics;
-    analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));
+    core::analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));
     return diagnostics;
 }
 
