@@ -3,7 +3,7 @@
  * with the d2 library.
  */
 
-#include <d2/event_repository.hpp>
+#include <d2/core/event_repository.hpp>
 #include <d2/events/exceptions.hpp>
 #include <d2/sync_skeleton.hpp>
 
@@ -139,7 +139,7 @@ int main(int argc, char const* argv[]) {
         return EXIT_FAILURE;
     }
 
-    typedef d2::EventRepository<> Repository;
+    typedef d2::core::EventRepository<> Repository;
     boost::scoped_ptr<Repository> repository;
     try {
         repository.reset(new Repository(repo_path));

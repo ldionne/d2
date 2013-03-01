@@ -4,10 +4,10 @@
 
 #define D2_SOURCE
 #include <d2/api.hpp>
+#include <d2/core/event_repository.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/getter.hpp>
-#include <d2/event_repository.hpp>
 #include <d2/mock/integration_test.hpp>
 #include <d2/sync_skeleton.hpp>
 
@@ -112,7 +112,7 @@ void verify_consume(std::vector<Deadlock> expected,
 D2_API void integration_test::verify_deadlocks(
                     std::initializer_list<detail::Deadlock> const& expected) {
     unset_log_repository();
-    EventRepository<> events(repo_);
+    core::EventRepository<> events(repo_);
     SyncSkeleton<EventRepository<> > skeleton(events);
     std::vector<detail::Deadlock> actual;
     BOOST_FOREACH(DeadlockDiagnostic const& diagnostic, skeleton.deadlocks())

@@ -2,8 +2,8 @@
  * This file defines the `EventRepository` class.
  */
 
-#ifndef D2_EVENT_REPOSITORY_HPP
-#define D2_EVENT_REPOSITORY_HPP
+#ifndef D2_CORE_EVENT_REPOSITORY_HPP
+#define D2_CORE_EVENT_REPOSITORY_HPP
 
 #include <d2/repository.hpp>
 #include <d2/thread_id.hpp>
@@ -16,7 +16,6 @@
 
 
 namespace d2 {
-
 namespace event_repository_detail {
 /**
  * Tag for accessing the process-wide events inside a repository.
@@ -77,8 +76,6 @@ inline char const* NamingPolicy::category_path<ProcessWideTag>() {
     return "process_wide";
 }
 
-} // end namespace event_repository_detail
-
 /**
  * Repository specialized for events.
  *
@@ -89,12 +86,12 @@ template <typename EventCategoryLockingPolicy = no_synchronization,
           typename StreamLockingPolicy = no_synchronization>
 struct EventRepository
     : Repository<
-        event_repository_detail::EventKeys,
-        event_repository_detail::EventMapping,
+        EventKeys,
+        EventMapping,
         EventCategoryLockingPolicy,
         StreamLockingPolicy,
         use_fstream,
-        event_repository_detail::NamingPolicy
+        NamingPolicy
     >
 {
     /**
@@ -108,7 +105,7 @@ struct EventRepository
     /**
      * Special tag for accessing the unique process-wide event stream.
      */
-    static event_repository_detail::ProcessWideTag const process_wide;
+    static ProcessWideTag const process_wide;
 
     /**
      * Type of the stream used for process wide events.
@@ -149,10 +146,14 @@ struct EventRepository
 };
 
 template <typename EventCategoryLockingPolicy, typename StreamLockingPolicy>
-event_repository_detail::ProcessWideTag const
-EventRepository<EventCategoryLockingPolicy, StreamLockingPolicy>::
-                                    process_wide = boost::initialized_value;
+ProcessWideTag const EventRepository<
+                        EventCategoryLockingPolicy, StreamLockingPolicy
+                    >::process_wide = boost::initialized_value;
+} // end namespace event_repository_detail
 
+namespace core {
+    using event_repository_detail::EventRepository;
+}
 } // end namespace d2
 
-#endif // !D2_EVENT_REPOSITORY_HPP
+#endif // !D2_CORE_EVENT_REPOSITORY_HPP

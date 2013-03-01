@@ -5,9 +5,9 @@
 #ifndef D2_CORE_FILESYSTEM_DISPATCHER_HPP
 #define D2_CORE_FILESYSTEM_DISPATCHER_HPP
 
+#include <d2/core/event_repository.hpp>
 #include <d2/detail/mutex.hpp>
 #include <d2/event_traits.hpp>
-#include <d2/event_repository.hpp>
 
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
@@ -37,7 +37,7 @@ class FilesystemDispatcher {
     // thread's stream (this is currently the case for SegmentHopEvents).
     typedef synchronize_with<detail::mutex> StreamLockingPolicy;
 
-    typedef EventRepository<
+    typedef core::EventRepository<
                 EventCategoryLockingPolicy, StreamLockingPolicy
             > Repository;
 
