@@ -5,9 +5,9 @@
 #define D2_SOURCE
 #include <d2/core/build_lock_graph.hpp>
 #include <d2/core/build_segmentation_graph.hpp>
+#include <d2/core/lock_graph.hpp>
+#include <d2/core/segmentation_graph.hpp>
 #include <d2/events.hpp>
-#include <d2/lock_graph.hpp>
-#include <d2/segmentation_graph.hpp>
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_match.hpp>
@@ -22,7 +22,7 @@ namespace d2 {
 namespace detail {
 
 extern void parse_and_build_seg_graph(std::istream& is,
-                                      SegmentationGraph& graph) {
+                                      core::SegmentationGraph& graph) {
     namespace qi = boost::spirit::qi;
 
     typedef boost::variant<StartEvent, JoinEvent> Event;
@@ -40,7 +40,8 @@ extern void parse_and_build_seg_graph(std::istream& is,
     core::build_segmentation_graph<true>()(events, graph);
 }
 
-extern void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
+extern void parse_and_build_lock_graph(std::istream& is,
+                                       core::LockGraph& graph) {
     namespace qi = boost::spirit::qi;
 
     typedef boost::variant<

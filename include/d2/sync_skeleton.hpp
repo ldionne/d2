@@ -5,9 +5,9 @@
 #ifndef D2_SYNC_SKELETON_HPP
 #define D2_SYNC_SKELETON_HPP
 
+#include <d2/core/lock_graph.hpp>
+#include <d2/core/segmentation_graph.hpp>
 #include <d2/deadlock_diagnostic.hpp>
-#include <d2/lock_graph.hpp>
-#include <d2/segmentation_graph.hpp>
 #include <d2/thread_id.hpp>
 
 #include <boost/range/begin.hpp>
@@ -22,10 +22,12 @@
 namespace d2 {
 
 namespace detail {
-    extern void parse_and_build_seg_graph(std::istream&, SegmentationGraph&);
-    extern void parse_and_build_lock_graph(std::istream&, LockGraph&);
+    extern void
+    parse_and_build_seg_graph(std::istream&, core::SegmentationGraph&);
+    extern void parse_and_build_lock_graph(std::istream&, core::LockGraph&);
     extern std::vector<DeadlockDiagnostic>
-    analyze_lock_ordering(LockGraph const&, SegmentationGraph const&);
+    analyze_lock_ordering(core::LockGraph const&,
+                          core::SegmentationGraph const&);
 } // end namespace detail
 
 /**
@@ -45,15 +47,15 @@ class SyncSkeleton {
     SyncSkeleton& operator=(SyncSkeleton const&) /*= delete*/;
 
     Repository& repository_;
-    SegmentationGraph segmentation_graph_;
-    LockGraph lock_graph_;
+    core::SegmentationGraph segmentation_graph_;
+    core::LockGraph lock_graph_;
 
     /**
      * Build the lock graph and the segmentation graph from the events inside
      * a repository.
      */
-    static void build_graphs(Repository& repo, LockGraph& lg,
-                                               SegmentationGraph& sg) {
+    static void build_graphs(Repository& repo, core::LockGraph& lg,
+                                               core::SegmentationGraph& sg) {
         detail::parse_and_build_seg_graph(repo[Repository::process_wide], sg);
 
         typedef typename Repository::thread_stream_range ThreadStreams;

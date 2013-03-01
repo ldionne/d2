@@ -4,11 +4,11 @@
 
 #define D2_SOURCE
 #include <d2/core/analysis.hpp>
+#include <d2/core/lock_graph.hpp>
+#include <d2/core/segmentation_graph.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
-#include <d2/lock_graph.hpp>
 #include <d2/lock_id.hpp>
-#include <d2/segmentation_graph.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -57,7 +57,8 @@ gather_diagnostics(OutputIterator const& out) {
 }
 
 extern std::vector<DeadlockDiagnostic>
-analyze_lock_ordering(LockGraph const& lg, SegmentationGraph const& sg) {
+analyze_lock_ordering(core::LockGraph const& lg,
+                      core::SegmentationGraph const& sg) {
     std::vector<DeadlockDiagnostic> diagnostics;
     core::analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));
     return diagnostics;

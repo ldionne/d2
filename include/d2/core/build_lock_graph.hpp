@@ -6,6 +6,7 @@
 #ifndef D2_CORE_BUILD_LOCK_GRAPH_HPP
 #define D2_CORE_BUILD_LOCK_GRAPH_HPP
 
+#include <d2/core/lock_graph.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/events/acquire_event.hpp>
 #include <d2/events/exceptions.hpp>
@@ -13,7 +14,6 @@
 #include <d2/events/recursive_release_event.hpp>
 #include <d2/events/release_event.hpp>
 #include <d2/events/segment_hop_event.hpp>
-#include <d2/lock_graph.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/segment.hpp>
 #include <d2/thread_id.hpp>
@@ -211,10 +211,10 @@ struct EventVisitor : boost::static_visitor<void> {
 
         // Compute the gatelock set, i.e. the set of locks currently
         // held by this thread.
-        detail::Gatelocks::underlying_set_type g_tmp;
+        core::Gatelocks::underlying_set_type g_tmp;
         BOOST_FOREACH(HeldLock const& l, held_locks)
             g_tmp.insert(l.lock);
-        detail::Gatelocks g(boost::move(g_tmp));
+        core::Gatelocks g(boost::move(g_tmp));
 
         // Add an edge from every lock l1 already held by
         // this thread to l2.

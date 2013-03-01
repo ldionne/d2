@@ -3,8 +3,8 @@
  * program analysis.
  */
 
-#ifndef D2_LOCK_GRAPH_HPP
-#define D2_LOCK_GRAPH_HPP
+#ifndef D2_CORE_LOCK_GRAPH_HPP
+#define D2_CORE_LOCK_GRAPH_HPP
 
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/lock_id.hpp>
@@ -22,8 +22,7 @@
 
 
 namespace d2 {
-
-namespace detail {
+namespace lock_graph_detail {
 /**
  * Set whose underlying representation can be shared by several owners.
  *
@@ -75,21 +74,20 @@ private:
  *         are the same on different events.
  */
 typedef shared_set<boost::unordered_set<LockId> > Gatelocks;
-} // end namespace detail
 
 /**
  * Label stored on each edge of a lock graph.
  */
 struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
     LockGraphLabel(Segment s1, ThreadId thread,
-                   detail::Gatelocks const& gatelocks, Segment s2)
+                   Gatelocks const& gatelocks, Segment s2)
         : s1(s1), s2(s2), thread_(thread), gatelocks_(gatelocks)
     { }
 
     detail::LockDebugInfo l1_info, l2_info;
     Segment s1, s2;
 
-    friend detail::Gatelocks::underlying_set_type const&
+    friend Gatelocks::underlying_set_type const&
     gatelocks_of(LockGraphLabel const& self) {
         return self.gatelocks_;
     }
@@ -111,7 +109,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
 
 private:
     ThreadId thread_;
-    detail::Gatelocks gatelocks_;
+    Gatelocks gatelocks_;
 };
 
 /**
@@ -122,6 +120,13 @@ typedef boost::adjacency_list<
             boost::vecS, boost::vecS, boost::directedS, LockId, LockGraphLabel
         > LockGraph;
 
+} // end namespace lock_graph_detail
+
+namespace core {
+    using lock_graph_detail::LockGraph;
+    using lock_graph_detail::LockGraphLabel;
+    using lock_graph_detail::Gatelocks;
+}
 } // end namespace d2
 
 namespace boost {
@@ -134,4 +139,4 @@ namespace graph {
 } // end namespace graph
 } // end namespace boost
 
-#endif // !D2_LOCK_GRAPH_HPP
+#endif // !D2_CORE_LOCK_GRAPH_HPP

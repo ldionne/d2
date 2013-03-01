@@ -2,13 +2,13 @@
  * This file contains unit tests for the segmentation graph construction.
  */
 
-#include <d2/build_segmentation_graph.hpp>
+#include <d2/core/build_segmentation_graph.hpp>
+#include <d2/core/segmentation_graph.hpp>
 #include <d2/events/acquire_event.hpp>
 #include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>
 #include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>
-#include <d2/segmentation_graph.hpp>
 
 #include <boost/assign.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -18,10 +18,11 @@
 #include <vector>
 
 
-namespace d2 {
-namespace test {
+using namespace d2;
+using namespace d2::core;
 
-struct SegmentationGraphTest : ::testing::Test {
+namespace {
+struct SegmentationGraphTest : testing::Test {
     std::vector<boost::variant<StartEvent, JoinEvent> > events;
     SegmentationGraph graph;
     std::vector<Segment> segments;
@@ -90,8 +91,7 @@ TEST_F(SegmentationGraphTest, simple_start_and_join) {
 
 TEST_F(SegmentationGraphTest, throws_on_unexpected_event_when_told_to) {
     using namespace boost::assign;
-    typedef boost::variant<StartEvent, JoinEvent, AcquireEvent>
-                                                                    Events;
+    typedef boost::variant<StartEvent, JoinEvent, AcquireEvent> Events;
     std::vector<Events> events;
     events +=
         StartEvent(segments[0], segments[1], segments[2]),
@@ -193,6 +193,4 @@ TEST_F(SegmentationGraphTest, multiple_starts_from_main_thread) {
     EXPECT_FALSE(happens_before(segments[6], segments[5], graph));
     EXPECT_FALSE(happens_before(segments[6], segments[6], graph));
 }
-
-} // end namespace test
-} // end namespace d2
+} // end anonymous namespace

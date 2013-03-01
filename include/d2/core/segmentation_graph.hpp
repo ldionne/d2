@@ -3,8 +3,8 @@
  * post-mortem program analysis.
  */
 
-#ifndef D2_SEGMENTATION_GRAPH_HPP
-#define D2_SEGMENTATION_GRAPH_HPP
+#ifndef D2_CORE_SEGMENTATION_GRAPH_HPP
+#define D2_CORE_SEGMENTATION_GRAPH_HPP
 
 #include <d2/segment.hpp>
 
@@ -26,7 +26,7 @@ namespace graph {
 } // end namespace boost
 
 namespace d2 {
-
+namespace core {
 /**
  * Directed acyclic graph representing the order of starts and joins between
  * the threads of a program.
@@ -34,7 +34,7 @@ namespace d2 {
 typedef boost::adjacency_list<
             boost::vecS, boost::vecS, boost::directedS, Segment
         > SegmentationGraph;
-
+} // end namespace core
 } // end namespace d2
 
-#endif // !D2_SEGMENTATION_GRAPH_HPP
+#endif // !D2_CORE_SEGMENTATION_GRAPH_HPP
