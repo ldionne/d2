@@ -25,7 +25,7 @@ namespace filesystem_dispatcher_detail {
 class FilesystemDispatcher {
     // Lock the mapping from thread to stream (and the dummy mapping to the
     // process-wide stream) using a mutex.
-    typedef synchronize_with<detail::mutex> EventCategoryLockingPolicy;
+    typedef core::synchronize_with<detail::mutex> EventCategoryLockingPolicy;
 
     // We lock the access to each stream using a mutex.
     //
@@ -35,7 +35,7 @@ class FilesystemDispatcher {
     // Locking the per-thread streams is also necessary, because threads may
     // emit cross-thread events, i.e. events that go from a thread to another
     // thread's stream (this is currently the case for SegmentHopEvents).
-    typedef synchronize_with<detail::mutex> StreamLockingPolicy;
+    typedef core::synchronize_with<detail::mutex> StreamLockingPolicy;
 
     typedef core::EventRepository<
                 EventCategoryLockingPolicy, StreamLockingPolicy

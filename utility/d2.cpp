@@ -49,6 +49,8 @@ namespace fs = boost::filesystem;
 namespace kma = boost::spirit::karma;
 namespace phx = boost::phoenix;
 namespace po = boost::program_options;
+using namespace d2;
+using namespace d2::core;
 
 template <typename ErrorTag, typename Exception>
 std::string get_error_info(Exception const& e,
@@ -139,11 +141,11 @@ int main(int argc, char const* argv[]) {
         return EXIT_FAILURE;
     }
 
-    typedef d2::core::EventRepository<> Repository;
+    typedef EventRepository<> Repository;
     boost::scoped_ptr<Repository> repository;
     try {
         repository.reset(new Repository(repo_path));
-    } catch (d2::RepositoryException const& e) {
+    } catch (RepositoryException const& e) {
         std::cerr << boost::format("unable to open the repository at %1%\n")
                                                                 % repo_path;
         if (args.count("debug"))
@@ -167,13 +169,13 @@ int main(int argc, char const* argv[]) {
     std::ostream& output = args.count("output-file") ? output_ofs : std::cout;
 
     // Create the skeleton of the program from the repository.
-    typedef d2::SyncSkeleton<Repository> Skeleton;
+    typedef SyncSkeleton<Repository> Skeleton;
     boost::scoped_ptr<Skeleton> skeleton;
     try {
         skeleton.reset(new Skeleton(*repository));
-    } catch (d2::EventTypeException const& e) {
-        std::string actual_type = get_error_info<d2::ActualType>(e);
-        std::string expected_type = get_error_info<d2::ExpectedType>(e);
+    } catch (EventTypeException const& e) {
+        std::string actual_type = get_error_info<ActualType>(e);
+        std::string expected_type = get_error_info<ExpectedType>(e);
 
         std::cerr << boost::format(
         "error while building the graphs:\n"
@@ -182,9 +184,9 @@ int main(int argc, char const* argv[]) {
         % actual_type % expected_type;
         return EXIT_FAILURE;
 
-    } catch (d2::UnexpectedReleaseException const& e) {
-        std::string lock = get_error_info<d2::ReleasedLock>(e);
-        std::string thread = get_error_info<d2::ReleasingThread>(e);
+    } catch (UnexpectedReleaseException const& e) {
+        std::string lock = get_error_info<ReleasedLock>(e);
+        std::string thread = get_error_info<ReleasingThread>(e);
 
         std::cerr << boost::format(
         "error while building the graphs:\n"

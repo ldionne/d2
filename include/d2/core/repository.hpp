@@ -2,8 +2,8 @@
  * This file defines the `Repository` class.
  */
 
-#ifndef D2_REPOSITORY_HPP
-#define D2_REPOSITORY_HPP
+#ifndef D2_CORE_REPOSITORY_HPP
+#define D2_CORE_REPOSITORY_HPP
 
 #include <d2/detail/container_view.hpp>
 #include <d2/detail/exceptions.hpp>
@@ -52,7 +52,7 @@
 
 
 namespace d2 {
-
+namespace core {
 /**
  * Base class for exceptions related to the `Repository` class.
  */
@@ -638,7 +638,7 @@ protected:
      */
     typedef Repository Repository_;
 };
-
+} // end namespace core
 } // end namespace d2
 
-#endif // !D2_REPOSITORY_HPP
+#endif // !D2_CORE_REPOSITORY_HPP

@@ -5,7 +5,7 @@
 #ifndef D2_CORE_EVENT_REPOSITORY_HPP
 #define D2_CORE_EVENT_REPOSITORY_HPP
 
-#include <d2/repository.hpp>
+#include <d2/core/repository.hpp>
 #include <d2/thread_id.hpp>
 
 #include <boost/config.hpp>
@@ -45,14 +45,14 @@ struct EventMapping {
     // a boost::unordered_map.
     template <typename Stream>
     struct apply<ThreadId, Stream>
-        : boost::mpl::apply<boost_unordered_map, ThreadId, Stream>
+        : boost::mpl::apply<core::boost_unordered_map, ThreadId, Stream>
     { };
 
     // Process-wide events are all logged into the same sink. A dummy map
     // mapping all these events to the same sink is used.
     template <typename Stream>
     struct apply<ProcessWideTag, Stream>
-        : boost::mpl::apply<unary_map, ProcessWideTag, Stream>
+        : boost::mpl::apply<core::unary_map, ProcessWideTag, Stream>
     { };
 };
 
@@ -82,15 +82,15 @@ inline char const* NamingPolicy::category_path<ProcessWideTag>() {
  * Process wide events are all saved in one file, and per-thread events are
  * saved in a different file for each thread.
  */
-template <typename EventCategoryLockingPolicy = no_synchronization,
-          typename StreamLockingPolicy = no_synchronization>
+template <typename EventCategoryLockingPolicy = core::no_synchronization,
+          typename StreamLockingPolicy = core::no_synchronization>
 struct EventRepository
-    : Repository<
+    : core::Repository<
         EventKeys,
         EventMapping,
         EventCategoryLockingPolicy,
         StreamLockingPolicy,
-        use_fstream,
+        core::use_fstream,
         NamingPolicy
     >
 {

@@ -2,10 +2,10 @@
  * This file contains unit tests for the `Repository` class.
  */
 
+#include <d2/core/repository.hpp>
 #include <d2/events/acquire_event.hpp>
 #include <d2/events/start_event.hpp>
 #include <d2/lock_id.hpp>
-#include <d2/repository.hpp>
 #include <d2/segment.hpp>
 #include <d2/thread_id.hpp>
 
@@ -24,11 +24,11 @@
 
 namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
+using namespace d2;
+using namespace d2::core;
 
-namespace d2 {
-namespace test {
-
-struct RepositoryTest : ::testing::Test {
+namespace {
+struct RepositoryTest : testing::Test {
     std::vector<ThreadId> threads;
     std::vector<LockId> locks;
     std::vector<Segment> segments;
@@ -225,6 +225,4 @@ TEST_F(RepositoryTest, use_read_and_write_to_manipulate_streams) {
         ASSERT_EQ(i, loaded);
     }
 }
-
-} // end namespace test
-} // end namespace d2
+} // end anonymous namespace
