@@ -8,7 +8,6 @@
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/core/sync_skeleton.hpp>
 #include <d2/deadlock_diagnostic.hpp>
-#include <d2/events.hpp>
 #include <d2/lock_id.hpp>
 
 #include <boost/foreach.hpp>
