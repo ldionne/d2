@@ -11,31 +11,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 
-# Function adding link dependencies to a target and copying these dependencies
-# to the target's output directory when done. This is to make sure shared
-# libraries are always found.
-function(d2_target_link_libraries target) # libaries...
-    if(TARGET ${target})
-        target_link_libraries(${target} ${ARGN})
-        foreach(library ${ARGN})
-            if(EXISTS ${library})
-                add_custom_command(
-                    TARGET ${target} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E
-                    copy ${library} $<TARGET_FILE_DIR:${target}>
-                )
-            endif()
-        endforeach()
-    endif()
-endfunction()
-
-
 # Function linking boost components to a target.
 function(d2_link_boost target) # boost components
     foreach(component ${ARGN})
         string(TOUPPER ${component} COMPONENT)
         if(${Boost_${COMPONENT}_FOUND})
-            d2_target_link_libraries(${target} ${Boost_${COMPONENT}_LIBRARY})
+            target_link_libraries(${target} ${Boost_${COMPONENT}_LIBRARY})
         endif()
     endforeach()
 endfunction()
@@ -122,7 +103,7 @@ add_subdirectory(test)
 # Add the d2 command line utility.
 if(TARGET d2support)
     d2_add_executable(d2 utility/d2.cpp graph program_options filesystem system)
-    d2_target_link_libraries(d2 d2support dbg)
+    target_link_libraries(d2 d2support dbg)
 else()
     message("Missing d2support library: d2 command line utility will be unavailable.")
 endif()

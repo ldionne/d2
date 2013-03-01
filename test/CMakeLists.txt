@@ -11,7 +11,7 @@ d2_add_standalone_unit_test(partition_by_index unit/detail/partition_by_index.cp
 d2_add_standalone_unit_test(uniquely_identifiable unit/test_uniquely_identifiable.cpp)
 
 d2_add_standalone_unit_test(c_compiler integration/c_compiler.c)
-d2_target_link_libraries(c_compiler_exe d2log)
+target_link_libraries(c_compiler_exe d2log)
 set_target_properties(c_compiler_exe PROPERTIES COMPILE_FLAGS -std=c89)
 
 
@@ -23,7 +23,7 @@ function(d2_add_unit_test name source) # boost components...
         message("Missing d2support library: ${name} will be unavailable.")
     else()
         d2_add_standalone_unit_test(${name} ${source} ${ARGN})
-        d2_target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2support)
+        target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2support)
     endif()
 endfunction()
 d2_add_unit_test(lock_debug_info unit/detail/lock_debug_info.cpp)
@@ -56,7 +56,7 @@ function(d2_add_integration_test name)
         message("Missing the d2mock library: ${name} will be unavailable.")
     else()
         d2_add_executable(${name}_exe integration/${name}.cpp)
-        d2_target_link_libraries(${name}_exe d2log d2support d2mock)
+        target_link_libraries(${name}_exe d2log d2support d2mock)
         add_test(NAME ${name} COMMAND ${name}_exe)
         add_dependencies(integration ${name}_exe)
         if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
