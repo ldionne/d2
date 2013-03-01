@@ -4,11 +4,11 @@
 
 #define D2_SOURCE
 #include <d2/api.h>
+#include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/mutex.hpp>
 #include <d2/events.hpp>
-#include <d2/filesystem_dispatcher.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
 
@@ -16,7 +16,7 @@
 
 
 namespace d2 { namespace api_detail {
-    static FilesystemDispatcher dispatcher;
+    static core::FilesystemDispatcher dispatcher;
     static detail::atomic<bool> event_logging_enabled(false);
 }}
 

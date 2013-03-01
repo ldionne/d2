@@ -2,8 +2,8 @@
  * This file defines the `FilesystemDispatcher` class.
  */
 
-#ifndef D2_FILESYSTEM_DISPATCHER_HPP
-#define D2_FILESYSTEM_DISPATCHER_HPP
+#ifndef D2_CORE_FILESYSTEM_DISPATCHER_HPP
+#define D2_CORE_FILESYSTEM_DISPATCHER_HPP
 
 #include <d2/detail/mutex.hpp>
 #include <d2/event_traits.hpp>
@@ -16,7 +16,7 @@
 
 
 namespace d2 {
-
+namespace filesystem_dispatcher_detail {
 /**
  * Class dispatching thread and process level events to a repository.
  *
@@ -144,7 +144,11 @@ public:
             repository->write(thread_of(event), event);
     }
 };
+} // end namespace filesystem_dispatcher_detail
 
+namespace core {
+    using filesystem_dispatcher_detail::FilesystemDispatcher;
+}
 } // end namespace d2
 
-#endif // !D2_FILESYSTEM_DISPATCHER_HPP
+#endif // !D2_CORE_FILESYSTEM_DISPATCHER_HPP
