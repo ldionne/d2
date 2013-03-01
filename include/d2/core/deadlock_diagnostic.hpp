@@ -2,8 +2,8 @@
  * This file defines classes to present deadlock potential diagnostics.
  */
 
-#ifndef D2_DEADLOCK_DIAGNOSTIC_HPP
-#define D2_DEADLOCK_DIAGNOSTIC_HPP
+#ifndef D2_CORE_DEADLOCK_DIAGNOSTIC_HPP
+#define D2_CORE_DEADLOCK_DIAGNOSTIC_HPP
 
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
@@ -17,7 +17,7 @@
 
 
 namespace d2 {
-
+namespace deadlock_diagnostic_detail {
 /**
  * Class representing a sequence of lock acquisitions by a single thread.
  */
@@ -95,7 +95,12 @@ public:
      */
     friend std::ostream& operator<<(std::ostream&, DeadlockDiagnostic const&);
 };
+} // end namespace deadlock_diagnostic_detail
 
+namespace core {
+    using deadlock_diagnostic_detail::AcquireStreak;
+    using deadlock_diagnostic_detail::DeadlockDiagnostic;
+}
 } // end namespace d2
 
-#endif // !D2_DEADLOCK_DIAGNOSTIC_HPP
+#endif // !D2_CORE_DEADLOCK_DIAGNOSTIC_HPP

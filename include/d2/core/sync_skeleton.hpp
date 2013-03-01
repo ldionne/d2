@@ -5,9 +5,9 @@
 #ifndef D2_CORE_SYNC_SKELETON_HPP
 #define D2_CORE_SYNC_SKELETON_HPP
 
+#include <d2/core/deadlock_diagnostic.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
-#include <d2/deadlock_diagnostic.hpp>
 #include <d2/thread_id.hpp>
 
 #include <boost/range/begin.hpp>
@@ -23,7 +23,7 @@ namespace d2 {
 namespace sync_skeleton_detail {
 extern void parse_and_build_seg_graph(std::istream&, core::SegmentationGraph&);
 extern void parse_and_build_lock_graph(std::istream&, core::LockGraph&);
-extern std::vector<DeadlockDiagnostic>
+extern std::vector<core::DeadlockDiagnostic>
 analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
 
 /**
@@ -93,7 +93,8 @@ public:
 private:
     typedef typename Repository::template
                 const_key_view<ThreadId>::type unspecified_range_of_threads;
-    typedef std::vector<DeadlockDiagnostic> unspecified_range_of_diagnostics;
+    typedef std::vector<core::DeadlockDiagnostic>
+                                            unspecified_range_of_diagnostics;
 
 public:
     unspecified_range_of_threads threads() const {

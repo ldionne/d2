@@ -4,12 +4,12 @@
 
 #define D2_SOURCE
 #include <d2/api.hpp>
+#include <d2/core/deadlock_diagnostic.hpp>
 #include <d2/core/event_repository.hpp>
-#include <d2/deadlock_diagnostic.hpp>
+#include <d2/core/sync_skeleton.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/getter.hpp>
 #include <d2/mock/integration_test.hpp>
-#include <d2/sync_skeleton.hpp>
 
 #include <algorithm>
 #include <boost/algorithm/cxx11/all_of.hpp>
@@ -33,6 +33,8 @@
 namespace fs = boost::filesystem;
 
 namespace d2 {
+using namespace core; // bring d2::core to d2
+
 namespace mock {
 
 namespace {

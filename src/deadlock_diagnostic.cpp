@@ -1,9 +1,9 @@
 /**
- * This file implements the `d2/sandbox/deadlock_diagnostic.hpp` header.
+ * This file implements the `d2/core/deadlock_diagnostic.hpp` header.
  */
 
 #define D2_SOURCE
-#include <d2/deadlock_diagnostic.hpp>
+#include <d2/core/deadlock_diagnostic.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/format.hpp>
@@ -14,7 +14,7 @@
 
 
 namespace d2 {
-
+namespace deadlock_diagnostic_detail {
 std::ostream& operator<<(std::ostream& os, AcquireStreak const& self) {
     namespace karma = boost::spirit::karma;
     os << karma::format(
@@ -45,5 +45,5 @@ std::ostream& operator<<(std::ostream& os, DeadlockDiagnostic const& self) {
             self.steps() | boost::adaptors::transformed(format_explanation));
     return os;
 }
-
+} // end namespace deadlock_diagnostic_detail
 } // end namespace d2

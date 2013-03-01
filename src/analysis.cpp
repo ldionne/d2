@@ -4,10 +4,10 @@
 
 #define D2_SOURCE
 #include <d2/core/analysis.hpp>
+#include <d2/core/deadlock_diagnostic.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/core/sync_skeleton.hpp>
-#include <d2/deadlock_diagnostic.hpp>
 #include <d2/lock_id.hpp>
 
 #include <boost/foreach.hpp>
@@ -35,17 +35,18 @@ public:
                                                             EdgeDescriptor;
         typedef typename boost::edge_property_type<LockGraph>::type Edge;
 
-        std::vector<AcquireStreak> streaks;
+        std::vector<core::AcquireStreak> streaks;
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             Edge const& edge_label = graph[edge_desc];
             LockId l1_l2[] = {graph[source(edge_desc, graph)],
                               graph[target(edge_desc, graph)]};
             streaks.push_back(
-                AcquireStreak(thread_of(edge_label), &l1_l2[0], &l1_l2[2]));
+                core::AcquireStreak(
+                    thread_of(edge_label), &l1_l2[0], &l1_l2[2]));
         }
 
-        *out_++ = DeadlockDiagnostic(boost::begin(streaks),
-                                     boost::end(streaks));
+        *out_++ = core::DeadlockDiagnostic(boost::begin(streaks),
+                                           boost::end(streaks));
     }
 };
 
@@ -55,10 +56,10 @@ gather_diagnostics(OutputIterator const& out) {
     return DiagnosticGatherer<OutputIterator>(out);
 }
 
-extern std::vector<DeadlockDiagnostic>
+extern std::vector<core::DeadlockDiagnostic>
 analyze_lock_ordering(core::LockGraph const& lg,
                       core::SegmentationGraph const& sg) {
-    std::vector<DeadlockDiagnostic> diagnostics;
+    std::vector<core::DeadlockDiagnostic> diagnostics;
     core::analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));
     return diagnostics;
 }
