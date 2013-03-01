@@ -3,8 +3,8 @@
  */
 
 #define D2_SOURCE
-#include <d2/build_lock_graph.hpp>
-#include <d2/build_segmentation_graph.hpp>
+#include <d2/core/build_lock_graph.hpp>
+#include <d2/core/build_segmentation_graph.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_graph.hpp>
 #include <d2/segmentation_graph.hpp>
@@ -37,7 +37,7 @@ extern void parse_and_build_seg_graph(std::istream& is,
     std::vector<Event> events;
     qi::parse(source.begin(), source.end(), *(start | join), events);
 
-    build_segmentation_graph<true>()(events, graph);
+    core::build_segmentation_graph<true>()(events, graph);
 }
 
 extern void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
@@ -64,7 +64,7 @@ extern void parse_and_build_lock_graph(std::istream& is, LockGraph& graph) {
         *(acquire | release | rec_acquire | rec_release | hop)
     , events);
 
-    build_lock_graph<true>(events, graph);
+    core::build_lock_graph<true>(events, graph);
 }
 
 } // end namespace detail

@@ -5,7 +5,7 @@
 #ifndef D2_CORE_ANALYSIS_HPP
 #define D2_CORE_ANALYSIS_HPP
 
-#include <d2/build_segmentation_graph.hpp> // for happens_before
+#include <d2/core/build_segmentation_graph.hpp> // for happens_before
 #include <d2/core/non_equivalent_cycles.hpp>
 
 #include <boost/foreach.hpp>
@@ -88,7 +88,7 @@ public:
                                           gatelocks_of(labels[e2])) &&
 
                     // The segments must not be ordered.
-                    !happens_before(labels[e1].s2, labels[e2].s1, sg_)
+                    !core::happens_before(labels[e1].s2, labels[e2].s1, sg_)
 
                 )) return;
             }

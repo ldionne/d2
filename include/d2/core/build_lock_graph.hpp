@@ -3,8 +3,8 @@
  * the relationship between the locks and the threads of a program.
  */
 
-#ifndef D2_BUILD_LOCK_GRAPH_HPP
-#define D2_BUILD_LOCK_GRAPH_HPP
+#ifndef D2_CORE_BUILD_LOCK_GRAPH_HPP
+#define D2_CORE_BUILD_LOCK_GRAPH_HPP
 
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/events/acquire_event.hpp>
@@ -48,8 +48,7 @@
 
 
 namespace d2 {
-
-namespace build_lg_detail {
+namespace build_lock_graph_detail {
 /**
  * Return whether `v` is adjacent to `u` using an edge whose property
  * satisfies `predicate`.
@@ -373,7 +372,6 @@ struct CustomVertexInfo {
         // Nothing.
     }
 };
-} // end namespace build_lg_detail
 
 /**
  * Algorithm building a lock graph from a range of events.
@@ -404,22 +402,23 @@ void build_lock_graph(Iterator first, Iterator last, Graph& graph) {
     // The only case where the first event is not a SegmentHopEvent is
     // for the main thread, in which case it can be an AcquireEvent too.
     // We deduce the thread we're processing from the first event.
-    build_lg_detail::DeduceThisThread<ThreadId> deduce;
+    DeduceThisThread<ThreadId> deduce;
     ThreadId this_thread = boost::apply_visitor(deduce, *first);
 
     typedef typename boost::property_map<
                 Graph, boost::edge_bundle_t
             >::type EdgeBundleMap;
 
-    typedef build_lg_detail::EventVisitor<
-                Graph, build_lg_detail::CustomVertexInfo,
-                build_lg_detail::CustomEdgeInfo<EdgeBundleMap>,
+    typedef EventVisitor<
+                Graph,
+                CustomVertexInfo,
+                CustomEdgeInfo<EdgeBundleMap>,
                 SilentlyIgnoreOtherEvents
             > Visitor;
 
-    build_lg_detail::CustomVertexInfo vertex_info;
+    CustomVertexInfo vertex_info;
     EdgeBundleMap edge_bundle = get(boost::edge_bundle, graph);
-    build_lg_detail::CustomEdgeInfo<EdgeBundleMap> edge_info(edge_bundle);
+    CustomEdgeInfo<EdgeBundleMap> edge_info(edge_bundle);
 
     Visitor visitor(graph, this_thread, vertex_info, edge_info);
     for (; first != last; ++first)
@@ -431,7 +430,11 @@ void build_lock_graph(Range const& range, Graph& graph) {
     build_lock_graph<SilentlyIgnoreOtherEvents>(
         boost::begin(range), boost::end(range), graph);
 }
+} // end namespace build_lock_graph_detail
 
+namespace core {
+    using build_lock_graph_detail::build_lock_graph;
+}
 } // end namespace d2
 
-#endif // !D2_BUILD_LOCK_GRAPH_HPP
+#endif // !D2_CORE_BUILD_LOCK_GRAPH_HPP

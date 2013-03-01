@@ -3,8 +3,8 @@
  * the relative order of thread starts and joins in a program.
  */
 
-#ifndef D2_BUILD_SEGMENTATION_GRAPH_HPP
-#define D2_BUILD_SEGMENTATION_GRAPH_HPP
+#ifndef D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
+#define D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
 
 #include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>
@@ -47,7 +47,7 @@ namespace graph {
 } // end namespace boost
 
 namespace d2 {
-
+namespace build_segmentation_graph_detail {
 /**
  * Function object building a segmentation graph from a range of events.
  * The events in the range should be `StartEvent`s or `JoinEvent`s. Depending
@@ -184,7 +184,12 @@ bool happens_before(typename Graph::vertex_name_type const& u_,
     boost::optional<Vertex> u = find_vertex(u_, graph);
     return u && happens_before(*u, v, graph);
 }
+} // end namespace build_segmentation_graph_detail
 
+namespace core {
+    using build_segmentation_graph_detail::build_segmentation_graph;
+    using build_segmentation_graph_detail::happens_before;
+}
 } // end namespace d2
 
-#endif // !D2_BUILD_SEGMENTATION_GRAPH_HPP
+#endif // !D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
