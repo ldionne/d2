@@ -3,12 +3,11 @@
  * begin and end functions for containers.
  */
 
-#ifndef D2_SANDBOX_BASIC_CONTAINER_HPP
-#define D2_SANDBOX_BASIC_CONTAINER_HPP
+#ifndef D2_DETAIL_BASIC_CONTAINER_HPP
+#define D2_DETAIL_BASIC_CONTAINER_HPP
 
 namespace d2 {
-namespace sandbox {
-
+namespace basic_container_detail {
 class basic_container_core_access {
 public:
     template <typename Facade>
@@ -98,8 +97,12 @@ protected:
     typedef basic_container basic_container_;
 
 };
+} // end namespace basic_container_detail
 
-} // end namespace sandbox
+namespace detail {
+    using basic_container_detail::basic_container;
+    using basic_container_detail::basic_container_core_access;
+}
 } // end namespace d2
 
-#endif // !D2_SANDBOX_BASIC_CONTAINER_HPP
+#endif // !D2_DETAIL_BASIC_CONTAINER_HPP

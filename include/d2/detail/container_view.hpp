@@ -2,10 +2,10 @@
  * This file defines the `container_view` class.
  */
 
-#ifndef D2_SANDBOX_CONTAINER_VIEW_HPP
-#define D2_SANDBOX_CONTAINER_VIEW_HPP
+#ifndef D2_DETAIL_CONTAINER_VIEW_HPP
+#define D2_DETAIL_CONTAINER_VIEW_HPP
 
-#include <d2/sandbox/basic_container.hpp>
+#include <d2/detail/basic_container.hpp>
 
 #include <algorithm>
 #include <boost/config.hpp>
@@ -18,12 +18,11 @@
 
 
 namespace d2 {
-
-namespace sandbox {
+namespace container_view_detail {
 template <typename Container, typename Accessor>
 struct container_view
     : boost::equality_comparable<container_view<Container, Accessor> >,
-      basic_container<
+      detail::basic_container<
         container_view<Container, Accessor>,
         boost::transform_iterator<
             Accessor, typename Container::iterator
@@ -221,8 +220,16 @@ struct first_accessor
         detail::first_accessor_helper, NextAccessor
     >
 { };
+} // end namespace container_view_detail
 
-} // end namespace sandbox
+namespace detail {
+    using container_view_detail::container_view;
+    using container_view_detail::first_accessor;
+    using container_view_detail::identity_accessor;
+    using container_view_detail::member_accessor;
+    using container_view_detail::rebind_accessor;
+    using container_view_detail::second_accessor;
+} // end namespace detail
 } // end namespace d2
 
-#endif // !D2_SANDBOX_CONTAINER_VIEW_HPP
+#endif // !D2_DETAIL_CONTAINER_VIEW_HPP

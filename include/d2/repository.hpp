@@ -5,9 +5,9 @@
 #ifndef D2_REPOSITORY_HPP
 #define D2_REPOSITORY_HPP
 
+#include <d2/detail/container_view.hpp>
 #include <d2/detail/exceptions.hpp>
 #include <d2/detail/mutex.hpp>
-#include <d2/sandbox/container_view.hpp>
 
 #include <boost/config.hpp>
 #ifdef BOOST_MSVC
@@ -308,16 +308,16 @@ class Repository : boost::noncopyable {
     // Accessor for the .stream member that is not yet fully bound.
     template <typename MappedType>
     struct stream_accessor_helper
-        : sandbox::member_accessor<
+        : detail::member_accessor<
             typename MappedType::bundle_type::stream_type MappedType::*,
             &MappedType::stream
         >
     { };
 
     // Accessor for the .stream member.
-    template <typename NextAccessor = sandbox::identity_accessor>
+    template <typename NextAccessor = detail::identity_accessor>
     struct stream_accessor
-        : sandbox::rebind_accessor<
+        : detail::rebind_accessor<
             stream_accessor_helper, NextAccessor
         >
     { };
