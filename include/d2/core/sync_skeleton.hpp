@@ -2,8 +2,8 @@
  * This file defines the `SyncSkeleton` class.
  */
 
-#ifndef D2_SYNC_SKELETON_HPP
-#define D2_SYNC_SKELETON_HPP
+#ifndef D2_CORE_SYNC_SKELETON_HPP
+#define D2_CORE_SYNC_SKELETON_HPP
 
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
@@ -20,15 +20,11 @@
 
 
 namespace d2 {
-
-namespace detail {
-    extern void
-    parse_and_build_seg_graph(std::istream&, core::SegmentationGraph&);
-    extern void parse_and_build_lock_graph(std::istream&, core::LockGraph&);
-    extern std::vector<DeadlockDiagnostic>
-    analyze_lock_ordering(core::LockGraph const&,
-                          core::SegmentationGraph const&);
-} // end namespace detail
+namespace sync_skeleton_detail {
+extern void parse_and_build_seg_graph(std::istream&, core::SegmentationGraph&);
+extern void parse_and_build_lock_graph(std::istream&, core::LockGraph&);
+extern std::vector<DeadlockDiagnostic>
+analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
 
 /**
  * Class representing a program stripped down from any other information than
@@ -56,14 +52,14 @@ class SyncSkeleton {
      */
     static void build_graphs(Repository& repo, core::LockGraph& lg,
                                                core::SegmentationGraph& sg) {
-        detail::parse_and_build_seg_graph(repo[Repository::process_wide], sg);
+        parse_and_build_seg_graph(repo[Repository::process_wide], sg);
 
         typedef typename Repository::thread_stream_range ThreadStreams;
         ThreadStreams thread_streams = repo.thread_streams();
         typename ThreadStreams::iterator thread(boost::begin(thread_streams)),
                                          last(boost::end(thread_streams));
         for (; thread != last; ++thread)
-            detail::parse_and_build_lock_graph(*thread, lg);
+            parse_and_build_lock_graph(*thread, lg);
     }
 
 public:
@@ -113,10 +109,14 @@ public:
      *          involves analyzing graphs that might be very large.
      */
     unspecified_range_of_diagnostics deadlocks() const {
-        return detail::analyze_lock_ordering(lock_graph_, segmentation_graph_);
+        return analyze_lock_ordering(lock_graph_, segmentation_graph_);
     }
 };
+} // end namespace sync_skeleton_detail
 
+namespace core {
+    using sync_skeleton_detail::SyncSkeleton;
+}
 } // end namespace d2
 
-#endif // !D2_SYNC_SKELETON_HPP
+#endif // !D2_CORE_SYNC_SKELETON_HPP

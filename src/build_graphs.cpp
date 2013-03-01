@@ -7,6 +7,7 @@
 #include <d2/core/build_segmentation_graph.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
+#include <d2/core/sync_skeleton.hpp>
 #include <d2/events.hpp>
 
 #include <boost/spirit/include/qi.hpp>
@@ -19,8 +20,7 @@
 
 
 namespace d2 {
-namespace detail {
-
+namespace sync_skeleton_detail {
 extern void parse_and_build_seg_graph(std::istream& is,
                                       core::SegmentationGraph& graph) {
     namespace qi = boost::spirit::qi;
@@ -67,6 +67,5 @@ extern void parse_and_build_lock_graph(std::istream& is,
 
     core::build_lock_graph<true>(events, graph);
 }
-
-} // end namespace detail
+} // end namespace sync_skeleton_detail
 } // end namespace d2

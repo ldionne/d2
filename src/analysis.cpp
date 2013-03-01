@@ -6,6 +6,7 @@
 #include <d2/core/analysis.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
+#include <d2/core/sync_skeleton.hpp>
 #include <d2/deadlock_diagnostic.hpp>
 #include <d2/events.hpp>
 #include <d2/lock_id.hpp>
@@ -21,8 +22,7 @@
 
 
 namespace d2 {
-namespace detail {
-
+namespace sync_skeleton_detail {
 template <typename OutputIterator>
 class DiagnosticGatherer {
     OutputIterator out_;
@@ -63,6 +63,5 @@ analyze_lock_ordering(core::LockGraph const& lg,
     core::analyze(lg, sg, gather_diagnostics(std::back_inserter(diagnostics)));
     return diagnostics;
 }
-
-} // end namespace detail
+} // end namespace sync_skeleton_detail
 } // end namespace d2
