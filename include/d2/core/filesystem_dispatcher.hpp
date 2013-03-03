@@ -6,7 +6,6 @@
 #define D2_CORE_FILESYSTEM_DISPATCHER_HPP
 
 #include <d2/detail/mutex.hpp>
-#include <d2/event_traits.hpp>
 
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
@@ -14,6 +13,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <dyno/event_scope.hpp>
 #include <dyno/filesystem.hpp>
 #include <fstream>
 #include <string>
@@ -24,13 +24,13 @@ namespace filesystem_dispatcher_detail {
 
 struct EventMappingPolicy {
     template <typename Event>
-    typename boost::enable_if<has_event_scope<Event, thread_scope>,
+    typename boost::enable_if<dyno::has_thread_scope<Event>,
     std::string>::type operator()(Event const& event) const {
         return boost::lexical_cast<std::string>(thread_of(event));
     }
 
     template <typename Event>
-    typename boost::enable_if<has_event_scope<Event, process_scope>,
+    typename boost::enable_if<dyno::has_process_scope<Event>,
     std::string>::type operator()(Event const&) const {
         return "process_wide";
     }

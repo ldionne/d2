@@ -6,7 +6,6 @@
 #define D2_EVENTS_JOIN_EVENT_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/event_traits.hpp>
 #include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>
 

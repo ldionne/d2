@@ -7,11 +7,11 @@
 
 #include <d2/detail/config.hpp>
 #include <d2/detail/lock_debug_info.hpp>
-#include <d2/event_traits.hpp>
 #include <d2/events/hold_custom.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
 
+#include <dyno/event_scope.hpp>
 #include <iosfwd>
 
 
@@ -58,8 +58,7 @@ struct AcquireEvent
     D2_API friend std::istream& operator>>(std::istream&, AcquireEvent&);
     D2_API friend std::ostream& operator<<(std::ostream&, AcquireEvent const&);
 
-    typedef thread_scope event_scope;
-    typedef strict_order_policy ordering_policy;
+    typedef dyno::thread_scope event_scope;
 };
 
 } // end namespace d2

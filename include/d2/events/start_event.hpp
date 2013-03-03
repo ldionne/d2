@@ -6,10 +6,10 @@
 #define D2_EVENTS_START_EVENT_HPP
 
 #include <d2/detail/config.hpp>
-#include <d2/event_traits.hpp>
 #include <d2/events/hold_custom.hpp>
 #include <d2/segment.hpp>
 
+#include <dyno/event_scope.hpp>
 #include <iosfwd>
 
 
@@ -50,8 +50,7 @@ struct StartEvent
     D2_API friend std::istream& operator>>(std::istream&, StartEvent&);
     D2_API friend std::ostream& operator<<(std::ostream&, StartEvent const&);
 
-    typedef process_scope event_scope;
-    typedef strict_order_policy ordering_policy;
+    typedef dyno::process_scope event_scope;
 };
 
 } // end namespace d2
