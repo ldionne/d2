@@ -1,7 +1,7 @@
 # Add the d2support static library.
 file(GLOB d2support_sources events/*.cpp detail/*.cpp *.cpp)
 add_library(d2support STATIC ${d2support_sources})
-target_link_libraries(d2support dbg)
+target_link_libraries(d2support dbg dyno)
 
 # Add the d2log logging library.
 if(${Boost_FILESYSTEM_FOUND} AND ${Boost_SYSTEM_FOUND} AND TARGET d2support)

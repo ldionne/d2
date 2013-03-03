@@ -1,0 +1,3 @@
+[submodule "ext/dyno"]
+	path = ext/dyno
+	url = https://ldionne@bitbucket.org/ldionne/dyno.git

@@ -83,8 +83,11 @@ endif()
 
 
 # Add dbg (we should use find_package, but we don't have a FindFungo.cmake)
-add_subdirectory(ext/dbg)
+add_subdirectory(ext/dbg EXCLUDE_FROM_ALL)
 include_directories(ext/dbg/include)
+
+add_subdirectory(ext/dyno EXCLUDE_FROM_ALL)
+include_directories(ext/dyno/include)
 
 
 # Try finding Google test.
