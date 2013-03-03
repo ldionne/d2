@@ -3,7 +3,7 @@
  * with the d2 library.
  */
 
-#include <d2/core/event_repository.hpp>
+#include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/core/sync_skeleton.hpp>
 #include <d2/events/exceptions.hpp>
 
@@ -141,11 +141,10 @@ int main(int argc, char const* argv[]) {
         return EXIT_FAILURE;
     }
 
-    typedef EventRepository<> Repository;
-    boost::scoped_ptr<Repository> repository;
+    boost::scoped_ptr<Filesystem> repository;
     try {
-        repository.reset(new Repository(repo_path));
-    } catch (RepositoryException const& e) {
+        repository.reset(new Filesystem(repo_path));
+    } catch (dyno::filesystem_error const& e) {
         std::cerr << boost::format("unable to open the repository at %1%\n")
                                                                 % repo_path;
         if (args.count("debug"))
@@ -169,7 +168,7 @@ int main(int argc, char const* argv[]) {
     std::ostream& output = args.count("output-file") ? output_ofs : std::cout;
 
     // Create the skeleton of the program from the repository.
-    typedef SyncSkeleton<Repository> Skeleton;
+    typedef SyncSkeleton<Filesystem> Skeleton;
     boost::scoped_ptr<Skeleton> skeleton;
     try {
         skeleton.reset(new Skeleton(*repository));

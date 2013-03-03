@@ -19,7 +19,6 @@
 #include <boost/range/end.hpp>
 #include <d2/api.hpp>
 #include <d2/core/deadlock_diagnostic.hpp>
-#include <d2/core/event_repository.hpp>
 #include <d2/core/sync_skeleton.hpp>
 #include <initializer_list>
 #include <iostream>
@@ -42,7 +41,6 @@ fs::path create_tmp_directory(fs::path const& test_source) {
     unsigned int i = 0;
     while (fs::exists(tmp))
         tmp.replace_extension(boost::lexical_cast<std::string>(i++));
-    fs::create_directory(tmp);
 
     return tmp;
 }
@@ -110,8 +108,8 @@ void verify_consume(std::vector<Deadlock> expected,
 D2MOCK_DECL void integration_test::verify_deadlocks(
                             std::initializer_list<Deadlock> const& expected) {
     d2::unset_log_repository();
-    d2::core::EventRepository<> events(repo_);
-    d2::core::SyncSkeleton<d2::core::EventRepository<> > skeleton(events);
+    d2::core::Filesystem events(repo_);
+    d2::core::SyncSkeleton<d2::core::Filesystem> skeleton(events);
     std::vector<Deadlock> actual;
     BOOST_FOREACH(d2::core::DeadlockDiagnostic const& diagnostic,
                                                         skeleton.deadlocks())

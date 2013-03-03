@@ -6,17 +6,17 @@
 #define D2_CORE_SYNC_SKELETON_HPP
 
 #include <d2/core/deadlock_diagnostic.hpp>
+#include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/thread_id.hpp>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
+#include <boost/foreach.hpp>
+#include <boost/range/distance.hpp>
 #include <cstddef>
 #include <iosfwd>
-#include <iterator>
-#include <vector>
 #include <string>
+#include <vector>
 
 
 namespace d2 {
@@ -38,40 +38,32 @@ analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
  *           between which the number of locks is to be computed.
  */
 template <typename Repository>
-class SyncSkeleton {
-    // Silence MSVC warning C4512: assignment operator could not be generated
-    SyncSkeleton& operator=(SyncSkeleton const&) /*= delete*/;
+class SyncSkeleton;
+
+template <>
+class SyncSkeleton<core::Filesystem> {
+    typedef core::Filesystem Repository;
 
     Repository& repository_;
     core::SegmentationGraph segmentation_graph_;
     core::LockGraph lock_graph_;
 
-    /**
-     * Build the lock graph and the segmentation graph from the events inside
-     * a repository.
-     */
-    static void build_graphs(Repository& repo, core::LockGraph& lg,
-                                               core::SegmentationGraph& sg) {
-        parse_and_build_seg_graph(repo[Repository::process_wide], sg);
-
-        typedef typename Repository::thread_stream_range ThreadStreams;
-        ThreadStreams thread_streams = repo.thread_streams();
-        typename ThreadStreams::iterator thread(boost::begin(thread_streams)),
-                                         last(boost::end(thread_streams));
-        for (; thread != last; ++thread)
-            parse_and_build_lock_graph(*thread, lg);
-    }
-
 public:
     /**
-     * Construct a skeleton from the data stored in a repository.
+     * Construct a skeleton from the data stored on a filesystem.
      *
      * @warning This may be a resource intensive operation since we have
-     *          to load the content of the whole repository in memory to
-     *          build two different graphs.
+     *          to load the content of the whole filesystem in memory and
+     *          build two potentially large graphs.
      */
-    explicit SyncSkeleton(Repository& repo) : repository_(repo) {
-        build_graphs(repository_, lock_graph_, segmentation_graph_);
+    explicit SyncSkeleton(Repository& repository) : repository_(repository) {
+        BOOST_FOREACH(Repository::file_entry file, repository_.files()) {
+            file.stream().seekg(0);
+            if (file.relative_path() == "process_wide")
+                parse_and_build_seg_graph(file.stream(), segmentation_graph_);
+            else
+                parse_and_build_lock_graph(file.stream(), lock_graph_);
+        }
     }
 
     /**
@@ -79,7 +71,9 @@ public:
      * captured by the skeleton.
      */
     std::size_t number_of_threads() const {
-        return std::distance(boost::begin(threads()), boost::end(threads()));
+        // Since we keep one file per thread + one file for the process wide
+        // events, this is the number of threads:
+        return boost::distance(repository_.files()) - 1;
     }
 
     /**
@@ -91,16 +85,10 @@ public:
     }
 
 private:
-    typedef typename Repository::template
-                const_key_view<ThreadId>::type unspecified_range_of_threads;
     typedef std::vector<core::DeadlockDiagnostic>
                                             unspecified_range_of_diagnostics;
 
 public:
-    unspecified_range_of_threads threads() const {
-        return repository_.template keys<ThreadId>();
-    }
-
     /**
      * Perform an analysis of the order in which locks are acquired relative
      * to each other in the part of the program captured by the skeleton, and
@@ -112,6 +100,10 @@ public:
     unspecified_range_of_diagnostics deadlocks() const {
         return analyze_lock_ordering(lock_graph_, segmentation_graph_);
     }
+
+private:
+    // Silence MSVC warning C4512: assignment operator could not be generated
+    SyncSkeleton& operator=(SyncSkeleton const&) /*= delete*/;
 };
 } // end namespace sync_skeleton_detail
 

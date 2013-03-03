@@ -5,50 +5,53 @@
 #ifndef D2_CORE_FILESYSTEM_DISPATCHER_HPP
 #define D2_CORE_FILESYSTEM_DISPATCHER_HPP
 
-#include <d2/core/event_repository.hpp>
 #include <d2/detail/mutex.hpp>
 #include <d2/event_traits.hpp>
 
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <dyno/filesystem.hpp>
+#include <fstream>
+#include <string>
 
 
 namespace d2 {
 namespace filesystem_dispatcher_detail {
+
+struct EventMappingPolicy {
+    template <typename Event>
+    typename boost::enable_if<has_event_scope<Event, thread_scope>,
+    std::string>::type operator()(Event const& event) const {
+        return boost::lexical_cast<std::string>(thread_of(event));
+    }
+
+    template <typename Event>
+    typename boost::enable_if<has_event_scope<Event, process_scope>,
+    std::string>::type operator()(Event const&) const {
+        return "process_wide";
+    }
+};
+
+typedef dyno::filesystem<EventMappingPolicy, std::fstream> Repository;
+
 /**
  * Class dispatching thread and process level events to a repository.
  *
  * This class is meant to be used concurrently by several threads.
  */
 class FilesystemDispatcher {
-    // Lock the mapping from thread to stream (and the dummy mapping to the
-    // process-wide stream) using a mutex.
-    typedef core::synchronize_with<detail::mutex> EventCategoryLockingPolicy;
-
-    // We lock the access to each stream using a mutex.
-    //
-    // Locking the process-wide stream is necessary because several
-    // threads may need to write to it at the same time.
-    //
-    // Locking the per-thread streams is also necessary, because threads may
-    // emit cross-thread events, i.e. events that go from a thread to another
-    // thread's stream (this is currently the case for SegmentHopEvents).
-    typedef core::synchronize_with<detail::mutex> StreamLockingPolicy;
-
-    typedef core::EventRepository<
-                EventCategoryLockingPolicy, StreamLockingPolicy
-            > Repository;
-
     struct RepoDeleter {
         void operator()(Repository* repo) const { delete repo; }
     };
 
     // We use `shared_ptr` because the `dispatch` methods will be writing into
     // repositories after a call to `set_repository` might have happened into
-    // another thread. The `dispatch` methods atomically get the value of the
-    // current repository, do their business and then the repository is
+    // another thread. The `dispatch` method atomically get the value of the
+    // current repository, do its business and then the repository is
     // released automatically if the repository is not referenced anymore
     // because a call to `set_repository` happened.
     boost::shared_ptr<Repository> repository_;
@@ -67,7 +70,7 @@ public:
 
     template <typename Source>
     explicit FilesystemDispatcher(Source const& path)
-        : repository_(new Repository(path))
+        : repository_(boost::make_shared<Repository>(path))
     { }
 
     /**
@@ -125,29 +128,21 @@ public:
      */
     bool has_repository() const {
         scoped_lock lock(repository_lock_);
-        return repository_;
+        return static_cast<bool>(repository_);
     }
 
     template <typename Event>
-    typename boost::enable_if<has_event_scope<Event, d2::process_scope>,
-    void>::type dispatch(Event const& event) {
+    void dispatch(Event const& event) {
         boost::shared_ptr<Repository> repository = get_repository();
         if (repository)
-            repository->write(Repository::process_wide, event);
-    }
-
-    template <typename Event>
-    typename boost::enable_if<has_event_scope<Event, d2::thread_scope>,
-    void>::type dispatch(Event const& event) {
-        boost::shared_ptr<Repository> repository = get_repository();
-        if (repository)
-            repository->write(thread_of(event), event);
+            repository->dispatch(event);
     }
 };
 } // end namespace filesystem_dispatcher_detail
 
 namespace core {
     using filesystem_dispatcher_detail::FilesystemDispatcher;
+    typedef filesystem_dispatcher_detail::Repository Filesystem;
 }
 } // end namespace d2
 
