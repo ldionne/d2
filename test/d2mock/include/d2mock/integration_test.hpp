@@ -28,8 +28,8 @@ struct Streak : boost::equality_comparable<Streak> {
     Streak() : thread_id() { }
 
     template <typename Lock1, typename Lock2, typename ...Locks>
-    Streak(thread const& thread, Lock1&& lock1, Lock2&& lock2,
-                                                    Locks&& ...locks)
+    Streak(thread const& thread, BOOST_FWD_REF(Lock1) lock1,
+                    BOOST_FWD_REF(Lock2) lock2, BOOST_FWD_REF(Locks) ...locks)
         : thread_id(thread),
           locks{d2::LockId(boost::forward<Lock1>(lock1)),
                 d2::LockId(boost::forward<Lock2>(lock2)),
