@@ -21,6 +21,7 @@ function(d2_add_unit_test name source) # boost components...
         target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2support)
     endif()
 endfunction()
+d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
 d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
 d2_add_unit_test(mixed_events mixed_events.cpp)
 d2_add_unit_test(segmentation_graph segmentation_graph.cpp graph)
