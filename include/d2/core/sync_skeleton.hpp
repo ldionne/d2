@@ -9,13 +9,15 @@
 #include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
-#include <d2/thread_id.hpp>
 
 #include <boost/foreach.hpp>
+#include <boost/move/utility.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/range/distance.hpp>
 #include <cstddef>
-#include <iosfwd>
-#include <string>
+#include <dyno/filesystem.hpp>
+#include <fstream>
+#include <ios>
 #include <vector>
 
 
@@ -37,14 +39,12 @@ analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
  *           accept some kind of query representing a range of `coordinates'
  *           between which the number of locks is to be computed.
  */
-template <typename Repository>
-class SyncSkeleton;
+class SyncSkeleton : boost::noncopyable {
+    typedef dyno::filesystem<
+                core::EventMappingPolicy, std::ifstream
+            > Filesystem;
 
-template <>
-class SyncSkeleton<core::Filesystem> {
-    typedef core::Filesystem Repository;
-
-    Repository& repository_;
+    Filesystem fs_;
     core::SegmentationGraph segmentation_graph_;
     core::LockGraph lock_graph_;
 
@@ -53,12 +53,13 @@ public:
      * Construct a skeleton from the data stored on a filesystem.
      *
      * @warning This may be a resource intensive operation since we have
-     *          to load the content of the whole filesystem in memory and
-     *          build two potentially large graphs.
+     *          to build two potentially large graphs.
      */
-    explicit SyncSkeleton(Repository& repository) : repository_(repository) {
-        BOOST_FOREACH(Repository::file_entry file, repository_.files()) {
-            file.stream().seekg(0);
+    template <typename Path>
+    explicit SyncSkeleton(BOOST_FWD_REF(Path) root)
+        : fs_(boost::forward<Path>(root), std::ios::in)
+    {
+        BOOST_FOREACH(Filesystem::file_entry file, fs_.files()) {
             if (file.relative_path() == "process_wide")
                 parse_and_build_seg_graph(file.stream(), segmentation_graph_);
             else
@@ -73,7 +74,7 @@ public:
     std::size_t number_of_threads() const {
         // Since we keep one file per thread + one file for the process wide
         // events, this is the number of threads:
-        return boost::distance(repository_.files()) - 1;
+        return boost::distance(fs_.files()) - 1;
     }
 
     /**
@@ -100,10 +101,6 @@ public:
     unspecified_range_of_diagnostics deadlocks() const {
         return analyze_lock_ordering(lock_graph_, segmentation_graph_);
     }
-
-private:
-    // Silence MSVC warning C4512: assignment operator could not be generated
-    SyncSkeleton& operator=(SyncSkeleton const&) /*= delete*/;
 };
 } // end namespace sync_skeleton_detail
 

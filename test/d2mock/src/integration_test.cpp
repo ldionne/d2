@@ -108,8 +108,7 @@ void verify_consume(std::vector<Deadlock> expected,
 D2MOCK_DECL void integration_test::verify_deadlocks(
                             std::initializer_list<Deadlock> const& expected) {
     d2::unset_log_repository();
-    d2::core::Filesystem events(repo_);
-    d2::core::SyncSkeleton<d2::core::Filesystem> skeleton(events);
+    d2::core::SyncSkeleton skeleton(repo_);
     std::vector<Deadlock> actual;
     BOOST_FOREACH(d2::core::DeadlockDiagnostic const& diagnostic,
                                                         skeleton.deadlocks())

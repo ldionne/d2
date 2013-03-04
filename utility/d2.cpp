@@ -141,18 +141,6 @@ int main(int argc, char const* argv[]) {
         return EXIT_FAILURE;
     }
 
-    boost::scoped_ptr<Filesystem> repository;
-    try {
-        repository.reset(new Filesystem(repo_path));
-    } catch (dyno::filesystem_error const& e) {
-        std::cerr << boost::format("unable to open the repository at %1%\n")
-                                                                % repo_path;
-        if (args.count("debug"))
-            std::cerr << boost::diagnostic_information(e) << '\n';
-        return EXIT_FAILURE;
-    }
-    BOOST_ASSERT(repository);
-
     // Open the output stream to whatever passed on the command line or to
     // stdout if unspecified.
     std::ofstream output_ofs;
@@ -167,11 +155,18 @@ int main(int argc, char const* argv[]) {
     }
     std::ostream& output = args.count("output-file") ? output_ofs : std::cout;
 
-    // Create the skeleton of the program from the repository.
-    typedef SyncSkeleton<Filesystem> Skeleton;
-    boost::scoped_ptr<Skeleton> skeleton;
+    // Create the skeleton of the program.
+    boost::scoped_ptr<SyncSkeleton> skeleton;
     try {
-        skeleton.reset(new Skeleton(*repository));
+        skeleton.reset(new SyncSkeleton(repo_path));
+
+    } catch (dyno::filesystem_error const& e) {
+        std::cerr << boost::format("unable to open the repository at %1%\n")
+                                                                % repo_path;
+        if (args.count("debug"))
+            std::cerr << boost::diagnostic_information(e) << '\n';
+        return EXIT_FAILURE;
+
     } catch (EventTypeException const& e) {
         std::string actual_type = get_error_info<ActualType>(e);
         std::string expected_type = get_error_info<ExpectedType>(e);

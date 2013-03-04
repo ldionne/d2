@@ -11,11 +11,14 @@
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/move/utility.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/lock_guard.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <dyno/event_scope.hpp>
 #include <dyno/filesystem.hpp>
 #include <fstream>
+#include <ios>
 #include <string>
 
 
@@ -36,7 +39,7 @@ struct EventMappingPolicy {
     }
 };
 
-typedef dyno::filesystem<EventMappingPolicy, std::fstream> Repository;
+typedef dyno::filesystem<EventMappingPolicy, std::ofstream> Filesystem;
 
 /**
  * Class dispatching thread and process level events to a repository.
@@ -44,8 +47,9 @@ typedef dyno::filesystem<EventMappingPolicy, std::fstream> Repository;
  * This class is meant to be used concurrently by several threads.
  */
 class FilesystemDispatcher {
-    struct RepoDeleter {
-        void operator()(Repository* repo) const { delete repo; }
+    struct default_deleter {
+        template <typename T>
+        void operator()(T* ptr) const { delete ptr; }
     };
 
     // We use `shared_ptr` because the `dispatch` methods will be writing into
@@ -54,11 +58,11 @@ class FilesystemDispatcher {
     // current repository, do its business and then the repository is
     // released automatically if the repository is not referenced anymore
     // because a call to `set_repository` happened.
-    boost::shared_ptr<Repository> repository_;
+    boost::shared_ptr<Filesystem> repository_;
     detail::mutex mutable repository_lock_;
-    typedef detail::scoped_lock<detail::mutex> scoped_lock;
+    typedef boost::lock_guard<detail::mutex> scoped_lock;
 
-    boost::shared_ptr<Repository> get_repository() {
+    boost::shared_ptr<Filesystem> get_repository() {
         scoped_lock lock(repository_lock_);
         return repository_;
     }
@@ -68,9 +72,10 @@ public:
         : repository_()
     { }
 
-    template <typename Source>
-    explicit FilesystemDispatcher(Source const& path)
-        : repository_(boost::make_shared<Repository>(path))
+    template <typename Path>
+    explicit FilesystemDispatcher(BOOST_FWD_REF(Path) root)
+        : repository_(boost::make_shared<Filesystem>(
+                                        root, std::ios::out | std::ios::ate))
     { }
 
     /**
@@ -82,18 +87,22 @@ public:
      *       (as-if the call never happened) and logging continues in the same
      *       repository as before the call.
      */
-    template <typename Source>
-    void set_repository(Source const& path) {
+    template <typename Path>
+    void set_repository(BOOST_FWD_REF(Path) new_root) {
         // Try to create a new repository.
         // If it throws, the repository won't be modified in any way.
-        namespace ipc = boost::interprocess;
-        ipc::unique_ptr<Repository,RepoDeleter> new_repo(new Repository(path));
+        typedef boost::interprocess::unique_ptr<
+                    Filesystem, default_deleter
+                > FilesystemPtr;
+
+        FilesystemPtr new_fs(new Filesystem(
+            boost::forward<Path>(new_root), std::ios::out | std::ios::ate));
 
         // "Atomically" exchange the old repository with the new one.
         // This has noexcept guarantee.
         {
             scoped_lock lock(repository_lock_);
-            repository_.reset(new_repo.release());
+            repository_.reset(new_fs.release());
         }
     }
 
@@ -112,10 +121,10 @@ public:
      *
      * @return Whether setting a new repository succeeded.
      */
-    template <typename Source>
-    bool set_repository_noexcept(Source const& path) BOOST_NOEXCEPT {
+    template <typename Path>
+    bool set_repository_noexcept(BOOST_FWD_REF(Path) root) BOOST_NOEXCEPT {
         try {
-            set_repository(path);
+            set_repository(boost::forward<Path>(root));
         } catch (std::exception const&) {
             return false;
         }
@@ -132,17 +141,17 @@ public:
     }
 
     template <typename Event>
-    void dispatch(Event const& event) {
-        boost::shared_ptr<Repository> repository = get_repository();
+    void dispatch(BOOST_FWD_REF(Event) event) {
+        boost::shared_ptr<Filesystem> repository = get_repository();
         if (repository)
-            repository->dispatch(event);
+            repository->dispatch(boost::forward<Event>(event));
     }
 };
 } // end namespace filesystem_dispatcher_detail
 
 namespace core {
     using filesystem_dispatcher_detail::FilesystemDispatcher;
-    typedef filesystem_dispatcher_detail::Repository Filesystem;
+    using filesystem_dispatcher_detail::EventMappingPolicy;
 }
 } // end namespace d2
 
