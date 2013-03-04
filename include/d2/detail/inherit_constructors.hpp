@@ -27,43 +27,61 @@
             : BASE(::boost::forward<Args>(args)...)                         \
         { }                                                                 \
                                                                             \
-        D2_IMPL_INHERIT_LVALUES(DERIVED, BASE)                              \
+        D2_I_INHERIT_LVALUES(DERIVED, BASE)                                 \
     /**/
 
-#   if defined(BOOST_NO_CXX11_RVALUE_REFERENCES)                            \
-#       define D2_IMPL_INHERIT_LVALUES(DERIVED, BASE)                       \
+#   if defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
+#       define D2_I_INHERIT_LVALUES(DERIVED, BASE)                          \
             template <typename ...Args>                                     \
             explicit DERIVED(Args& ...args)                                 \
                 : BASE(args...)                                             \
             { }                                                             \
         /**/
 #   else
-#       define D2_IMPL_INHERIT_LVALUES(DERIVED, BASE) /* nothing */
+#       define D2_I_INHERIT_LVALUES(DERIVED, BASE) /* nothing */
 #   endif
 
 // If we don't have any of this
 #else
 
-#   define D2_INHERIT_CONSTRUCTORS(DERIVED, BASE)                           \
-        DERIVED() { }                                                       \
-                                                                            \
+#   define D2_I_CONSTRUCTORS(DERIVED, BASE, MAKE_REFERENCE_TYPE, FORWARD)   \
         template <typename A1>                                              \
-        explicit DERIVED(BOOST_FWD_REF(A1) a1)                              \
-            : BASE(::boost::foward<A1>(a1))                                 \
+        explicit DERIVED(MAKE_REFERENCE_TYPE(A1) a1)                        \
+            : BASE(FORWARD(A1, a1))                                         \
         { }                                                                 \
                                                                             \
-        D2_IMPL_INHERIT_LVALUES(DERIVED, BASE)                              \
+        template <typename A1, typename A2>                                 \
+        explicit DERIVED(MAKE_REFERENCE_TYPE(A1) a1,                        \
+                         MAKE_REFERENCE_TYPE(A2) a2)                        \
+            : BASE(FORWARD(A1, a1), FORWARD(A2, a2))                        \
+        { }                                                                 \
+                                                                            \
+        template <typename A1, typename A2, typename A3>                    \
+        explicit DERIVED(MAKE_REFERENCE_TYPE(A1) a1,                        \
+                         MAKE_REFERENCE_TYPE(A2) a2,                        \
+                         MAKE_REFERENCE_TYPE(A3) a3)                        \
+            : BASE(FORWARD(A1, a1), FORWARD(A2, a2), FORWARD(A3, a3))       \
+        { }                                                                 \
+/**/
+
+#   define D2_I_MAKE_LVALUE_REF(T) T&
+#   define D2_I_NO_FORWARD(T, t) t
+
+#   define D2_I_MAKE_FWD_REF(T) BOOST_FWD_REF(T)
+#   define D2_I_FORWARD(T, t) ::boost::forward<T>(t)
+
+#   define D2_INHERIT_CONSTRUCTORS(DERIVED, BASE)                           \
+        D2_I_CONSTRUCTORS(DERIVED, BASE, D2_I_MAKE_FWD_REF, D2_I_FORWARD)   \
+        D2_I_INHERIT_LVALUES(DERIVED, BASE)                                 \
     /**/
 
 #   ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
-#       define D2_IMPL_INHERIT_LVALUES(DERIVED, BASE)                       \
-            template <typename A1>                                          \
-            explicit DERIVED(A1& a1)                                        \
-                : BASE(a1)                                                  \
-            { }                                                             \
+#       define D2_I_INHERIT_LVALUES(DERIVED, BASE)                          \
+            D2_I_CONSTRUCTORS(DERIVED, BASE,                                \
+                              D2_I_MAKE_LVALUE_REF, D2_I_NO_FORWARD)        \
         /**/
 #   else
-#       define D2_IMPL_INHERIT_LVALUES(DERIVED, BASE) /* nothing */
+#       define D2_I_INHERIT_LVALUES(DERIVED, BASE) /* nothing */
 #   endif
 
 #endif // end feature availability switch
