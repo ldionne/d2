@@ -10,15 +10,16 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/move/utility.hpp>
-#include <boost/mpl/or.hpp>
 #include <boost/optional.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/variant/apply_visitor.hpp>
+#include <boost/variant/static_visitor.hpp>
 #include <dyno/filesystem.hpp>
-#include <string>
 #include <ios>
+#include <string>
 
 
 namespace d2 {
@@ -33,26 +34,29 @@ namespace filesystem_detail {
  * `start` and `join` events are all mapped to the same file, which is
  * currently named `start_and_join`.
  */
-class mapping_for_sync_events {
-    template <typename Event>
-    struct is_start_or_join
-        : boost::mpl::or_<
-            boost::is_same<Event, core::events::start>,
-            boost::is_same<Event, core::events::join>
-        >
-    { };
+struct mapping_for_sync_events {
+    struct get_thread_id : boost::static_visitor<core::events::thread_id> {
+        template <typename Event>
+        result_type operator()(BOOST_FWD_REF(Event) event) const {
+            return thread_of(boost::forward<Event>(event));
+        }
+    };
 
-public:
     template <typename Event>
-    typename boost::disable_if<
-        is_start_or_join<typename boost::remove_reference<Event>::type>,
+    typename boost::enable_if<
+        boost::is_same<
+            typename boost::remove_reference<Event>::type,
+            core::events::thread_specific
+        >,
     std::string>::type operator()(BOOST_FWD_REF(Event) event) const {
         return boost::lexical_cast<std::string>(
-               get(core::events::tag::thread(), boost::forward<Event>(event)));
+                    boost::apply_visitor(
+                        get_thread_id(), boost::forward<Event>(event)));
     }
 
     template <typename Event>
-    typename boost::enable_if<is_start_or_join<Event>,
+    typename boost::enable_if<
+        boost::is_same<Event, core::events::non_thread_specific>,
     std::string>::type operator()(Event const&) const {
         return "start_and_join";
     }
@@ -83,6 +87,31 @@ class filesystem : public dyno::filesystem<mapping_for_sync_events, Stream> {
 
 public:
     D2_INHERIT_CONSTRUCTORS(filesystem, Base)
+
+    /**
+     * Wrap the operand in the appropriate variant to allow saving
+     * heterogeneous objects in the same file and forward to the
+     * `dyno::filesystem`.
+     */
+    template <typename Event>
+    typename boost::enable_if<
+        core::events::is_thread_specific<
+            typename boost::remove_reference<Event>::type
+        >,
+    void>::type dispatch(BOOST_FWD_REF(Event) event) {
+        Base::dispatch(
+            core::events::thread_specific(boost::forward<Event>(event)));
+    }
+
+    template <typename Event>
+    typename boost::disable_if<
+        core::events::is_thread_specific<
+            typename boost::remove_reference<Event>::type
+        >,
+    void>::type dispatch(BOOST_FWD_REF(Event) event) {
+        Base::dispatch(
+            core::events::non_thread_specific(boost::forward<Event>(event)));
+    }
 
     /**
      * Type of the range returned by the non-const version of `thread_files()`.
@@ -126,7 +155,6 @@ public:
         return (*this)["start_and_join"];
     }
 };
-
 } // end namespace filesystem_detail
 
 namespace core {

@@ -4,11 +4,11 @@
 
 #define D2_SOURCE
 #include <d2/api.h>
+#include <d2/core/events.hpp>
 #include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/mutex.hpp>
-#include <d2/events.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
 
@@ -49,7 +49,7 @@ D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
     using namespace d2;
     using namespace d2::api_detail;
     if (d2_is_enabled()) {
-        AcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
+        core::events::acquire event((ThreadId(thread_id)), LockId(lock_id));
                         // ignore current frame
         event.info.init_call_stack(1);
         dispatcher.dispatch(event);
@@ -61,7 +61,7 @@ D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
     using namespace d2;
     using namespace d2::api_detail;
     if (d2_is_enabled()) {
-        RecursiveAcquireEvent event((LockId(lock_id)), ThreadId(thread_id));
+        core::events::recursive_acquire event((ThreadId(thread_id)), LockId(lock_id));
                         // ignore current frame
         event.info.init_call_stack(1);
         dispatcher.dispatch(event);
@@ -72,8 +72,8 @@ D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
     using namespace d2;
     using namespace d2::api_detail;
     if (d2_is_enabled())
-        dispatcher.dispatch(ReleaseEvent((LockId(lock_id)),
-                                          ThreadId(thread_id)));
+        dispatcher.dispatch(
+            core::events::release(ThreadId(thread_id), LockId(lock_id)));
 }
 
 D2_API extern void d2_notify_recursive_release(size_t thread_id,
@@ -81,8 +81,8 @@ D2_API extern void d2_notify_recursive_release(size_t thread_id,
     using namespace d2;
     using namespace d2::api_detail;
     if (d2_is_enabled())
-        dispatcher.dispatch(RecursiveReleaseEvent((LockId(lock_id)),
-                                                  ThreadId(thread_id)));
+        dispatcher.dispatch(
+            core::events::recursive_release(ThreadId(thread_id), LockId(lock_id)));
 }
 
 namespace d2 { namespace api_detail {
@@ -132,10 +132,14 @@ D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
             segment_of_parent = new_parent_segment;
         }
 
-        dispatcher.dispatch(StartEvent(parent_segment, new_parent_segment,
-                                                       child_segment));
-        dispatcher.dispatch(SegmentHopEvent(parent, new_parent_segment));
-        dispatcher.dispatch(SegmentHopEvent(child, child_segment));
+        dispatcher.dispatch(
+            core::events::start(parent_segment, new_parent_segment, child_segment));
+
+        dispatcher.dispatch(
+            core::events::segment_hop(parent, new_parent_segment));
+
+        dispatcher.dispatch(
+            core::events::segment_hop(child, child_segment));
     }
 }
 
@@ -160,9 +164,10 @@ D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
             segment_of.erase(child);
         }
 
-        dispatcher.dispatch(JoinEvent(parent_segment, new_parent_segment,
-                                                      child_segment));
-        dispatcher.dispatch(SegmentHopEvent(parent, new_parent_segment));
+        dispatcher.dispatch(
+            core::events::join(parent_segment, new_parent_segment, child_segment));
+
+        dispatcher.dispatch(core::events::segment_hop(parent, new_parent_segment));
         // We could possibly generate informative events like end-of-thread
         // in the child thread, but that's not strictly necessary right now.
     }

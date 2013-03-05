@@ -5,67 +5,34 @@
 #define D2_SOURCE
 #include <d2/core/build_lock_graph.hpp>
 #include <d2/core/build_segmentation_graph.hpp>
+#include <d2/core/events.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/core/sync_skeleton.hpp>
-#include <d2/events.hpp>
 
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/qi_match.hpp>
-#include <boost/variant.hpp>
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <vector>
+#include <dyno/istream_iterator.hpp>
 
 
 namespace d2 {
 namespace sync_skeleton_detail {
-extern void parse_and_build_seg_graph(std::istream& is,
+extern void parse_and_build_seg_graph(StreamType& is,
                                       core::SegmentationGraph& graph) {
-    namespace qi = boost::spirit::qi;
+    typedef dyno::istream_iterator<
+                StreamType, core::events::non_thread_specific
+            > Iterator;
 
-    typedef boost::variant<StartEvent, JoinEvent> Event;
-
-    is.unsetf(std::ios_base::skipws);
-    std::string source((std::istream_iterator<char>(is)),
-                        std::istream_iterator<char>());
-
-    qi::typed_stream<StartEvent> start;
-    qi::typed_stream<JoinEvent> join;
-
-    std::vector<Event> events;
-    qi::parse(source.begin(), source.end(), *(start | join), events);
-
-    core::build_segmentation_graph<true>()(events, graph);
+    Iterator first(is), last;
+    core::build_segmentation_graph<true>()(first, last, graph);
 }
 
-extern void parse_and_build_lock_graph(std::istream& is,
+extern void parse_and_build_lock_graph(StreamType& is,
                                        core::LockGraph& graph) {
-    namespace qi = boost::spirit::qi;
+    typedef dyno::istream_iterator<
+                StreamType, core::events::thread_specific
+            > Iterator;
 
-    typedef boost::variant<
-                AcquireEvent, ReleaseEvent,
-                RecursiveAcquireEvent, RecursiveReleaseEvent,
-                SegmentHopEvent
-            > Event;
-
-    is.unsetf(std::ios_base::skipws);
-    std::string source((std::istream_iterator<char>(is)),
-                        std::istream_iterator<char>());
-
-    qi::typed_stream<AcquireEvent> acquire;
-    qi::typed_stream<ReleaseEvent> release;
-    qi::typed_stream<RecursiveAcquireEvent> rec_acquire;
-    qi::typed_stream<RecursiveReleaseEvent> rec_release;
-    qi::typed_stream<SegmentHopEvent> hop;
-
-    std::vector<Event> events;
-    qi::parse(source.begin(), source.end(),
-        *(acquire | release | rec_acquire | rec_release | hop)
-    , events);
-
-    core::build_lock_graph<true>(events, graph);
+    Iterator first(is), last;
+    core::build_lock_graph<true>(first, last, graph);
 }
 } // end namespace sync_skeleton_detail
 } // end namespace d2

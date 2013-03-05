@@ -6,16 +6,17 @@
 #define D2_CORE_SYNC_SKELETON_HPP
 
 #include <d2/core/deadlock_diagnostic.hpp>
-#include <d2/core/filesystem_dispatcher.hpp>
+#include <d2/core/filesystem.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
 
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/foreach.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/range/distance.hpp>
 #include <cstddef>
-#include <dyno/filesystem.hpp>
+#include <dyno/serializing_stream.hpp>
 #include <fstream>
 #include <ios>
 #include <vector>
@@ -23,8 +24,13 @@
 
 namespace d2 {
 namespace sync_skeleton_detail {
-extern void parse_and_build_seg_graph(std::istream&, core::SegmentationGraph&);
-extern void parse_and_build_lock_graph(std::istream&, core::LockGraph&);
+typedef dyno::serializing_stream<
+            std::ifstream,
+            boost::archive::text_iarchive
+        > StreamType;
+
+extern void parse_and_build_seg_graph(StreamType&, core::SegmentationGraph&);
+extern void parse_and_build_lock_graph(StreamType&, core::LockGraph&);
 extern std::vector<core::DeadlockDiagnostic>
 analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
 
@@ -40,9 +46,7 @@ analyze_lock_ordering(core::LockGraph const&, core::SegmentationGraph const&);
  *           between which the number of locks is to be computed.
  */
 class SyncSkeleton : boost::noncopyable {
-    typedef dyno::filesystem<
-                core::EventMappingPolicy, std::ifstream
-            > Filesystem;
+    typedef core::filesystem<StreamType> Filesystem;
 
     Filesystem fs_;
     core::SegmentationGraph segmentation_graph_;

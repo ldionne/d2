@@ -3,11 +3,9 @@
  */
 
 #include <d2/core/build_segmentation_graph.hpp>
+#include <d2/core/events.hpp>
 #include <d2/core/exceptions.hpp>
 #include <d2/core/segmentation_graph.hpp>
-#include <d2/events/acquire_event.hpp>
-#include <d2/events/join_event.hpp>
-#include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>
 
 #include <boost/assign.hpp>
@@ -22,8 +20,12 @@ using namespace d2;
 using namespace d2::core;
 
 namespace {
+typedef d2::core::events::start StartEvent;
+typedef d2::core::events::join JoinEvent;
+typedef d2::core::events::acquire AcquireEvent;
+
 struct SegmentationGraphTest : testing::Test {
-    std::vector<boost::variant<StartEvent, JoinEvent> > events;
+    std::vector<core::events::non_thread_specific> events;
     SegmentationGraph graph;
     std::vector<Segment> segments;
 

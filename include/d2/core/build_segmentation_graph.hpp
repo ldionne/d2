@@ -6,9 +6,8 @@
 #ifndef D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
 #define D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
 
+#include <d2/core/events.hpp>
 #include <d2/core/exceptions.hpp>
-#include <d2/events/join_event.hpp>
-#include <d2/events/start_event.hpp>
 
 #include <boost/concept/assert.hpp>
 #include <boost/concept_check.hpp>
@@ -70,11 +69,11 @@ class build_segmentation_graph {
         void operator()(Event const& event) {
             if (!SilentlyIgnoreOtherEvents)
                 D2_THROW(EventTypeException()
-                            << ExpectedType("StartEvent or JoinEvent")
+                            << ExpectedType("start or join")
                             << ActualType(typeid(event).name()));
         }
 
-        void operator()(StartEvent const& event) {
+        void operator()(core::events::start const& event) {
             Segment parent_segment = parent_of(event);
             Segment child_segment = child_of(event);
             Segment new_parent_segment = new_parent_of(event);
@@ -88,7 +87,7 @@ class build_segmentation_graph {
             add_edge(parent_segment, child_segment, graph);
         }
 
-        void operator()(JoinEvent const& event) {
+        void operator()(core::events::join const& event) {
             Segment parent_segment = parent_of(event);
             Segment child_segment = child_of(event);
             Segment new_parent_segment = new_parent_of(event);
@@ -133,10 +132,11 @@ public:
         // continue because we really need to know the initial segment.
         typedef typename boost::iterator_reference<Iterator>::type Event;
         Event first_event = *first;
-        StartEvent const* initial_event = boost::get<StartEvent>(&first_event);
+        core::events::start const* initial_event =
+                                boost::get<core::events::start>(&first_event);
         if (initial_event == NULL)
             D2_THROW(EventTypeException()
-                        << ExpectedType("StartEvent")
+                        << ExpectedType("start")
                         << ActualType(typeid(first_event).name()));
         add_vertex(parent_of(*initial_event), graph);
 

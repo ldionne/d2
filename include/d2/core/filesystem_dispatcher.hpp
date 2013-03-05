@@ -5,8 +5,10 @@
 #ifndef D2_CORE_FILESYSTEM_DISPATCHER_HPP
 #define D2_CORE_FILESYSTEM_DISPATCHER_HPP
 
+#include <d2/core/filesystem.hpp>
 #include <d2/detail/mutex.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/config.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include <boost/lexical_cast.hpp>
@@ -14,9 +16,7 @@
 #include <boost/move/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/lock_guard.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <dyno/event_scope.hpp>
-#include <dyno/filesystem.hpp>
+#include <dyno/serializing_stream.hpp>
 #include <fstream>
 #include <ios>
 #include <string>
@@ -25,21 +25,12 @@
 namespace d2 {
 namespace filesystem_dispatcher_detail {
 
-struct EventMappingPolicy {
-    template <typename Event>
-    typename boost::enable_if<dyno::has_thread_scope<Event>,
-    std::string>::type operator()(Event const& event) const {
-        return boost::lexical_cast<std::string>(thread_of(event));
-    }
-
-    template <typename Event>
-    typename boost::enable_if<dyno::has_process_scope<Event>,
-    std::string>::type operator()(Event const&) const {
-        return "process_wide";
-    }
-};
-
-typedef dyno::filesystem<EventMappingPolicy, std::ofstream> Filesystem;
+typedef core::filesystem<
+            dyno::serializing_stream<
+                std::ofstream,
+                boost::archive::text_oarchive
+            >
+        > Filesystem;
 
 /**
  * Class dispatching thread and process level events to a repository.
@@ -151,7 +142,6 @@ public:
 
 namespace core {
     using filesystem_dispatcher_detail::FilesystemDispatcher;
-    using filesystem_dispatcher_detail::EventMappingPolicy;
 }
 } // end namespace d2
 

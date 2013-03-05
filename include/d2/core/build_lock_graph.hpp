@@ -6,14 +6,10 @@
 #ifndef D2_CORE_BUILD_LOCK_GRAPH_HPP
 #define D2_CORE_BUILD_LOCK_GRAPH_HPP
 
+#include <d2/core/events.hpp>
 #include <d2/core/exceptions.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/detail/lock_debug_info.hpp>
-#include <d2/events/acquire_event.hpp>
-#include <d2/events/recursive_acquire_event.hpp>
-#include <d2/events/recursive_release_event.hpp>
-#include <d2/events/release_event.hpp>
-#include <d2/events/segment_hop_event.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/segment.hpp>
 #include <d2/thread_id.hpp>
@@ -140,7 +136,7 @@ struct EventVisitor : boost::static_visitor<void> {
     Graph& graph;
     ThreadId this_thread;
 
-    typedef CurrentlyHeldLock<typename AcquireEvent::aux_info_type> HeldLock;
+    typedef CurrentlyHeldLock<core::events::acquire::aux_info_type> HeldLock;
 
     // Set of locks currently held by the thread we're processing.
     typedef boost::unordered_set<HeldLock> HeldLocks;
@@ -177,12 +173,12 @@ struct EventVisitor : boost::static_visitor<void> {
     void operator()(Event const& event) {
         if (!SilentlyIgnoreOtherEvents)
             D2_THROW(EventTypeException()
-        << ExpectedType("SegmentHopEvent, AcquireEvent or ReleaseEvent")
+        << ExpectedType("segment_hop, acquire or release")
         << ActualType(typeid(event).name()));
     }
 
-    void operator()(SegmentHopEvent const& event) {
-        ThreadId thread(thread_of(event));
+    void operator()(core::events::segment_hop const& event) {
+        ThreadId thread(get(core::events::tag::thread(), event));
         if (thread != this_thread)
             D2_THROW(EventThreadException()
                         << ExpectedThread(this_thread)
@@ -256,11 +252,11 @@ struct EventVisitor : boost::static_visitor<void> {
         held_locks.insert(HeldLock(l2, s2, aux_info_of(event)));
     }
 
-    void operator()(AcquireEvent const& event) {
+    void operator()(core::events::acquire const& event) {
         process_acquire_event(event);
     }
 
-    void operator()(RecursiveAcquireEvent const& event) {
+    void operator()(core::events::recursive_acquire const& event) {
         ThreadId thread(thread_of(event));
         LockId lock(lock_of(event));
         if (thread != this_thread)
@@ -282,7 +278,7 @@ struct EventVisitor : boost::static_visitor<void> {
             process_acquire_event(event);
     }
 
-    void operator()(RecursiveReleaseEvent const& event) {
+    void operator()(core::events::recursive_release const& event) {
         ThreadId thread(thread_of(event));
         LockId lock(lock_of(event));
         if (thread != this_thread)
@@ -300,10 +296,10 @@ struct EventVisitor : boost::static_visitor<void> {
         // the lock at all anymore after this release, then we really
         // signal a release event.
         if (--lock_count == 0)
-            (*this)(ReleaseEvent(lock, thread));
+            (*this)(core::events::release(thread, lock));
     }
 
-    void operator()(ReleaseEvent const& event) {
+    void operator()(core::events::release const& event) {
         ThreadId thread(thread_of(event));
         LockId lock(lock_of(event));
         if (thread != this_thread)
@@ -335,20 +331,18 @@ struct DeduceThisThread : boost::static_visitor<ThreadId> {
     template <typename Event>
     ThreadId operator()(Event const& event) const {
         D2_THROW(EventTypeException()
-                    << ExpectedType("AcquireEvent or "
-                                    "RecursiveAcquireEvent or "
-                                    "SegmentHopEvent")
+                    << ExpectedType("acquire, recursive_acquire or segment_hop")
                     << ActualType(typeid(event).name()));
         return ThreadId(); // never reached.
     }
 
-    ThreadId operator()(RecursiveAcquireEvent const& event) const
+    ThreadId operator()(core::events::recursive_acquire const& event) const
     { return thread_of(event); }
 
-    ThreadId operator()(AcquireEvent const& event) const
+    ThreadId operator()(core::events::acquire const& event) const
     { return thread_of(event); }
 
-    ThreadId operator()(SegmentHopEvent const& event) const
+    ThreadId operator()(core::events::segment_hop const& event) const
     { return thread_of(event); }
 };
 
@@ -397,10 +391,10 @@ void build_lock_graph(Iterator first, Iterator last, Graph& graph) {
     if (first == last)
         return;
 
-    // The first event must be a SegmentHopEvent, because generating a
-    // SegmentHopEvent is the first thing we do when a thread is started.
-    // The only case where the first event is not a SegmentHopEvent is
-    // for the main thread, in which case it can be an AcquireEvent too.
+    // The first event must be a segment_hop, because generating a
+    // segment_hop is the first thing we do when a thread is started.
+    // The only case where the first event is not a segment_hop is
+    // for the main thread, in which case it can be an acquire too.
     // We deduce the thread we're processing from the first event.
     DeduceThisThread<ThreadId> deduce;
     ThreadId this_thread = boost::apply_visitor(deduce, *first);
