@@ -3,9 +3,9 @@
  */
 
 #include <d2/core/build_segmentation_graph.hpp>
+#include <d2/core/exceptions.hpp>
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/events/acquire_event.hpp>
-#include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>
 #include <d2/events/start_event.hpp>
 #include <d2/segment.hpp>

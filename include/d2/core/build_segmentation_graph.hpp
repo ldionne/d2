@@ -6,7 +6,7 @@
 #ifndef D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
 #define D2_CORE_BUILD_SEGMENTATION_GRAPH_HPP
 
-#include <d2/events/exceptions.hpp>
+#include <d2/core/exceptions.hpp>
 #include <d2/events/join_event.hpp>
 #include <d2/events/start_event.hpp>
 

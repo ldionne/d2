@@ -3,9 +3,9 @@
  * with the d2 library.
  */
 
+#include <d2/core/exceptions.hpp>
 #include <d2/core/filesystem_dispatcher.hpp>
 #include <d2/core/sync_skeleton.hpp>
-#include <d2/events/exceptions.hpp>
 
 // Disable MSVC warning C4512: assignment operator could not be generated
 #include <boost/config.hpp>

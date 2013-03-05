@@ -6,10 +6,10 @@
 #ifndef D2_CORE_BUILD_LOCK_GRAPH_HPP
 #define D2_CORE_BUILD_LOCK_GRAPH_HPP
 
+#include <d2/core/exceptions.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/events/acquire_event.hpp>
-#include <d2/events/exceptions.hpp>
 #include <d2/events/recursive_acquire_event.hpp>
 #include <d2/events/recursive_release_event.hpp>
 #include <d2/events/release_event.hpp>

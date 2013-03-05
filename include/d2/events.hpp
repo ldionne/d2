@@ -6,7 +6,6 @@
 #define D2_EVENTS_HPP
 
 #include <d2/events/acquire_event.hpp>
-#include <d2/events/exceptions.hpp>
 #include <d2/events/join_event.hpp>
 #include <d2/events/recursive_acquire_event.hpp>
 #include <d2/events/recursive_release_event.hpp>

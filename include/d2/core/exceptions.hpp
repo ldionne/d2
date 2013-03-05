@@ -1,16 +1,30 @@
 /**
- * This file defines exceptions dealing with events.
+ * This file defines several exception types used in the library.
  */
 
-#ifndef D2_EVENTS_EXCEPTIONS_HPP
-#define D2_EVENTS_EXCEPTIONS_HPP
+#ifndef D2_CORE_EXCEPTIONS_HPP
+#define D2_CORE_EXCEPTIONS_HPP
 
-#include <d2/detail/exceptions.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/thread_id.hpp>
 
+#include <boost/exception/all.hpp>
+#include <boost/throw_exception.hpp>
+#include <exception>
+
 
 namespace d2 {
+
+#define D2_THROW(e) BOOST_THROW_EXCEPTION(e)
+
+/**
+ * Base class for exceptions in the library.
+ */
+struct Exception : virtual boost::exception, virtual std::exception {
+    virtual char const* what() const throw() {
+        return "d2::Exception";
+    }
+};
 
 /**
  * Base class for exceptions related to events. This should be subclassed
@@ -108,4 +122,4 @@ typedef boost::error_info<
 
 } // end namespace d2
 
-#endif // !D2_EVENTS_EXCEPTIONS_HPP
+#endif // !D2_CORE_EXCEPTIONS_HPP
