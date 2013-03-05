@@ -6,6 +6,8 @@
 #define D2_DETAIL_LOCK_DEBUG_INFO_HPP
 
 #include <boost/operators.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/vector.hpp>
 #include <cstddef>
 #include <iosfwd>
 #include <string>
@@ -16,15 +18,20 @@ namespace d2 {
 namespace detail {
 
 struct StackFrame : boost::equality_comparable<StackFrame> {
-    void const* ip;
+    std::size_t ip;
     std::string function;
     std::string module;
 
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & ip & function & module;
+    }
+
     StackFrame()
-        : ip(NULL)
+        : ip(0)
     { }
 
-    StackFrame(void const* ip, std::string const& function,
+    StackFrame(std::size_t ip, std::string const& function,
                                std::string const& module)
         : ip(ip), function(function), module(module)
     { }
@@ -40,6 +47,11 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
 struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
     typedef std::vector<StackFrame> CallStack;
     CallStack call_stack;
+
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & call_stack;
+    }
 
     void init_call_stack(unsigned int ignore = 0);
 

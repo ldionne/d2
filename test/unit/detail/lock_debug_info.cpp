@@ -14,7 +14,7 @@ struct StackFrameTest {
     typedef detail::StackFrame value_type;
 
     static value_type get_random_object() {
-        return value_type((void*)0x0, "fun0", "file0");
+        return value_type(1234, "fun0", "file0");
     }
 };
 

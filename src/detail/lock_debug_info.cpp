@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <boost/assert.hpp>
+#include <boost/static_assert.hpp>
 #include <cstddef>
 #include <dbg/frames.hpp>
 #include <dbg/symbols.hpp>
@@ -28,7 +29,8 @@ namespace {
 
         virtual void process_function(void const* ip, char const* name,
                                                       char const* module) {
-            *out_++ = StackFrame(ip, name, module);
+            BOOST_STATIC_ASSERT(sizeof(std::size_t) >= sizeof(void const*));
+            *out_++ = StackFrame(reinterpret_cast<std::size_t>(ip), name, module);
         }
     };
 } // end anonymous namespace
@@ -97,7 +99,7 @@ extern std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
 }
 
 extern std::istream& operator>>(std::istream& is, StackFrame& self) {
-    is >> const_cast<void*&>(self.ip) >> std::ws
+    is >> self.ip >> std::ws
        >> delimit(self.function)
        >> delimit(self.module);
     return is;
