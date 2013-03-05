@@ -23,20 +23,6 @@ function(d2_add_unit_test name source) # boost components...
 endfunction()
 d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
 d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
-d2_add_unit_test(mixed_events mixed_events.cpp)
 d2_add_unit_test(segmentation_graph segmentation_graph.cpp graph)
 d2_add_unit_test(synchronization_skeleton
                  core/test_synchronization_skeleton.cpp filesystem system)
-
-
-# Add unit tests for events.
-function(d2_add_event_test name) # boost components...
-    d2_add_unit_test(${name} events/${name}.cpp ${ARGN})
-endfunction()
-d2_add_event_test(acquire_event)
-d2_add_event_test(join_event)
-d2_add_event_test(recursive_acquire_event)
-d2_add_event_test(recursive_release_event)
-d2_add_event_test(release_event)
-d2_add_event_test(segment_hop_event)
-d2_add_event_test(start_event)
