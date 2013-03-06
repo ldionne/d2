@@ -2,9 +2,9 @@
 # Unit tests will depend on the `unit' target.
 add_custom_target(unit)
 function(d2_add_standalone_unit_test name sources) # boost components...
-    d2_add_executable(${name}_exe ${sources} ${ARGN})
-    add_test(NAME ${name} COMMAND ${name}_exe)
-    add_dependencies(unit ${name}_exe)
+    d2_add_executable(test_${name} ${sources} ${ARGN})
+    add_test(NAME ${name} COMMAND test_${name})
+    add_dependencies(unit test_${name})
 endfunction()
 d2_add_standalone_unit_test(partition_by_index detail/partition_by_index.cpp)
 d2_add_standalone_unit_test(uniquely_identifiable test_uniquely_identifiable.cpp)
@@ -18,7 +18,7 @@ function(d2_add_unit_test name source) # boost components...
         message("Missing d2support library: ${name} will be unavailable.")
     else()
         d2_add_standalone_unit_test(${name} ${source} ${ARGN})
-        target_link_libraries(${name}_exe ${GTEST_BOTH_LIBRARIES} d2support)
+        target_link_libraries(test_${name} ${GTEST_BOTH_LIBRARIES} d2support)
     endif()
 endfunction()
 d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
