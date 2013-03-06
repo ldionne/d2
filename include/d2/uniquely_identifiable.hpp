@@ -14,6 +14,7 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_unsigned.hpp>
+#include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <cstddef>
 
@@ -25,7 +26,10 @@ namespace d2 {
  */
 template <typename T>
 typename boost::enable_if<
-    boost::mpl::and_<boost::is_integral<T>, boost::is_unsigned<T> >,
+    boost::mpl::and_<
+        boost::is_integral<typename boost::remove_reference<T>::type>,
+        boost::is_unsigned<typename boost::remove_reference<T>::type>
+    >,
 BOOST_FWD_REF(T)>::type unique_id(BOOST_FWD_REF(T) t) {
     return boost::forward<T>(t);
 }
