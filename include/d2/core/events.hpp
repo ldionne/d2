@@ -5,7 +5,6 @@
 #ifndef D2_CORE_EVENTS_HPP
 #define D2_CORE_EVENTS_HPP
 
-#include <boost/serialization/variant.hpp>
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/lock_id.hpp>
@@ -15,6 +14,9 @@
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/vector.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/variant.hpp>
 #include <boost/variant.hpp>
 #include <dyno/auto_event.hpp>
 
@@ -61,6 +63,14 @@ struct acquire
 
     friend aux_info_type& aux_info_of(acquire& self) {
         return self.info;
+    }
+
+private:
+    friend class boost::serialization::access;
+    template <typename Archive>
+    void serialize(Archive& ar, unsigned int const) {
+        ar & boost::serialization::base_object<auto_event_>(*this)
+           & info;
     }
 };
 
