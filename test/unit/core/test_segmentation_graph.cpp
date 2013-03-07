@@ -24,7 +24,7 @@ typedef d2::core::events::start StartEvent;
 typedef d2::core::events::join JoinEvent;
 typedef d2::core::events::acquire AcquireEvent;
 
-struct SegmentationGraphTest : testing::Test {
+struct test_segmentation_graph : testing::Test {
     std::vector<core::events::non_thread_specific> events;
     SegmentationGraph graph;
     std::vector<Segment> segments;
@@ -36,19 +36,19 @@ struct SegmentationGraphTest : testing::Test {
 
     void TearDown() {
         if (HasFailure()) {
-            std::cout << "Test failed, printing the segmentation graph:\n";
-            boost::write_graphviz(std::cout, graph);
+            std::clog << "Test failed, printing the segmentation graph:\n";
+            boost::write_graphviz(std::clog, graph);
         }
     }
 };
 
-TEST_F(SegmentationGraphTest, no_events_create_empty_graph) {
+TEST_F(test_segmentation_graph, no_events_create_empty_graph) {
     build_segmentation_graph<>()(events, graph);
 
     ASSERT_EQ(0, num_vertices(graph));
 }
 
-TEST_F(SegmentationGraphTest, test_one_start_event_adds_right_edges) {
+TEST_F(test_segmentation_graph, test_one_start_event_adds_right_edges) {
     using namespace boost::assign;
     //      0   1   2
     // t0   o___o
@@ -66,7 +66,7 @@ TEST_F(SegmentationGraphTest, test_one_start_event_adds_right_edges) {
     EXPECT_FALSE(happens_before(segments[2], segments[1], graph));
 }
 
-TEST_F(SegmentationGraphTest, simple_start_and_join) {
+TEST_F(test_segmentation_graph, simple_start_and_join) {
     using namespace boost::assign;
     //      0   1   2   3
     // t0   o___o_______o
@@ -91,7 +91,7 @@ TEST_F(SegmentationGraphTest, simple_start_and_join) {
     EXPECT_TRUE(happens_before(segments[2], segments[3], graph));
 }
 
-TEST_F(SegmentationGraphTest, throws_on_unexpected_event_when_told_to) {
+TEST_F(test_segmentation_graph, throws_on_unexpected_event_when_told_to) {
     using namespace boost::assign;
     typedef boost::variant<StartEvent, JoinEvent, AcquireEvent> Events;
     std::vector<Events> events;
@@ -106,7 +106,8 @@ TEST_F(SegmentationGraphTest, throws_on_unexpected_event_when_told_to) {
     ASSERT_THROW(build(events, graph), EventTypeException);
 }
 
-TEST_F(SegmentationGraphTest, has_strong_guarantee_when_first_event_is_not_a_start_event) {
+TEST_F(test_segmentation_graph,
+                has_strong_guarantee_when_first_event_is_not_a_start_event) {
     using namespace boost::assign;
     events +=
         // Note: join comes before start.
@@ -122,7 +123,7 @@ TEST_F(SegmentationGraphTest, has_strong_guarantee_when_first_event_is_not_a_sta
     ASSERT_EQ(0, num_vertices(graph));
 }
 
-TEST_F(SegmentationGraphTest, multiple_starts_from_main_thread) {
+TEST_F(test_segmentation_graph, multiple_starts_from_main_thread) {
     using namespace boost::assign;
     //      0   1   2   3   4   5   6
     // t0   o___o_______o_______o___o
