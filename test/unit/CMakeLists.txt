@@ -9,7 +9,6 @@ endfunction()
 d2_add_standalone_unit_test(partition_by_index detail/partition_by_index.cpp)
 d2_add_standalone_unit_test(uniquely_identifiable test_uniquely_identifiable.cpp)
 
-
 # Add unit tests requiring Google test and d2support.
 function(d2_add_unit_test name source) # boost components...
     if(NOT ${GTEST_FOUND})
@@ -21,9 +20,11 @@ function(d2_add_unit_test name source) # boost components...
         target_link_libraries(test_${name} ${GTEST_BOTH_LIBRARIES} d2support)
     endif()
 endfunction()
+d2_add_unit_test(basic_lockable test_basic_lockable.cpp)
 d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
 d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
-d2_add_unit_test(thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
+d2_add_unit_test(lockable test_lockable.cpp)
 d2_add_unit_test(segmentation_graph core/test_segmentation_graph.cpp graph)
-d2_add_unit_test(synchronization_skeleton
-                 core/test_synchronization_skeleton.cpp filesystem system)
+d2_add_unit_test(synchronization_skeleton core/test_synchronization_skeleton.cpp filesystem system)
+d2_add_unit_test(thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
+d2_add_unit_test(timed_lockable test_timed_lockable.cpp)

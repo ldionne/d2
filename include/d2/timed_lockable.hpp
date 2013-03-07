@@ -35,7 +35,7 @@ struct timed_lockable : lockable<TimedLockable> {
     bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {
         if (lockable<TimedLockable>::try_lock_for(
                 boost::forward<Duration>(rel_time))) {
-            notify_lock();
+            this->notify_lock();
             return true;
         }
         return false;
@@ -51,7 +51,7 @@ struct timed_lockable : lockable<TimedLockable> {
     bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT {
         if (lockable<TimedLockable>::try_lock_until(
                 boost::forward<TimePoint>(abs_time))) {
-            notify_lock();
+            this->notify_lock();
             return true;
         }
         return false;

@@ -41,7 +41,7 @@ struct basic_lockable
      */
     void lock() {
         BasicLockable::lock();
-        notify_lock();
+        this->notify_lock();
     }
 
     /**
@@ -50,7 +50,7 @@ struct basic_lockable
      */
     void unlock() BOOST_NOEXCEPT {
         BasicLockable::unlock();
-        notify_unlock();
+        this->notify_unlock();
     }
 };
 } // end namespace d2

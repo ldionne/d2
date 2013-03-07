@@ -34,7 +34,7 @@ struct lockable : basic_lockable<Lockable> {
      */
     bool try_lock() BOOST_NOEXCEPT {
         if (basic_lockable<Lockable>::try_lock()) {
-            notify_lock();
+            this->notify_lock();
             return true;
         }
         return false;
