@@ -5,12 +5,11 @@
 #ifndef D2_CORE_SYNCHRONIZATION_SKELETON_HPP
 #define D2_CORE_SYNCHRONIZATION_SKELETON_HPP
 
+#include <d2/core/diagnostic.hpp>
 #include <d2/core/filesystem.hpp>
 #include <d2/core/lock_graph.hpp>
 #include <d2/core/segmentation_graph.hpp>
 #include <d2/detail/decl.hpp>
-#include <d2/lock_id.hpp>
-#include <d2/thread_id.hpp>
 
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/foreach.hpp>
@@ -22,37 +21,17 @@
 #include <dyno/serializing_stream.hpp>
 #include <fstream>
 #include <ios>
-#include <vector>
 
 
 namespace d2 {
 namespace synchronization_skeleton_detail {
-//! Class representing the state of a single deadlocked thread.
-struct deadlocked_thread {
-    //! Thread identifier of the deadlocked thread.
-    ThreadId tid;
-
-    /**
-     * Collection of locks held by that thread at the moment of the deadlock.
-     * The locks are ordered in their order of acquisition.
-     */
-    std::vector<LockId> locks;
-};
-
-/**
- * Type representing a state which, if reached, would create a
- * deadlock in the program.
- */
-typedef std::vector<deadlocked_thread> potential_deadlock;
-
-
 /**
  * Class representing a program stripped from all information unrelated to
  * synchronization.
  */
 class synchronization_skeleton : boost::noncopyable {
     typedef boost::function<
-                void (potential_deadlock const&)
+                void (core::potential_deadlock const&)
             > DeadlockVisitor;
 
     typedef dyno::serializing_stream<
@@ -130,8 +109,6 @@ public:
 } // end namespace synchronization_skeleton_detail
 
 namespace core {
-    using synchronization_skeleton_detail::deadlocked_thread;
-    using synchronization_skeleton_detail::potential_deadlock;
     using synchronization_skeleton_detail::synchronization_skeleton;
 }
 } // end namespace d2

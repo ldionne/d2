@@ -5,6 +5,7 @@
 
 #define D2_SOURCE
 #include <d2/core/analysis.hpp>
+#include <d2/core/diagnostic.hpp>
 #include <d2/core/synchronization_skeleton.hpp>
 #include <d2/detail/decl.hpp>
 #include <d2/lock_id.hpp>
@@ -54,9 +55,9 @@ struct GiveSynchronizationSemantics {
             // (maybe) taken in between these two locks, we can't insert
             // them in the diagnostic. This has to be fixed.
 
-            core::deadlocked_thread thread = {
+            core::deadlocked_thread thread(
                 thread_of(edge_label), boost::move(held_locks)
-            };
+            );
             deadlock.push_back(boost::move(thread));
         }
 
