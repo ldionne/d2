@@ -22,7 +22,7 @@ extern void parse_and_build_seg_graph(StreamType& is,
             > Iterator;
 
     Iterator first(is), last;
-    core::build_segmentation_graph<true>()(first, last, graph);
+    core::build_segmentation_graph<true>(first, last, graph);
 }
 
 extern void parse_and_build_lock_graph(StreamType& is,
