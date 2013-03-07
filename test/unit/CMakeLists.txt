@@ -23,6 +23,7 @@ function(d2_add_unit_test name source) # boost components...
 endfunction()
 d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
 d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
+d2_add_unit_test(thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
 d2_add_unit_test(segmentation_graph core/test_segmentation_graph.cpp graph)
 d2_add_unit_test(synchronization_skeleton
                  core/test_synchronization_skeleton.cpp filesystem system)
