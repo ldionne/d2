@@ -41,6 +41,12 @@ class Driver {
 
     typedef d2::core::synchronization_skeleton Skeleton;
 
+    //! Print an error to the standard error stream with a trailing newline.
+    template <typename Printable>
+    static void error(Printable const& p) {
+        std::cerr << "d2: error: " << p << '\n';
+    }
+
     /**
      * Return a pointer to a `synchronization_skeleton` loaded with the data
      * found in the repository, or a default initialized `shared_ptr` if
@@ -48,7 +54,7 @@ class Driver {
      */
     boost::shared_ptr<Skeleton> create_skeleton() const {
         if (!boost::filesystem::exists(repo)) {
-            std::cerr << repo << " does not exist\n";
+            error(repo + " does not exist");
             return boost::shared_ptr<Skeleton>();
         }
 
@@ -56,43 +62,42 @@ class Driver {
             return boost::make_shared<Skeleton>(repo);
 
         } catch (d2::core::filesystem_error const& e) {
-            std::cerr << "unable to open the repository at " << repo << '\n';
-
+            error("unable to open the repository at " + repo);
             if (debug)
-                std::cerr << boost::diagnostic_information(e) << '\n';
+                error(boost::diagnostic_information(e));
 
         } catch (d2::EventTypeException const& e) {
             std::string actual_type = get_error_info<d2::ActualType>(e);
             std::string expected_type = get_error_info<d2::ExpectedType>(e);
 
-            std::cerr << boost::format(
-                "error while loading the data:\n"
-                "    encountered an event of type %1%\n"
-                "    while expecting an event of type %2%\n")
-                % actual_type % expected_type;
-
+            error(boost::format(
+                    "while building the graphs:\n"
+                    "    encountered an event of type %1%\n"
+                    "    while expecting an event of type %2%")
+                    % actual_type % expected_type);
             if (debug)
-                std::cerr << boost::diagnostic_information(e) << '\n';
+                error(boost::diagnostic_information(e));
 
         } catch (d2::UnexpectedReleaseException const& e) {
             std::string lock = get_error_info<d2::ReleasedLock>(e);
             std::string thread = get_error_info<d2::ReleasingThread>(e);
 
-            std::cerr << boost::format(
-                "error while building the graphs:\n"
-                "    lock %1% was unexpectedly released by thread %2%\n")
-                % lock % thread;
+            error(boost::format(
+                    "while building the graphs:\n"
+                    "    lock %1% was unexpectedly released by thread %2%")
+                    % lock % thread);
 
              if (debug)
-                std::cerr << boost::diagnostic_information(e) << '\n';
+                error(boost::diagnostic_information(e));
         }
         return boost::shared_ptr<Skeleton>();
     }
 
     bool parse_command_line(int argc, char const* argv[]) {
         po::variables_map args;
-        po::options_description hidden, all;
+        po::options_description visible, hidden, all;
         po::positional_options_description positionals;
+        bool help = false;
 
         visible.add_options()
         (
@@ -126,20 +131,29 @@ class Driver {
         all.add(visible).add(hidden);
 
         po::command_line_parser parser(argc, argv);
-        po::store(parser.options(all).positional(positionals).run(), args);
+        try {
+            po::store(parser.options(all).positional(positionals).run(), args);
+        } catch (po::error const& e) {
+            error(e.what());
+            return false;
+        }
         po::notify(args);
 
+        if (help) {
+            std::cout << visible;
+            return false;
+        }
+
         if (repo.empty()) {
-            std::cerr << "missing input directory\n" << visible;
+            error("missing input directory");
             return false;
         }
 
         return true;
     }
 
-    po::options_description visible;
     std::string repo;
-    bool debug, help, analyze, stats;
+    bool debug, analyze, stats;
 
     static void print_deadlock(d2::core::potential_deadlock const& dl) {
         std::cout <<
@@ -151,27 +165,28 @@ class Driver {
 
 public:
     int run(int argc, char const* argv[]) {
-        if (!parse_command_line(argc, argv))
-            return EXIT_FAILURE;
+        try {
+            if (!parse_command_line(argc, argv))
+                return EXIT_FAILURE;
 
-        if (help) {
-            std::cout << visible << '\n';
-            return EXIT_FAILURE;
-        }
+            boost::shared_ptr<Skeleton> skeleton = create_skeleton();
+            if (!skeleton)
+                return EXIT_FAILURE;
 
-        boost::shared_ptr<Skeleton> skeleton = create_skeleton();
-        if (!skeleton)
-            return EXIT_FAILURE;
+            if (analyze)
+                skeleton->on_deadlocks(print_deadlock);
 
-        if (analyze)
-            skeleton->deadlocks(print_deadlock);
+            if (stats) {
+                std::cout << boost::format(
+                    "number of threads: %1%\n"
+                    "number of distinct locks: %2%\n")
+                    % skeleton->number_of_threads()
+                    % skeleton->number_of_locks();
+            }
 
-        if (stats) {
-            std::cout << boost::format(
-                "number of threads: %1%\n"
-                "number of distinct locks: %2%\n")
-                % skeleton->number_of_threads()
-                % skeleton->number_of_locks();
+        } catch (std::exception const& e) {
+            error("unknown problem:");
+            error(boost::diagnostic_information(e));
         }
 
         return EXIT_SUCCESS;
@@ -181,13 +196,6 @@ public:
 
 
 int main(int argc, char const* argv[]) {
-    try {
-        Driver driver;
-        return driver.run(argc, argv);
-
-    } catch (std::exception const& e) {
-        std::cerr << "encountered an unknown problem:\n"
-                  << boost::diagnostic_information(e) << '\n';
-        return EXIT_FAILURE;
-    }
+    Driver driver;
+    return driver.run(argc, argv);
 }
