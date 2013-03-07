@@ -11,11 +11,11 @@
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/spirit/include/karma.hpp>
 #include <cstdlib> // EXIT_FAILURE, EXIT_SUCCESS
+#include <d2/core/diagnostic.hpp>
 #include <d2/core/exceptions.hpp>
 #include <d2/core/filesystem.hpp>
-#include <d2/core/sync_skeleton.hpp>
+#include <d2/core/synchronization_skeleton.hpp>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -23,7 +23,6 @@
 
 namespace {
 namespace po = boost::program_options;
-namespace kma = boost::spirit::karma;
 
 class Driver {
     /**
@@ -40,7 +39,7 @@ class Driver {
         return info ? boost::lexical_cast<std::string>(*info) : default_;
     }
 
-    typedef d2::core::SyncSkeleton Skeleton;
+    typedef d2::core::synchronization_skeleton Skeleton;
 
     /**
      * Return a pointer to a `synchronization_skeleton` loaded with the data
@@ -98,19 +97,19 @@ class Driver {
         visible.add_options()
         (
             "help,h",
-            po::value<bool>(&help)->default_value(false, "false"),
+            po::bool_switch(&help),
             "produce help message and exit"
         )(
             "analyze",
-            po::value<bool>(&analyze)->default_value(false, "false"),
+            po::bool_switch(&analyze)->default_value(true, "true"),
             "perform the analysis for deadlocks"
         )(
             "stats",
-            po::value<bool>(&stats)->default_value(false, "false"),
+            po::bool_switch(&stats),
             "produce statistics about the usage of locks and threads"
         )(
             "debug",
-            po::value<bool>(&debug)->default_value(false, "false"),
+            po::bool_switch(&debug),
             "enable special debugging output"
         )
         ;
@@ -142,6 +141,14 @@ class Driver {
     std::string repo;
     bool debug, help, analyze, stats;
 
+    static void print_deadlock(d2::core::potential_deadlock const& dl) {
+        std::cout <<
+        // 80 columns
+"\n--------------------------------------------------------------------------------\n";
+        d2::core::plain_text_explanation(std::cout, dl);
+        std::cout << '\n';
+    }
+
 public:
     int run(int argc, char const* argv[]) {
         if (!parse_command_line(argc, argv))
@@ -156,11 +163,8 @@ public:
         if (!skeleton)
             return EXIT_FAILURE;
 
-        if (analyze) {
-            std::cout << kma::format(
-                kma::stream % ('\n' << kma::repeat(80)['-'] << '\n') << '\n'
-            , skeleton->deadlocks());
-        }
+        if (analyze)
+            skeleton->deadlocks(print_deadlock);
 
         if (stats) {
             std::cout << boost::format(

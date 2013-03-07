@@ -103,7 +103,7 @@ public:
      */
     template <typename Visitor>
     void deadlocks(BOOST_FWD_REF(Visitor) visitor) const {
-        deadlocks_impl(Visitor_(boost::forward<Visitor>(visitor)));
+        deadlocks_impl(DeadlockVisitor(boost::forward<Visitor>(visitor)));
     }
 };
 } // end namespace synchronization_skeleton_detail
