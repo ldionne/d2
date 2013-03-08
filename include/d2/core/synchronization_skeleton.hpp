@@ -21,6 +21,7 @@
 #include <dyno/serializing_stream.hpp>
 #include <fstream>
 #include <ios>
+#include <vector>
 
 
 namespace d2 {
@@ -102,9 +103,30 @@ public:
      *          to be very large.
      */
     template <typename Visitor>
-    void deadlocks(BOOST_FWD_REF(Visitor) visitor) const {
+    void on_deadlocks(BOOST_FWD_REF(Visitor) visitor) const {
         deadlocks_impl(DeadlockVisitor(boost::forward<Visitor>(visitor)));
     }
+
+private:
+    template <typename BackInsertionSequence>
+    struct accumulate_deadlocks {
+        BackInsertionSequence& out_;
+        void operator()(core::potential_deadlock const& dl) const {
+            out_.push_back(dl);
+        }
+    };
+
+public:
+    //! Type of the range returned by the `deadlocks()` method.
+    typedef std::vector<core::potential_deadlock> deadlock_range;
+
+    /**
+     * Call the `on_deadlocks()` method with a visitor that accumulates the
+     * potential deadlocks in a range and then return the range.
+     *
+     * @see `on_deadlocks()`
+     */
+    D2_DECL deadlock_range deadlocks() const;
 };
 } // end namespace synchronization_skeleton_detail
 

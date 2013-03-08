@@ -14,6 +14,8 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/move/utility.hpp>
+#include <boost/phoenix/core/argument.hpp>
+#include <boost/phoenix/stl/container.hpp>
 #include <vector>
 
 
@@ -70,6 +72,13 @@ synchronization_skeleton::deadlocks_impl(DeadlockVisitor const& visitor) const
 {
     core::analyze(lg_, sg_,
         GiveSynchronizationSemantics<DeadlockVisitor>(visitor));
+}
+
+D2_DECL synchronization_skeleton::deadlock_range
+synchronization_skeleton::deadlocks() const {
+    deadlock_range dl;
+    on_deadlocks(boost::phoenix::push_back(dl, boost::phoenix::arg_names::_1));
+    return boost::move(dl);
 }
 } // end namespace synchronization_skeleton_detail
 } // end namespace d2
