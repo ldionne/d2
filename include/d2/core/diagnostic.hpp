@@ -14,33 +14,54 @@
 #include <boost/move/utility.hpp>
 #include <boost/operators.hpp>
 #include <iosfwd>
-#include <set>
+#include <vector>
 
 
 namespace d2 {
 namespace diagnostic_detail {
 //! Class representing the state of a single deadlocked thread.
 struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
-    deadlocked_thread(ThreadId tid, BOOST_RV_REF(std::vector<LockId>) locks)
-        : tid(tid), locks(boost::move(locks))
-    { }
+    /**
+     * Create a `deadlocked_thread` with the thread identifier `tid` and
+     * holding a sequence of `locks`.
+     */
+    template <typename Container>
+    deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Container) locks)
+        : tid(tid), locks(boost::forward<Container>(locks))
+    {
+        BOOST_ASSERT_MSG(locks.size() >= 2,
+            "a thread can't be deadlocked while holding fewer than 2 locks");
+    }
 
-    deadlocked_thread(ThreadId tid, std::vector<LockId> const& locks)
-        : tid(tid), locks(locks)
-    { }
+    /**
+     * Create a `deadlocked_thread` with the thread identifier `tid` and
+     * holding a sequence of locks in the range delimited by [first, last).
+     */
+    template <typename Iterator>
+    deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Iterator) first,
+                                    BOOST_FWD_REF(Iterator) last)
+        : tid(tid), locks(boost::forward<Iterator>(first),
+                          boost::forward<Iterator>(last))
+    {
+        BOOST_ASSERT_MSG(locks.size() >= 2,
+            "a thread can't be deadlocked while holding fewer than 2 locks");
+    }
 
     //! Thread identifier of the deadlocked thread.
     ThreadId tid;
+
+    //! Type of the sequence of locks held by the thread.
+    typedef std::vector<LockId> lock_sequence;
 
     /**
      * Collection of locks held by that thread at the moment of the deadlock.
      * The locks are ordered in their order of acquisition.
      */
-    std::vector<LockId> locks;
+    lock_sequence locks;
 
     /**
      * Return whether two `deadlocked_thread`s represent the same thread
-     * holding the same set of locks in the same order.
+     * holding the same sequence of locks in the same order.
      */
     friend bool
     operator==(deadlocked_thread const& a, deadlocked_thread const& b) {
@@ -48,13 +69,13 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     }
 
     /**
-     * Return whether `a`'s identifier is smaller than `b`'s. If both
-     * have the same identifier, the operator returns whether `a`'s
+     * Return whether `a`'s identifier is smaller than `b`'s.
+     *
+     * If both have the same identifier, the operator returns whether `a`'s
      * locks are lexicographically smaller than `b`'s.
      *
      * @note While it is not generally useful to compare `deadlocked_thread`s
-     *       together, this operator is useful for determining the equivalence
-     *       of two `deadlocked_thread`s.
+     *       together, it can be useful to store them in containers.
      */
     friend bool
     operator<(deadlocked_thread const& a, deadlocked_thread const& b) {
@@ -67,48 +88,85 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
 };
 
 /**
- * Predicate ensuring the partial order required by `potential_deadlock`.
- *
- * @internal We also order the threads from smallest thread identifier to
- *           largest to make the result deterministic, but this is an
- *           implementation detail.
- *
- * @see `potential_deadlock`
- */
-struct chain_predicate {
-    typedef bool result_type;
-    result_type operator()(deadlocked_thread const& a,
-                           deadlocked_thread const& b) const {
-        BOOST_ASSERT_MSG(a.locks.size() >= 2 && b.locks.size() >= 2,
-            "can't have a deadlocked thread with fewer than 2 locks taken");
-
-        if (a.locks.back() == b.locks.front()) {
-            if (a.locks.front() != b.locks.back())
-                return true;
-            else
-                return a.tid < b.tid;
-        }
-        else
-            return false;
-    }
-};
-
-/**
  * Type representing a state which, if reached, would create a
  * deadlock in the program.
  *
- * The steps leading each thread to its deadlock state are guaranteed to be
- * ordered relatively to each other in a way that creates a chain.
- *
- * Example of a correct partial order:
- *  Steps of thread 1: A, B
- *  Steps of thread 2: B, C
- *  Steps of thread 3: C, A
- *
- * This creates the `chain' [A, (B], [C), A]. Any other configuration
- * yielding a valid chain is considered valid. Anything else is not.
+ * A thread identifier is guaranteed to appear at most once in the sequence
+ * of threads. Also, it is guaranteed that at least two threads are present
+ * in the sequence, otherwise a deadlock is impossible.
  */
-typedef std::set<deadlocked_thread, chain_predicate> potential_deadlock;
+class potential_deadlock : boost::less_than_comparable<potential_deadlock> {
+    void invariants() const {
+        BOOST_ASSERT_MSG(threads.size() >= 2,
+            "a deadlock can't happen with fewer than 2 threads");
+        BOOST_ASSERT_MSG(!has_duplicate_threads(),
+            "it makes no sense for the same thread to appear more than "
+            "once in the sequence of deadlocked threads");
+    }
+
+    /**
+     * Return whether the sequence of threads contains more than one thread
+     * with the same identifier.
+     */
+    D2_DECL bool has_duplicate_threads() const;
+
+public:
+    /**
+     * Create a `potential_deadlock` from a sequence of `deadlocked_thread`s
+     * delimited by [first, last).
+     *
+     * @pre A thread identifier appears at most once in the sequence.
+     * @pre There are at least two threads in the sequence, otherwise a
+     *      deadlock is impossible.
+     */
+    template <typename Iterator>
+    potential_deadlock(BOOST_FWD_REF(Iterator) first,
+                       BOOST_FWD_REF(Iterator) last)
+        : threads(boost::forward<Iterator>(first),
+                  boost::forward<Iterator>(last))
+    {
+        invariants();
+    }
+
+    /**
+     * Create a `potential_deadlock` from the `deadlocked_thread`s contained
+     * in `threads`.
+     *
+     * @pre A thread identifier appears at most once in the sequence.
+     * @pre There are at least two threads in the sequence, otherwise a
+     *      deadlock is impossible.
+     */
+    template <typename Container>
+    explicit potential_deadlock(BOOST_FWD_REF(Container) threads)
+        : threads(boost::forward<Container>(threads))
+    {
+        invariants();
+    }
+
+    /**
+     * Return the lexicographical comparison of the sequences of threads of
+     * two `potential_deadlock`s.
+     *
+     * @note This is mostly (if not only) useful to store
+     *       `potential_deadlock`s in ordered containers.
+     */
+    friend bool
+    operator<(potential_deadlock const& a, potential_deadlock const& b) {
+        return a.threads < b.threads;
+    }
+
+    /**
+     * Return whether a deadlock is equivalent to another, i.e. if it consists
+     * of the same sequence of threads in a possibly different order.
+     */
+    D2_DECL bool is_equivalent_to(potential_deadlock const& other) const;
+
+    //! Type of the container holding the sequence of `deadlocked_thread`s.
+    typedef std::vector<deadlocked_thread> thread_sequence;
+
+    //! The actual sequence of threads involved in the deadlock.
+    thread_sequence threads;
+};
 
 /**
  * Write an explanation of the potential deadlock state in plain text to

@@ -11,9 +11,8 @@
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/range/algorithm/copy.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
+#include <boost/range/algorithm/find_if.hpp>
 #include <boost/range/algorithm/transform.hpp>
-#include <boost/range/algorithm_ext/is_sorted.hpp>
 #include <cstdlib>
 #include <d2/api.hpp>
 #include <d2/core/diagnostic.hpp>
@@ -39,31 +38,44 @@ to_d2_deadlocked_thread(deadlocked_thread const& thread) {
 
 //! Create a `d2::core::potential_deadlock` from a `potential_deadlock`.
 d2::core::potential_deadlock to_d2_deadlock(potential_deadlock const& dl) {
-    d2::core::potential_deadlock ret;
-    boost::transform(dl, std::inserter(ret, ret.end()),
-                            to_d2_deadlocked_thread);
-    return ret;
+    std::vector<d2::core::deadlocked_thread> threads;
+    boost::transform(dl, std::back_inserter(threads), to_d2_deadlocked_thread);
+    return d2::core::potential_deadlock(boost::move(threads));
 }
 
 //! Print a `d2::core::potential_deadlock`.
 void print_potential_deadlock(std::ostream& os,
                               d2::core::potential_deadlock const& dl) {
-    BOOST_FOREACH(d2::core::deadlocked_thread const& thread, dl)
+    BOOST_FOREACH(d2::core::deadlocked_thread const& thread, dl.threads)
         os << thread << '\n';
     os << '\n';
 }
 
-template <typename Container>
-bool check_scenario_results(Container const& expected, Container const& actual) {
-    BOOST_ASSERT(boost::is_sorted(expected));
-    BOOST_ASSERT(boost::is_sorted(actual));
+//! Output the deadlocks that are in `expected` but not in `actual` to `result`.
+template <typename Deadlocks, typename OutputIterator>
+void consume_equivalent_deadlocks(Deadlocks expected, Deadlocks actual,
+                                  OutputIterator result) {
+    while (!expected.empty()) {
+        typename Deadlocks::const_reference exp = expected.back();
+        typename Deadlocks::iterator it = boost::find_if(actual,
+            [&](typename Deadlocks::const_reference act) {
+                return exp.is_equivalent_to(act);
+            });
+        if (it == actual.end())
+            *result++ = exp;
+        else
+            actual.erase(it);
+        expected.pop_back();
+    }
+}
 
-    Container unexpected, unseen;
-    boost::set_difference(expected, actual,
-        std::inserter(unseen, unseen.end()));
-
-    boost::set_difference(actual, expected,
-        std::inserter(unexpected, unexpected.end()));
+bool check_scenario_results(
+                    std::vector<d2::core::potential_deadlock> const& expected,
+                    std::vector<d2::core::potential_deadlock> const& actual) {
+    std::vector<d2::core::potential_deadlock> unexpected, unseen;
+    consume_equivalent_deadlocks(expected, actual, std::back_inserter(unseen));
+    consume_equivalent_deadlocks(actual, expected,
+                                            std::back_inserter(unexpected));
 
     if (!(unexpected.empty() && unseen.empty())) {
         if (expected.empty())
@@ -130,11 +142,9 @@ check_scenario(boost::function<void()> const& scenario,
     d2::unset_log_repository();
 
     d2::core::synchronization_skeleton skeleton(directory);
-    std::set<d2::core::potential_deadlock> actual, expected;
-    boost::copy(skeleton.deadlocks(), std::inserter(actual, actual.end()));
-
-    boost::transform(expected_,
-        std::inserter(expected, expected.end()), to_d2_deadlock);
+    std::vector<d2::core::potential_deadlock> actual, expected;
+    boost::copy(skeleton.deadlocks(), std::back_inserter(actual));
+    boost::transform(expected_, std::back_inserter(expected), to_d2_deadlock);
 
     return check_scenario_results(expected, actual) ? EXIT_SUCCESS
                                                     : EXIT_FAILURE;

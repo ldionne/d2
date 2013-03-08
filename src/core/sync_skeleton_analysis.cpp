@@ -44,7 +44,7 @@ struct GiveSynchronizationSemantics {
                             LockGraph
                         >::type EdgeLabel;
 
-        core::potential_deadlock deadlock;
+        std::vector<core::deadlocked_thread> threads;
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             EdgeLabel const& edge_label = graph[edge_desc];
             LockId was_held = graph[source(edge_desc, graph)];
@@ -61,9 +61,10 @@ struct GiveSynchronizationSemantics {
             core::deadlocked_thread thread(
                 thread_of(edge_label), boost::move(held_locks)
             );
-            deadlock.insert(deadlock.end(), boost::move(thread));
+            threads.push_back(boost::move(thread));
         }
 
+        core::potential_deadlock deadlock(boost::move(threads));
         visitor_(boost::move(deadlock));
     }
 };
