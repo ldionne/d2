@@ -60,8 +60,8 @@ if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
     add_definitions(-Wall -Wextra -pedantic)
 elseif(MSVC)
     add_definitions(-W3 # -W4 and above is just crazy
-                    -D _SCL_SECURE_NO_WARNINGS  # disable non standard MSVC
-                    -D _CRT_SECURE_NO_WARNINGS) # warnings
+                    -D_SCL_SECURE_NO_WARNINGS  # disable non standard MSVC
+                    -D_CRT_SECURE_NO_WARNINGS) # warnings
 endif()
 
 
@@ -75,10 +75,10 @@ if(NOT Boost_INCLUDE_DIR)
 else()
     include_directories(${Boost_INCLUDE_DIR})
     link_directories(${Boost_LIBRARY_DIRS})
-    add_definitions(-D BOOST_SPIRIT_USE_PHOENIX_V3
-                    -D BOOST_ALL_NO_LIB
-                    -D BOOST_ALL_DYN_LINK
-                    -D BOOST_UNORDERED_USE_MOVE)
+    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3
+                    -DBOOST_ALL_NO_LIB
+                    -DBOOST_ALL_DYN_LINK
+                    -DBOOST_UNORDERED_USE_MOVE)
 endif()
 
 
@@ -94,7 +94,7 @@ include_directories(ext/dyno/include)
 find_package(GTest 1.50.0)
 if(${GTEST_FOUND})
     include_directories(${GTEST_INCLUDE_DIRS})
-    add_definitions(-D GTEST_HAS_TR1_TUPLE=0)
+    add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 endif()
 
 

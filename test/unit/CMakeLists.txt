@@ -9,15 +9,13 @@ endfunction()
 d2_add_standalone_unit_test(partition_by_index detail/partition_by_index.cpp)
 d2_add_standalone_unit_test(uniquely_identifiable test_uniquely_identifiable.cpp)
 
-# Add unit tests requiring Google test and d2support.
+# Add unit tests requiring Google test and d2.
 function(d2_add_unit_test name source) # boost components...
     if(NOT ${GTEST_FOUND})
         message("Missing Google Test library: ${name} will be unavailable.")
-    elseif(NOT TARGET d2support)
-        message("Missing d2support library: ${name} will be unavailable.")
     else()
         d2_add_standalone_unit_test(${name} ${source} ${ARGN})
-        target_link_libraries(test_${name} ${GTEST_BOTH_LIBRARIES} d2support)
+        target_link_libraries(test_${name} ${GTEST_BOTH_LIBRARIES} d2)
     endif()
 endfunction()
 d2_add_unit_test(basic_lockable test_basic_lockable.cpp)
