@@ -8,6 +8,7 @@
 #include <d2mock/integration_test.hpp>
 #include <d2mock/mutex.hpp>
 #include <d2mock/recursive_mutex.hpp>
+#include <d2mock/scenario.hpp>
 #include <d2mock/this_thread.hpp>
 #include <d2mock/thread.hpp>
 
