@@ -1,5 +1,5 @@
 # Add the d2support static library.
-file(GLOB d2support_sources detail/*.cpp *.cpp core/*.cpp)
+file(GLOB d2support_sources *.cpp core/*.cpp detail/*.cpp)
 add_library(d2support STATIC ${d2support_sources})
 target_link_libraries(d2support dbg dyno)
 
