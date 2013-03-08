@@ -1,0 +1,27 @@
+
+include_directories(../d2mock/include)
+
+add_custom_target(scenario)
+function(add_scenario name)
+    add_executable(scenario_${name} ${name}.cpp)
+    target_link_libraries(scenario_${name} d2mock)
+    add_dependencies(scenario scenario_${name})
+    add_test(NAME ${name} COMMAND scenario_${name})
+    set_target_properties(scenario_${name} PROPERTIES COMPILE_FLAGS -std=c++11)
+endfunction()
+
+add_scenario(ABBA)
+add_scenario(ABBA_false_middle_gate)
+add_scenario(ABBA_noise)
+add_scenario(ABBA_recursive)
+add_scenario(ABBA_redundant)
+add_scenario(ABBA_redundant_diff_functions)
+add_scenario(ABBA_segmented)
+add_scenario(ABC)
+add_scenario(ABC_segmented)
+add_scenario(miss_unless_transitive_closure)
+
+add_executable(scenario_c_api test_c_api.c)
+target_link_libraries(scenario_c_api d2mock)
+add_dependencies(scenario scenario_c_api)
+add_test(NAME c_api COMMAND scenario_c_api)
