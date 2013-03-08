@@ -17,6 +17,13 @@ namespace karma = boost::spirit::karma;
 
 namespace d2 {
 namespace diagnostic_detail {
+D2_DECL std::ostream&
+operator<<(std::ostream& os, deadlocked_thread const& self) {
+    os << "{thread: " << self.tid << ", locks: {"
+       << karma::format(karma::stream % ", ", self.locks) << "}}";
+    return os;
+}
+
 namespace {
 std::string show_thread(deadlocked_thread const& thread) {
     std::string ret;

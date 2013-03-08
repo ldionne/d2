@@ -16,6 +16,7 @@
 #include <boost/move/utility.hpp>
 #include <boost/phoenix/core/argument.hpp>
 #include <boost/phoenix/stl/container.hpp>
+#include <boost/ref.hpp>
 #include <vector>
 
 
@@ -60,7 +61,7 @@ struct GiveSynchronizationSemantics {
             core::deadlocked_thread thread(
                 thread_of(edge_label), boost::move(held_locks)
             );
-            deadlock.push_back(boost::move(thread));
+            deadlock.insert(deadlock.end(), boost::move(thread));
         }
 
         visitor_(boost::move(deadlock));
@@ -77,7 +78,8 @@ synchronization_skeleton::deadlocks_impl(DeadlockVisitor const& visitor) const
 D2_DECL synchronization_skeleton::deadlock_range
 synchronization_skeleton::deadlocks() const {
     deadlock_range dl;
-    on_deadlocks(boost::phoenix::push_back(dl, boost::phoenix::arg_names::_1));
+    on_deadlocks(boost::phoenix::push_back(
+                    boost::ref(dl), boost::phoenix::arg_names::_1));
     return boost::move(dl);
 }
 } // end namespace synchronization_skeleton_detail
