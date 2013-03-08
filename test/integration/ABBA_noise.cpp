@@ -45,16 +45,15 @@ int main(int argc, char const* argv[]) {
     });
     boost::random_shuffle(threads);
 
+    auto test_main = [&] {
+        boost::for_each(threads, [](ThreadPtr t) { t->start(); });
+        boost::for_each(threads, [](ThreadPtr t) { t->join(); });
+    };
 
-    d2mock::integration_test integration_test(argc, argv, __FILE__);
-
-    boost::for_each(threads, [](ThreadPtr t) { t->start(); });
-    boost::for_each(threads, [](ThreadPtr t) { t->join(); });
-
-    integration_test.verify_deadlocks({
-        {
-            {*t0, A, B},
-            {*t1, B, A}
-        }
-    });
+    return d2mock::check_scenario(test_main, argc, argv, {
+                {
+                    {*t0, A, B},
+                    {*t1, B, A}
+                }
+            });
 }

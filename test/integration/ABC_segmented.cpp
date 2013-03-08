@@ -26,16 +26,16 @@ int main(int argc, char const* argv[]) {
         C.unlock();
     });
 
-    d2mock::integration_test integration_test(argc, argv, __FILE__);
+    auto test_main = [&] {
+        t0.start();
+        t1.start();
 
-    t0.start();
-    t1.start();
+        t0.join();
+        t2.start();
 
-    t0.join();
-    t2.start();
+        t1.join();
+        t2.join();
+    };
 
-    t1.join();
-    t2.join();
-
-    integration_test.verify_deadlocks({/* none */});
+    return d2mock::check_scenario(test_main, argc, argv, {/* none */});
 }
