@@ -7,6 +7,7 @@
 
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/lockable.hpp>
+#include <d2/trackable_sync_object.hpp>
 
 #include <boost/config.hpp>
 #include <boost/move/utility.hpp>
@@ -61,28 +62,33 @@ public:
     }
 };
 
+#define D2_TIMED_LOCKABLE_MIXIN_CODE(Derived)                               \
+    D2_LOCKABLE_MIXIN_CODE(Derived)                                         \
+    template <typename Duration>                                            \
+    bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {    \
+        if (static_cast<Derived*>(this)->                                   \
+                try_lock_for_impl(::boost::forward<Duration>(rel_time))) {  \
+            this->notify_lock();                                            \
+            return true;                                                    \
+        }                                                                   \
+        return false;                                                       \
+    }                                                                       \
+                                                                            \
+    template <typename TimePoint>                                           \
+    bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT { \
+        if (static_cast<Derived*>(this)->                                   \
+              try_lock_until_impl(::boost::forward<TimePoint>(abs_time))) { \
+            this->notify_lock();                                            \
+            return true;                                                    \
+        }                                                                   \
+        return false;                                                       \
+    }                                                                       \
+/**/
+
 //! Mixin version of the `timed_lockable` wrapper.
 template <typename Derived, bool recursive = false>
-struct timed_lockable_mixin : lockable_mixin<Derived, recursive> {
-    template <typename Duration>
-    bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {
-        if (static_cast<Derived*>(this)->
-                try_lock_for_impl(boost::forward<Duration>(rel_time))) {
-            this->notify_lock();
-            return true;
-        }
-        return false;
-    }
-
-    template <typename TimePoint>
-    bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT {
-        if (static_cast<Derived*>(this)->
-                try_lock_until_impl(boost::forward<TimePoint>(abs_time))) {
-            this->notify_lock();
-            return true;
-        }
-        return false;
-    }
+struct timed_lockable_mixin : trackable_sync_object<recursive> {
+    D2_TIMED_LOCKABLE_MIXIN_CODE(Derived)
 };
 } // end namespace d2
 

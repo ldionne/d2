@@ -7,6 +7,7 @@
 
 #include <d2/basic_lockable.hpp>
 #include <d2/detail/inherit_constructors.hpp>
+#include <d2/trackable_sync_object.hpp>
 
 #include <boost/config.hpp>
 #include <boost/mpl/bool.hpp>
@@ -44,16 +45,21 @@ public:
     }
 };
 
+#define D2_LOCKABLE_MIXIN_CODE(Derived)                                     \
+    D2_BASIC_LOCKABLE_MIXIN_CODE(Derived)                                   \
+    bool try_lock() BOOST_NOEXCEPT {                                        \
+        if (static_cast<Derived*>(this)->try_lock_impl()) {                 \
+            this->notify_lock();                                            \
+            return true;                                                    \
+        }                                                                   \
+        return false;                                                       \
+    }                                                                       \
+/**/
+
 //! Mixin version of the `lockable` wrapper.
 template <typename Derived, bool recursive = false>
-struct lockable_mixin : basic_lockable_mixin<Derived, recursive> {
-    bool try_lock() BOOST_NOEXCEPT {
-        if (static_cast<Derived*>(this)->try_lock_impl()) {
-            this->notify_lock();
-            return true;
-        }
-        return false;
-    }
+struct lockable_mixin : trackable_sync_object<recursive> {
+    D2_LOCKABLE_MIXIN_CODE(Derived)
 };
 } // end namespace d2
 

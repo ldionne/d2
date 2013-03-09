@@ -55,18 +55,27 @@ struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
     }
 };
 
+/**
+ * @internal
+ * Code required to create a mixin for the `BasicLockable` concept.
+ * Additionally, the class must also derive from `trackable_sync_object`.
+ */
+#define D2_BASIC_LOCKABLE_MIXIN_CODE(Derived)                               \
+    void lock() {                                                           \
+        static_cast<Derived*>(this)->lock_impl();                           \
+        this->notify_lock();                                                \
+    }                                                                       \
+                                                                            \
+    void unlock() BOOST_NOEXCEPT {                                          \
+        static_cast<Derived*>(this)->unlock_impl();                         \
+        this->notify_unlock();                                              \
+    }                                                                       \
+/**/
+
 //! Mixin version of the `basic_lockable` wrapper.
 template <typename Derived, bool recursive = false>
 struct basic_lockable_mixin : trackable_sync_object<recursive> {
-    void lock() {
-        static_cast<Derived*>(this)->lock_impl();
-        this->notify_lock();
-    }
-
-    void unlock() BOOST_NOEXCEPT {
-        static_cast<Derived*>(this)->unlock_impl();
-        this->notify_unlock();
-    }
+    D2_BASIC_LOCKABLE_MIXIN_CODE(Derived)
 };
 } // end namespace d2
 
