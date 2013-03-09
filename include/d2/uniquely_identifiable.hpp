@@ -5,8 +5,9 @@
 #ifndef D2_UNIQUELY_IDENTIFIABLE_HPP
 #define D2_UNIQUELY_IDENTIFIABLE_HPP
 
-#include <d2/detail/decl.hpp>
+#include <d2/detail/atomic.hpp>
 
+#include <boost/assert.hpp>
 #include <boost/concept/usage.hpp>
 #include <boost/concept_archetype.hpp>
 #include <boost/move/utility.hpp>
@@ -17,6 +18,7 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <cstddef>
+#include <limits>
 
 
 namespace d2 {
@@ -40,8 +42,7 @@ BOOST_FWD_REF(T)>::type unique_id(BOOST_FWD_REF(T) t) {
  * Specification of the `UniquelyIdentifiable` concept.
  *
  * A type is `UniquelyIdentifiable` iff it is possible to obtain an unsigned
- * integral identifier that is unique for any two distinct objects. This is
- * much like being able to hash an object, but the hash has to be perfect.
+ * integral identifier that is unique for any two distinct objects.
  */
 template <typename T>
 struct UniquelyIdentifiable {
@@ -102,64 +103,62 @@ public:
 
 
 
-namespace uniquely_identifiable_detail {
-    /**
-     * Unsigned integral type used to hold unique identifiers.
-     *
-     * @note This type is not part of the public API.
-     */
-    typedef std::size_t unsigned_integral_type;
-
-    /**
-     * Return a new unsigned integral value each time it is called.
-     * This function can be considered atomic.
-     *
-     * @note The unique identifiers could wrap if this function is called too
-     *       many times. An assertion will prevent this from happening
-     *       silently in debug mode, but in release mode this could cause
-     *       several synchronization objects to have the same identifier.
-     *       In such case, the analysis could yield undefined results.
-     *
-     *       If you suspect this might happen with your usage pattern of the
-     *       library, please contact the maintainer of the project so the
-     *       issue can be addressed.
-     *
-     * @note This function is not part of the public API.
-     */
-    D2_DECL extern unsigned_integral_type get_unique_id();
-} // end namespace uniquely_identifiable_detail
-
 /**
- * Mixin class making its `Derived` class a model of the
- * `UniquelyIdentifiable` concept.
+ * Mixin class making its `Derived` type a model of the `UniquelyIdentifiable`
+ * concept.
+ *
+ * For two different instantiations of `uniquely_identifiable`, say
+ * `uniquely_identifiable<T>` and `uniquely_identifiable<U>`, the
+ * counters generating unique identifiers are guaranteed to be distinct.
  *
  * @see `UniquelyIdentifiable`
  *
- * @note The identifiers are unique across the instances of this template
- *       (with any template parameter). For example, instances of
- *       `uniquely_identifiable<T>` and instances of `uniquely_identifiable<U>`
- *       are guaranteed to have different identifiers just like two instances
- *       of `uniquely_identifiable<T>` are guaranteed to.
- *
- * @note Using this class requires linking with the `d2` library.
+ * @tparam Derived Type to be made a model of the `UniquelyIdentifiable`
+ *                 concept.
  */
 template <typename Derived>
 class uniquely_identifiable {
-    typedef uniquely_identifiable_detail::unsigned_integral_type
-                                                    unsigned_integral_type;
-    unsigned_integral_type id_;
+    /**
+     * @internal
+     * Unsigned integral type used to hold unique identifiers.
+     *
+     * The unique identifiers could eventually wrap if too many are generated.
+     * An assertion will prevent this from happening silently in debug mode,
+     * but in release mode this could cause several objects to have the same
+     * identifier.
+     *
+     * If you suspect this might happen with your usage pattern of the
+     * library, please contact the maintainer of the project so the
+     * issue can be addressed.
+     */
+    typedef std::size_t unique_id_type;
+
+    unique_id_type id_;
+
+    /**
+     * @internal
+     * Return a reference to the unique identifier counter. This is to avoid
+     * the static initialization order fiasco.
+     */
+    static detail::atomic<unique_id_type>& get_counter() {
+        static detail::atomic<unique_id_type> counter(0);
+        return counter;
+    }
 
 public:
     //! Construct an object with a new and unique identifier.
     uniquely_identifiable()
-        : id_(uniquely_identifiable_detail::get_unique_id())
-    { }
+        : id_(get_counter()++)
+    {
+        BOOST_ASSERT_MSG(id_ < std::numeric_limits<unique_id_type>::max(),
+            "unique identifiers are about to wrap");
+    }
 
     /**
      * Return an unsigned integral value representing the unique
      * identifier of `*this`.
      */
-    friend unsigned_integral_type unique_id(Derived const& self) {
+    friend unique_id_type unique_id(Derived const& self) {
         return static_cast<uniquely_identifiable const&>(self).id_;
     }
 };
