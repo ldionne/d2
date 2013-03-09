@@ -33,12 +33,7 @@ namespace d2 {
  * @tparam recursive Whether the synchronization object is recursive.
  */
 template <typename BasicLockable, bool recursive = false>
-struct basic_lockable
-    : BasicLockable,
-      trackable_sync_object<
-        basic_lockable<BasicLockable, recursive>, recursive
-    >
-{
+struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
     /**
@@ -62,12 +57,7 @@ struct basic_lockable
 
 //! Mixin version of the `basic_lockable` wrapper.
 template <typename Derived, bool recursive = false>
-struct basic_lockable_mixin
-    : trackable_sync_object<
-        basic_lockable_mixin<Derived, recursive>,
-        recursive
-    >
-{
+struct basic_lockable_mixin : trackable_sync_object<recursive> {
     void lock() {
         static_cast<Derived*>(this)->lock_impl();
         this->notify_lock();

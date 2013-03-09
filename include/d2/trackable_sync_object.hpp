@@ -32,15 +32,14 @@ namespace trackable_sync_object_detail {
  * Base class providing basic facilities to notify the acquisition and release
  * of synchronization objects to `d2`.
  *
- * Deriving from this class will provide the `Derived` class with the
+ * Deriving from this class will provide the derived class with the
  * `notify_lock()` and the `notify_unlock()` protected methods. These
  * methods should be called as appropriate to notify `d2` of an acquisition
  * or a release of `*this`.
  *
- * @tparam Derived The type of the wrapped synchronization object.
  * @tparam recursive Whether the synchronization object is recursive.
  */
-template <typename Derived, bool recursive>
+template <bool recursive>
 class trackable_sync_object {
     trackable_sync_object_detail::unique_id_for_all_locks unique_id_;
 
