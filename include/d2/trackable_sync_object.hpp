@@ -69,6 +69,17 @@ protected:
         else
             notify_release(tid, unique_id_);
     }
+
+// This is kind of a hack, but we need to access the unique id of locks in
+// the test scenarios in order to validate the results of the analysis.
+// When the macro is defined, we can call `unique_id(obj)` on a
+// `trackable_sync_object` to retrieve its unique identifier.
+#ifdef D2MOCK_TRACKABLE_SYNC_OBJECT_ACCESS
+public:
+    friend std::size_t unique_id(trackable_sync_object const& self) {
+        return unique_id(self.unique_id_);
+    }
+#endif
 };
 } // end namespace d2
 

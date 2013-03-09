@@ -7,7 +7,9 @@ function(add_scenario name)
     target_link_libraries(scenario_${name} d2mock)
     add_dependencies(scenario scenario_${name})
     add_test(NAME ${name} COMMAND scenario_${name})
-    set_target_properties(scenario_${name} PROPERTIES COMPILE_FLAGS -std=c++11)
+    set_target_properties(scenario_${name} PROPERTIES
+                COMPILE_FLAGS -std=c++11
+                COMPILE_DEFINITIONS D2MOCK_TRACKABLE_SYNC_OBJECT_ACCESS)
 endfunction()
 
 add_scenario(ABBA)
