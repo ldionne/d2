@@ -35,7 +35,9 @@ namespace d2 {
 template <typename BasicLockable, bool recursive = false>
 struct basic_lockable
     : BasicLockable,
-      trackable_sync_object<basic_lockable<BasicLockable>, recursive>
+      trackable_sync_object<
+        basic_lockable<BasicLockable, recursive>, recursive
+    >
 {
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
@@ -54,6 +56,25 @@ struct basic_lockable
      */
     void unlock() BOOST_NOEXCEPT {
         BasicLockable::unlock();
+        this->notify_unlock();
+    }
+};
+
+//! Mixin version of the `basic_lockable` wrapper.
+template <typename Derived, bool recursive = false>
+struct basic_lockable_mixin
+    : trackable_sync_object<
+        basic_lockable_mixin<Derived, recursive>,
+        recursive
+    >
+{
+    void lock() {
+        static_cast<Derived*>(this)->lock_impl();
+        this->notify_lock();
+    }
+
+    void unlock() BOOST_NOEXCEPT {
+        static_cast<Derived*>(this)->unlock_impl();
         this->notify_unlock();
     }
 };

@@ -43,6 +43,18 @@ public:
         return false;
     }
 };
+
+//! Mixin version of the `lockable` wrapper.
+template <typename Derived, bool recursive = false>
+struct lockable_mixin : basic_lockable_mixin<Derived, recursive> {
+    bool try_lock() BOOST_NOEXCEPT {
+        if (static_cast<Derived*>(this)->try_lock_impl()) {
+            this->notify_lock();
+            return true;
+        }
+        return false;
+    }
+};
 } // end namespace d2
 
 namespace boost {
