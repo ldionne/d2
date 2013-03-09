@@ -21,10 +21,13 @@ namespace d2 {
  *  - When the `*this` is `try_lock()`ed successfully, `d2` is notified
  *    automatically.
  */
-template <typename Lockable>
-struct lockable : basic_lockable<Lockable> {
+template <typename Lockable, bool recursive = false>
+struct lockable : basic_lockable<Lockable, recursive> {
+private:
+    typedef basic_lockable<Lockable, recursive> Base;
 
-    D2_INHERIT_CONSTRUCTORS(lockable, basic_lockable<Lockable>)
+public:
+    D2_INHERIT_CONSTRUCTORS(lockable, Base)
 
     /**
      * Call the `try_lock()` method of `Lockable` and notify `d2` of the
@@ -33,7 +36,7 @@ struct lockable : basic_lockable<Lockable> {
      * @return Whether the acquisition succeeded.
      */
     bool try_lock() BOOST_NOEXCEPT {
-        if (basic_lockable<Lockable>::try_lock()) {
+        if (Base::try_lock()) {
             this->notify_lock();
             return true;
         }
@@ -44,8 +47,13 @@ struct lockable : basic_lockable<Lockable> {
 
 namespace boost {
     namespace sync {
+        template <typename L, bool recursive>
+        class is_lockable<d2::lockable<L, recursive> >
+            : public boost::mpl::true_
+        { };
+
         template <typename L>
-        class is_lockable<d2::lockable<L> >
+        class is_recursive_mutex_sur_parolle<d2::lockable<L, true> >
             : public boost::mpl::true_
         { };
     }

@@ -17,8 +17,11 @@ namespace d2 {
  * `notify_lock()` and the `notify_unlock()` protected methods. These
  * methods should be called as appropriate to notify `d2` of an acquisition
  * or a release of `*this`.
+ *
+ * @tparam Derived The type of the wrapped synchronization object.
+ * @tparam recursive Whether the synchronization object is recursive.
  */
-template <typename Derived>
+template <typename Derived, bool recursive>
 struct trackable_sync_object {
 protected:
     /**

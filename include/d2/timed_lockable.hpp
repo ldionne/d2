@@ -10,6 +10,8 @@
 
 #include <boost/config.hpp>
 #include <boost/move/utility.hpp>
+#include <boost/mpl/bool.hpp>
+#include <boost/thread/lockable_traits.hpp>
 
 
 namespace d2 {
@@ -20,10 +22,13 @@ namespace d2 {
  *  - When any one of `try_lock_for()` and `try_lock_until()` is called and
  *    successfully acquires `*this`, `d2` is notified automatically.
  */
-template <typename TimedLockable>
-struct timed_lockable : lockable<TimedLockable> {
+template <typename TimedLockable, bool recursive = false>
+struct timed_lockable : lockable<TimedLockable, recursive> {
+private:
+    typedef lockable<TimedLockable, recursive> Base;
 
-    D2_INHERIT_CONSTRUCTORS(timed_lockable, lockable<TimedLockable>)
+public:
+    D2_INHERIT_CONSTRUCTORS(timed_lockable, Base)
 
     /**
      * Call the `try_lock_for()` method of `TimedLockable` and notify `d2`
@@ -33,8 +38,7 @@ struct timed_lockable : lockable<TimedLockable> {
      */
     template <typename Duration>
     bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {
-        if (lockable<TimedLockable>::try_lock_for(
-                boost::forward<Duration>(rel_time))) {
+        if (Base::try_lock_for(boost::forward<Duration>(rel_time))) {
             this->notify_lock();
             return true;
         }
@@ -49,8 +53,7 @@ struct timed_lockable : lockable<TimedLockable> {
      */
     template <typename TimePoint>
     bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT {
-        if (lockable<TimedLockable>::try_lock_until(
-                boost::forward<TimePoint>(abs_time))) {
+        if (Base::try_lock_until(boost::forward<TimePoint>(abs_time))) {
             this->notify_lock();
             return true;
         }
@@ -58,5 +61,14 @@ struct timed_lockable : lockable<TimedLockable> {
     }
 };
 } // end namespace d2
+
+namespace boost {
+    namespace sync {
+        template <typename L>
+        class is_recursive_mutex_sur_parolle<d2::timed_lockable<L, true> >
+            : public boost::mpl::true_
+        { };
+    }
+}
 
 #endif // !D2_TIMED_LOCKABLE_HPP

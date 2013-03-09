@@ -28,10 +28,14 @@ namespace d2 {
  *      typedef d2::basic_lockable<impl::my_basic_lockable> my_basic_lockable;
  *
  * @endcode
+ *
+ * @tparam BasicLockable The type of the wrapped synchronization object.
+ * @tparam recursive Whether the synchronization object is recursive.
  */
-template <typename BasicLockable>
+template <typename BasicLockable, bool recursive = false>
 struct basic_lockable
-    : BasicLockable, trackable_sync_object<basic_lockable<BasicLockable> >
+    : BasicLockable,
+      trackable_sync_object<basic_lockable<BasicLockable>, recursive>
 {
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
@@ -57,8 +61,13 @@ struct basic_lockable
 
 namespace boost {
     namespace sync {
+        template <typename L, bool recursive>
+        class is_basic_lockable<d2::basic_lockable<L, recursive> >
+            : public boost::mpl::true_
+        { };
+
         template <typename L>
-        class is_basic_lockable<d2::basic_lockable<L> >
+        class is_recursive_mutex_sur_parolle<d2::basic_lockable<L, true> >
             : public boost::mpl::true_
         { };
     }
