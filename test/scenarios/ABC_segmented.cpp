@@ -1,3 +1,8 @@
+/**
+ * Do not detect a deadlock between three threads and three locks if the
+ * threads are synchronized in such a way that makes it impossible for them
+ * to run at the same time.
+ */
 
 #include <d2mock.hpp>
 

@@ -1,3 +1,6 @@
+/**
+ * Detect acquire order inconsistency across three threads and three locks.
+ */
 
 #include <d2mock.hpp>
 

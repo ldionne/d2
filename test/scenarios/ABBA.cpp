@@ -1,7 +1,6 @@
 /**
- * This test makes sure that we detect the basic deadlock between t0 and t1.
- * The deadlock happens if t0 holds A while t1 holds B. Both threads will be
- * waiting for the other to release its lock, hence creating a deadlock.
+ * Detect the simplest acquisition order inconsistency between two locks and
+ * two threads.
  */
 
 #include <d2mock.hpp>
@@ -34,7 +33,9 @@ int main(int argc, char const* argv[]) {
 
     return d2mock::check_scenario(test_main, argc, argv, {
                 {
+                    // t0 holds A, and waits for B
                     {t0, A, B},
+                    // t1 holds B, and waits for A
                     {t1, B, A}
                 }
             });

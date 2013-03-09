@@ -14,6 +14,7 @@ endfunction()
 
 add_scenario(ABBA)
 add_scenario(ABBA_false_middle_gate)
+add_scenario(ABBA_gatelock)
 add_scenario(ABBA_noise)
 add_scenario(ABBA_recursive)
 add_scenario(ABBA_redundant)
