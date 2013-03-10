@@ -1,0 +1,269 @@
+Index: Jamroot
+===================================================================
+diff --git a/trunk/Jamroot b/trunk/Jamroot
+--- a/trunk/Jamroot (révision 82714)
++++ b/trunk/Jamroot (copie de travail)
+@@ -135,8 +135,27 @@
+
+ boostcpp.set-version $(BOOST_VERSION) ;
+
++##############################################################################
++# Configuration file to build boost with support for d2.
++
++lib d2
++    # no sources (already built)
++    :
++
++    # requirements
++    : <file>/Users/louisdionne/Documents/Ordi/d2/build/src/libd2.dylib
++
++    # no default build
++    :
++
++    # usage requirements
++    : <include>/Users/louisdionne/Documents/Ordi/d2/include
++      <link>shared:<define>D2_DYN_LINK=1
++    ;
++##############################################################################
++
+ project boost
+-    : requirements <include>.
++    : requirements <include>. <library>d2
+       # Disable auto-linking for all targets here, primarily because it caused
+       # troubles with V2.
+       <define>BOOST_ALL_NO_LIB=1
+Index: boost/thread/pthread/mutex.hpp
+===================================================================
+diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/mutex.hpp
+--- a/trunk/boost/thread/pthread/mutex.hpp  (révision 82714)
++++ b/trunk/boost/thread/pthread/mutex.hpp  (copie de travail)
+@@ -6,6 +6,8 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+
++#include <d2/lockable.hpp>
++#include <d2/timed_lockable.hpp>
+ #include <boost/thread/detail/config.hpp>
+ #include <pthread.h>
+ #include <boost/throw_exception.hpp>
+@@ -35,10 +37,11 @@
+
+ namespace boost
+ {
+-    class mutex
++    class mutex : public d2::lockable_mixin<mutex>
+     {
+     private:
+         pthread_mutex_t m;
++        friend class d2::lockable_mixin<mutex>;
+     public:
+         BOOST_THREAD_NO_COPYABLE(mutex)
+
+@@ -59,7 +62,8 @@
+             } while (ret == EINTR);
+         }
+
+-        void lock()
++    private:
++        void lock_impl()
+         {
+             int res;
+             do
+@@ -72,7 +76,7 @@
+             }
+         }
+
+-        void unlock()
++        void unlock_impl()
+         {
+             int res;
+             do
+@@ -85,7 +89,7 @@
+             }
+         }
+
+-        bool try_lock()
++        bool try_lock_impl()
+         {
+             int res;
+             do
+@@ -100,6 +104,7 @@
+             return !res;
+         }
+
++    public:
+ #define BOOST_THREAD_DEFINES_MUTEX_NATIVE_HANDLE
+         typedef pthread_mutex_t* native_handle_type;
+         native_handle_type native_handle()
+@@ -115,9 +120,10 @@
+
+     typedef mutex try_mutex;
+
+-    class timed_mutex
++    class timed_mutex : public d2::timed_lockable_mixin<timed_mutex>
+     {
+     private:
++        friend class d2::timed_lockable_mixin<timed_mutex>;
+         pthread_mutex_t m;
+ #ifndef BOOST_PTHREAD_HAS_TIMEDLOCK
+         pthread_cond_t cond;
+@@ -161,8 +167,10 @@
+             return timed_lock(system_time(absolute_time));
+         }
+ #endif
++
++    private:
+ #ifdef BOOST_PTHREAD_HAS_TIMEDLOCK
+-        void lock()
++        void lock_impl()
+         {
+             int res;
+             do
+@@ -175,7 +183,7 @@
+             }
+         }
+
+-        void unlock()
++        void unlock_impl()
+         {
+             int res;
+             do
+@@ -188,7 +196,7 @@
+             }
+         }
+
+-        bool try_lock()
++        bool try_lock_impl()
+         {
+           int res;
+           do
+@@ -203,18 +211,14 @@
+           return !res;
+         }
+
+-
+-    private:
+         bool do_try_lock_until(struct timespec const &timeout)
+         {
+           int const res=pthread_mutex_timedlock(&m,&timeout);
+           BOOST_ASSERT(!res || res==ETIMEDOUT);
+           return !res;
+         }
+-    public:
+-
+ #else
+-        void lock()
++        void lock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             while(is_locked)
+@@ -224,14 +228,14 @@
+             is_locked=true;
+         }
+
+-        void unlock()
++        void unlock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             is_locked=false;
+             BOOST_VERIFY(!pthread_cond_signal(&cond));
+         }
+
+-        bool try_lock()
++        bool try_lock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(is_locked)
+@@ -242,7 +246,6 @@
+             return true;
+         }
+
+-    private:
+         bool do_try_lock_until(struct timespec const &timeout)
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+@@ -258,9 +261,9 @@
+             is_locked=true;
+             return true;
+         }
+-    public:
+ #endif
+
++public:
+ #if defined BOOST_THREAD_USES_DATETIME
+         bool timed_lock(system_time const & abs_time)
+         {
+@@ -268,14 +271,16 @@
+             return do_try_lock_until(ts);
+         }
+ #endif
++
+ #ifdef BOOST_THREAD_USES_CHRONO
++    private:
+         template <class Rep, class Period>
+-        bool try_lock_for(const chrono::duration<Rep, Period>& rel_time)
++        bool try_lock_for_impl(const chrono::duration<Rep, Period>& rel_time)
+         {
+           return try_lock_until(chrono::steady_clock::now() + rel_time);
+         }
+         template <class Clock, class Duration>
+-        bool try_lock_until(const chrono::time_point<Clock, Duration>& t)
++        bool try_lock_until_impl(const chrono::time_point<Clock, Duration>& t)
+         {
+           using namespace chrono;
+           system_clock::time_point     s_now = system_clock::now();
+@@ -283,19 +288,20 @@
+           return try_lock_until(s_now + ceil<nanoseconds>(t - c_now));
+         }
+         template <class Duration>
+-        bool try_lock_until(const chrono::time_point<chrono::system_clock, Duration>& t)
++        bool try_lock_until_impl(const chrono::time_point<chrono::system_clock, Duration>& t)
+         {
+           using namespace chrono;
+           typedef time_point<system_clock, nanoseconds> nano_sys_tmpt;
+           return try_lock_until(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
+         }
+-        bool try_lock_until(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
++        bool try_lock_until_impl(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
+         {
+           //using namespace chrono;
+           chrono::nanoseconds d = tp.time_since_epoch();
+           timespec ts = boost::detail::to_timespec(d);
+           return do_try_lock_until(ts);
+         }
++    public:
+ #endif
+
+ #define BOOST_THREAD_DEFINES_TIMED_MUTEX_NATIVE_HANDLE
+Index: boost/thread/win32/mutex.hpp
+===================================================================
+diff --git a/trunk/boost/thread/win32/mutex.hpp b/trunk/boost/thread/win32/mutex.hpp
+--- a/trunk/boost/thread/win32/mutex.hpp    (révision 82714)
++++ b/trunk/boost/thread/win32/mutex.hpp    (copie de travail)
+@@ -6,6 +6,8 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+
++#include <d2/lockable.hpp>
++#include <d2/timed_lockable.hpp>
+ #include <boost/thread/win32/basic_timed_mutex.hpp>
+ #include <boost/thread/exceptions.hpp>
+ #if defined BOOST_THREAD_PROVIDES_NESTED_LOCKS
+@@ -23,7 +25,7 @@
+     }
+
+     class mutex:
+-        public ::boost::detail::underlying_mutex
++        public d2::lockable< ::boost::detail::underlying_mutex>
+     {
+     public:
+         BOOST_THREAD_NO_COPYABLE(mutex)
+@@ -45,7 +47,7 @@
+     typedef mutex try_mutex;
+
+     class timed_mutex:
+-        public ::boost::detail::basic_timed_mutex
++        public d2::timed_lockable< ::boost::detail::basic_timed_mutex>
+     {
+     public:
+         BOOST_THREAD_NO_COPYABLE(timed_mutex)
