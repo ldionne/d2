@@ -35,8 +35,9 @@ D2_DECL bool potential_deadlock::has_duplicate_threads() const {
 
 D2_DECL std::ostream&
 operator<<(std::ostream& os, deadlocked_thread const& self) {
-    os << "{thread: " << self.tid << ", locks: {"
-       << karma::format(karma::stream % ", ", self.locks) << "}}";
+    os << "{thread: " << self.tid << ", "
+       << "holding: {" << karma::format(karma::stream % ", ", self.holding) << "}, "
+       << "waiting for: " << self.waiting_for << "}";
     return os;
 }
 
@@ -49,37 +50,19 @@ potential_deadlock::is_equivalent_to(potential_deadlock const& other) const {
 }
 
 namespace {
-std::string show_thread(deadlocked_thread const& thread) {
+std::string explain_thread(deadlocked_thread const& thread) {
     std::string ret;
     karma::generate(std::back_inserter(ret),
-        "thread " << karma::stream << " acquired " << (karma::stream % ", "),
-        thread.tid, thread.locks);
-    return ret;
-}
-
-// Note: copying the deadlocked_thread is voluntary so we can modify it inside.
-std::string explain_thread(deadlocked_thread thread) {
-    std::string ret;
-    LockId last_lock = thread.locks.back();
-
-    karma::generate(std::back_inserter(ret),
-        "thread " << karma::stream << " acquires " << (karma::stream % ", ")
+        "thread " << karma::stream << " holds " << (karma::stream % ", ")
                                    << " and waits for " << karma::stream,
-        thread.tid,
-        boost::make_iterator_range(thread.locks.begin(), thread.locks.end()-1),
-        last_lock);
+        thread.tid, thread.holding, thread.waiting_for);
     return ret;
 }
 } // end anonymous namespace
 
 D2_DECL extern std::ostream&
 plain_text_explanation(std::ostream& os, potential_deadlock const& dl) {
-    os << karma::format(karma::string % "\nwhile ",
-                    dl.threads | boost::adaptors::transformed(show_thread))
-
-       << "\n\nwhich creates a deadlock if\n"
-
-       << karma::format(karma::string % '\n',
+    os << karma::format(karma::string % '\n',
                     dl.threads | boost::adaptors::transformed(explain_thread));
     return os;
 }

@@ -33,7 +33,12 @@ namespace {
 d2::core::deadlocked_thread
 to_d2_deadlocked_thread(deadlocked_thread const& thread) {
     return d2::core::deadlocked_thread(
-                d2::ThreadId(thread.thread), thread.locks);
+                // We must NOT construct the ThreadId before now, because
+                // we must be sure the thread has been started (e.g. after
+                // the test) for it to have a thread identifier.
+                d2::ThreadId(thread.thread),
+                thread.locks.begin(), thread.locks.end() - 1,
+                thread.locks.back());
 }
 
 //! Create a `d2::core::potential_deadlock` from a `potential_deadlock`.

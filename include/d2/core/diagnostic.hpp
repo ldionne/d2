@@ -22,29 +22,35 @@ namespace diagnostic_detail {
 //! Class representing the state of a single deadlocked thread.
 struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     /**
-     * Create a `deadlocked_thread` with the thread identifier `tid` and
-     * holding a sequence of `locks`.
+     * Create a `deadlocked_thread` with the thread identifier `tid`,
+     * holding a sequence of `locks` and waiting for the `waiting_for` lock.
      */
     template <typename Container>
-    deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Container) locks)
-        : tid(tid), locks(boost::forward<Container>(locks))
+    deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Container) locks,
+                                    LockId waiting_for)
+        : tid(tid), holding(boost::forward<Container>(locks)),
+          waiting_for(waiting_for)
     {
-        BOOST_ASSERT_MSG(locks.size() >= 2,
-            "a thread can't be deadlocked while holding fewer than 2 locks");
+        BOOST_ASSERT_MSG(holding.size() >= 1,
+            "a thread can't be deadlocked if it is not holding at least one "
+            "lock while waiting for another one");
     }
 
     /**
-     * Create a `deadlocked_thread` with the thread identifier `tid` and
-     * holding a sequence of locks in the range delimited by [first, last).
+     * Create a `deadlocked_thread` with the thread identifier `tid`,
+     * holding a sequence of `locks` in the range delimited by [first, last)
+     * and waiting for the `waiting_for` lock.
      */
     template <typename Iterator>
     deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Iterator) first,
-                                    BOOST_FWD_REF(Iterator) last)
-        : tid(tid), locks(boost::forward<Iterator>(first),
-                          boost::forward<Iterator>(last))
+                      BOOST_FWD_REF(Iterator) last, LockId waiting_for)
+        : tid(tid), holding(boost::forward<Iterator>(first),
+                            boost::forward<Iterator>(last)),
+          waiting_for(waiting_for)
     {
-        BOOST_ASSERT_MSG(locks.size() >= 2,
-            "a thread can't be deadlocked while holding fewer than 2 locks");
+        BOOST_ASSERT_MSG(holding.size() >= 1,
+            "a thread can't be deadlocked if it is not holding at least one "
+            "lock while waiting for another one");
     }
 
     //! Thread identifier of the deadlocked thread.
@@ -57,29 +63,42 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
      * Collection of locks held by that thread at the moment of the deadlock.
      * The locks are ordered in their order of acquisition.
      */
-    lock_sequence locks;
+    lock_sequence holding;
+
+    //! Identifier of the lock the thread is waiting after.
+    LockId waiting_for;
 
     /**
      * Return whether two `deadlocked_thread`s represent the same thread
-     * holding the same sequence of locks in the same order.
+     * holding the same sequence of locks in the same order and waiting for
+     * the same lock.
      */
     friend bool
     operator==(deadlocked_thread const& a, deadlocked_thread const& b) {
-        return a.tid == b.tid && a.locks == b.locks;
+        return a.tid == b.tid &&
+               a.waiting_for == b.waiting_for &&
+               a.holding == b.holding;
     }
 
     /**
-     * Return whether `a`'s identifier is smaller than `b`'s.
+     * Return whether `a`'s thread identifier is smaller than `b`'s.
      *
-     * If both have the same identifier, the operator returns whether `a`'s
-     * locks are lexicographically smaller than `b`'s.
+     * If both have the same thread identifier, the lock they are waiting
+     * for is compared. If these are the same, their sequences of held locks
+     * are compared lexicographically.
      *
      * @note While it is not generally useful to compare `deadlocked_thread`s
      *       together, it can be useful to store them in containers.
      */
     friend bool
     operator<(deadlocked_thread const& a, deadlocked_thread const& b) {
-        return a.tid < b.tid || (a.tid == b.tid && a.locks < b.locks);
+        if (a.tid < b.tid)
+            return true;
+        else if (a.tid == b.tid)
+            return a.waiting_for < b.waiting_for ||
+                   (a.waiting_for == b.waiting_for && a.holding < b.holding);
+        else
+            return false;
     }
 
     //! Print a human readable representation of a `deadlocked_thread`.

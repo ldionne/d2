@@ -48,18 +48,17 @@ struct GiveSynchronizationSemantics {
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             EdgeLabel const& edge_label = graph[edge_desc];
             LockId was_held = graph[source(edge_desc, graph)];
-            LockId while_taking = graph[target(edge_desc, graph)];
+            LockId when_waited_for = graph[target(edge_desc, graph)];
 
-            std::vector<LockId> held_locks;
-            held_locks.push_back(boost::move(was_held));
-            held_locks.push_back(boost::move(while_taking));
+            std::vector<LockId> were_held;
+            were_held.push_back(boost::move(was_held));
             // FIXME:
             // Since we don't currently store all the locks that were
-            // (maybe) taken in between these two locks, we can't insert
+            // held at that moment by the thread, we can't insert
             // them in the diagnostic. This has to be fixed.
 
             core::deadlocked_thread thread(
-                thread_of(edge_label), boost::move(held_locks)
+                thread_of(edge_label), boost::move(were_held), when_waited_for
             );
             threads.push_back(boost::move(thread));
         }
