@@ -127,6 +127,12 @@ public:
      * @see `on_deadlocks()`
      */
     D2_DECL deadlock_range deadlocks() const;
+
+    //! @internal Print a graphviz representation of the lock graph.
+    D2_DECL void print_lock_graph(std::ostream&) const;
+
+    //! @internal Print a graphviz representation of the segmentation graph.
+    D2_DECL void print_segmentation_graph(std::ostream&) const;
 };
 } // end namespace synchronization_skeleton_detail
 

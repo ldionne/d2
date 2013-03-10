@@ -6,6 +6,7 @@
 #ifndef D2_CORE_LOCK_GRAPH_HPP
 #define D2_CORE_LOCK_GRAPH_HPP
 
+#include <d2/detail/decl.hpp>
 #include <d2/detail/lock_debug_info.hpp>
 #include <d2/lock_id.hpp>
 #include <d2/segment.hpp>
@@ -20,6 +21,7 @@
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_set.hpp>
+#include <iosfwd>
 
 
 namespace d2 {
@@ -107,6 +109,9 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
                a.l2_info == b.l2_info &&
                gatelocks_of(a) == gatelocks_of(b);
     }
+
+    D2_DECL friend
+    std::ostream& operator<<(std::ostream&, LockGraphLabel const&);
 
 private:
     ThreadId thread_;
