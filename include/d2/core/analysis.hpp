@@ -77,20 +77,21 @@ public:
         EdgeLabelMap labels = get(boost::edge_bundle, graph);
         BOOST_FOREACH(LockGraphEdgeDescriptor e1, edge_path) {
             BOOST_FOREACH(LockGraphEdgeDescriptor e2, edge_path) {
-                if (e1 == e2) continue;
-                else if (!(
+                if (e1 == e2)
+                  continue;
 
-                    // The threads must differ.
-                    thread_of(labels[e1]) != thread_of(labels[e2]) &&
+                // The threads must differ.
+                if (thread_of(labels[e1]) == thread_of(labels[e2]))
+                  return;
 
-                    // The guard sets must not overlap.
-                    !unordered_intersects(gatelocks_of(labels[e1]),
-                                          gatelocks_of(labels[e2])) &&
+                // The guard sets must not overlap.
+                if (unordered_intersects(gatelocks_of(labels[e1]),
+                                         gatelocks_of(labels[e2])))
+                  return;
 
-                    // The segments must not be ordered.
-                    !core::happens_before(labels[e1].s2, labels[e2].s1, sg_)
-
-                )) return;
+                // The segments must not be ordered.
+                if (core::happens_before(labels[e1].s2, labels[e2].s1, sg_))
+                  return;
             }
         }
 
