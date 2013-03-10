@@ -47,15 +47,14 @@ struct GiveSynchronizationSemantics {
         std::vector<core::deadlocked_thread> threads;
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             EdgeLabel const& edge_label = graph[edge_desc];
-            LockId was_held = graph[source(edge_desc, graph)];
-            LockId when_waited_for = graph[target(edge_desc, graph)];
 
-            std::vector<LockId> were_held;
-            were_held.push_back(boost::move(was_held));
-            // FIXME:
-            // Since we don't currently store all the locks that were
-            // held at that moment by the thread, we can't insert
-            // them in the diagnostic. This has to be fixed.
+            // FIXME: The gatelocks stored on each edge are NOT sorted
+            //        in their order of acquisition, which makes them
+            //        almost useless for non-trivial reporting goals.
+            std::vector<LockId> were_held(gatelocks_of(edge_label).begin(),
+                                          gatelocks_of(edge_label).end());
+
+            LockId when_waited_for = graph[target(edge_desc, graph)];
 
             core::deadlocked_thread thread(
                 thread_of(edge_label), boost::move(were_held), when_waited_for

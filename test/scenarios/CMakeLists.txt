@@ -22,6 +22,7 @@ add_scenario(ABBA_redundant_diff_functions)
 add_scenario(ABBA_segmented)
 add_scenario(ABC)
 add_scenario(ABC_segmented)
+add_scenario(held_locks_are_in_acquisition_order)
 add_scenario(miss_unless_transitive_closure)
 
 add_executable(scenario_c_api test_c_api.c)
