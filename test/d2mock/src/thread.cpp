@@ -39,7 +39,8 @@ D2MOCK_DECL thread::thread(BOOST_RV_REF(thread) other) {
 }
 
 D2MOCK_DECL thread::~thread() {
-    join();
+    if (was_started())
+        join();
 }
 
 D2MOCK_DECL thread::id thread::get_id() const {
