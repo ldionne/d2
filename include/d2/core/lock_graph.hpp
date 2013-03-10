@@ -14,6 +14,7 @@
 #include <boost/assert.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/named_graph.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/move/move.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/operators.hpp>
@@ -35,7 +36,7 @@ struct shared_set {
 
     //! Construct an empty set.
     shared_set()
-        : set_(new underlying_set_type())
+        : set_(boost::make_shared<underlying_set_type>())
     { }
 
     //! Construct a shared set sharing its underlying set with `other`.
@@ -45,7 +46,7 @@ struct shared_set {
 
     //! Construct a shared set with an underlying set equal to `other`.
     explicit shared_set(BOOST_RV_REF(underlying_set_type) other)
-        : set_(new underlying_set_type(boost::move(other)))
+        : set_(boost::make_shared<underlying_set_type>(boost::move(other)))
     { }
 
     //! Return a constant reference to the underlying set of `*this`.
