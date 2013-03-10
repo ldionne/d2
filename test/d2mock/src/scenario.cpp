@@ -151,8 +151,18 @@ check_scenario(boost::function<void()> const& scenario,
     boost::copy(skeleton.deadlocks(), std::back_inserter(actual));
     boost::transform(expected_, std::back_inserter(expected), to_d2_deadlock);
 
-    return check_scenario_results(expected, actual) ? EXIT_SUCCESS
-                                                    : EXIT_FAILURE;
+    if (!check_scenario_results(expected, actual)) {
+        std::cout << "Segmentation graph\n"
+                     "------------------\n";
+        skeleton.print_segmentation_graph(std::cout);
+
+        std::cout << "\n\nLock graph\n"
+                         "----------\n";
+        skeleton.print_lock_graph(std::cout);
+        std::cout << '\n';
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }
 } // end namespace check_scenario_detail
 } // end namespace d2mock
