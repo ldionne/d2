@@ -41,6 +41,14 @@ operator<<(std::ostream& os, deadlocked_thread const& self) {
     return os;
 }
 
+D2_DECL std::ostream&
+operator<<(std::ostream& os, potential_deadlock const& self) {
+    os << "{\n"
+       << karma::format(karma::stream % ",\n", self.threads)
+       << "\n}";
+    return os;
+}
+
 D2_DECL bool
 potential_deadlock::is_equivalent_to(potential_deadlock const& other) const {
     // We just get rid of the order of the threads.

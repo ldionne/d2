@@ -185,6 +185,10 @@ public:
 
     //! The actual sequence of threads involved in the deadlock.
     thread_sequence threads;
+
+    //! Print a human readable representation of a `potential_deadlock`.
+    D2_DECL friend
+    std::ostream& operator<<(std::ostream&, potential_deadlock const&);
 };
 
 /**
