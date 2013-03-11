@@ -48,11 +48,9 @@ struct GiveSynchronizationSemantics {
         BOOST_FOREACH(EdgeDescriptor const& edge_desc, cycle) {
             EdgeLabel const& edge_label = graph[edge_desc];
 
-            // FIXME: The gatelocks stored on each edge are NOT sorted
-            //        in their order of acquisition, which makes them
-            //        almost useless for non-trivial reporting goals.
-            std::vector<LockId> were_held(gatelocks_of(edge_label).begin(),
-                                          gatelocks_of(edge_label).end());
+            std::vector<LockId> were_held(
+                gatelocks_of(edge_label).template get<1>().begin(),
+                gatelocks_of(edge_label).template get<1>().end());
 
             LockId when_waited_for = graph[target(edge_desc, graph)];
 

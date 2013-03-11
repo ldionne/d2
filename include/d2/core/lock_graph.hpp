@@ -17,7 +17,11 @@
 #include <boost/graph/named_graph.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/move/move.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/indexed_by.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index_container.hpp>
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_set.hpp>
@@ -51,6 +55,11 @@ struct shared_set {
         : set_(boost::make_shared<underlying_set_type>(boost::move(other)))
     { }
 
+    //! Construct a shared set with an underlying set equal to `other`.
+    explicit shared_set(underlying_set_type const& other)
+        : set_(boost::make_shared<underlying_set_type>(other))
+    { }
+
     //! Return a constant reference to the underlying set of `*this`.
     operator underlying_set_type const&() const {
         BOOST_ASSERT_MSG(set_, "invariant broken: the shared_ptr of a "
@@ -76,7 +85,15 @@ private:
  *         repetition of the gatelocks in the lock graph when the gatelocks
  *         are the same on different events.
  */
-typedef shared_set<boost::unordered_set<LockId> > Gatelocks;
+typedef shared_set<
+            boost::multi_index_container<
+                LockId,
+                boost::multi_index::indexed_by<
+                    boost::multi_index::hashed_unique<boost::multi_index::identity<LockId> >,
+                    boost::multi_index::sequenced<>
+                >
+            >
+        > Gatelocks;
 
 /**
  * Label stored on each edge of a lock graph.
@@ -107,7 +124,7 @@ struct LockGraphLabel : boost::equality_comparable<LockGraphLabel> {
                thread_of(a) == thread_of(b) &&
                a.l1_info == b.l1_info &&
                a.l2_info == b.l2_info &&
-               gatelocks_of(a) == gatelocks_of(b);
+               gatelocks_of(a).get<1>() == gatelocks_of(b).get<1>();
     }
 
     D2_DECL friend

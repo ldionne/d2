@@ -17,6 +17,7 @@
 #include <boost/assert.hpp>
 #include <boost/concept/assert.hpp>
 #include <boost/concept_check.hpp>
+#include <boost/container/vector.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/graph/graph_concepts.hpp>
@@ -34,7 +35,6 @@
 #include <boost/range/end.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/static_visitor.hpp>
@@ -139,7 +139,7 @@ struct EventVisitor : boost::static_visitor<void> {
     typedef CurrentlyHeldLock<core::events::acquire::aux_info_type> HeldLock;
 
     // Set of locks currently held by the thread we're processing.
-    typedef boost::unordered_set<HeldLock> HeldLocks;
+    typedef boost::container::vector<HeldLock> HeldLocks;
     HeldLocks held_locks;
 
     Segment current_segment;
@@ -209,7 +209,7 @@ struct EventVisitor : boost::static_visitor<void> {
         // held by this thread.
         core::Gatelocks::underlying_set_type g_tmp;
         BOOST_FOREACH(HeldLock const& l, held_locks)
-            g_tmp.insert(l.lock);
+            g_tmp.get<1>().push_back(l.lock);
         core::Gatelocks g(boost::move(g_tmp));
 
         // Add an edge from every lock l1 already held by
@@ -249,7 +249,7 @@ struct EventVisitor : boost::static_visitor<void> {
                 custom_edge_info(added_edge.first, l.data, aux_info_of(event));
             }
         }
-        held_locks.insert(HeldLock(l2, s2, aux_info_of(event)));
+        held_locks.push_back(HeldLock(l2, s2, aux_info_of(event)));
     }
 
     void operator()(core::events::acquire const& event) {
@@ -307,7 +307,7 @@ struct EventVisitor : boost::static_visitor<void> {
                         << ExpectedThread(this_thread)
                         << ActualThread(thread));
 
-        //Release the lock; remove all locks equal to it from the context.
+        // Release the lock; remove all locks equal to it from the context.
         typename HeldLocks::const_iterator it(boost::begin(held_locks)),
                                            last(boost::end(held_locks));
         bool l_is_owned_by_this_thread = false;
