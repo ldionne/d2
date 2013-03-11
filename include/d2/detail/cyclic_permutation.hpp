@@ -2,8 +2,8 @@
  * This file defines the `is_cyclic_permutation` algorithm.
  */
 
-#ifndef D2_CORE_CYCLIC_PERMUTATION_HPP
-#define D2_CORE_CYCLIC_PERMUTATION_HPP
+#ifndef D2_DETAIL_CYCLIC_PERMUTATION_HPP
+#define D2_DETAIL_CYCLIC_PERMUTATION_HPP
 
 #include <algorithm>
 #include <boost/assert.hpp>
@@ -300,9 +300,9 @@ bool is_cyclic_permutation(BOOST_FWD_REF(Range1) range1,
 }
 } // end namespace cyclic_permutation_detail
 
-namespace core {
+namespace detail {
     using cyclic_permutation_detail::is_cyclic_permutation;
 }
 } // end namespace d2
 
-#endif // !D2_CORE_CYCLIC_PERMUTATION_HPP
+#endif // !D2_DETAIL_CYCLIC_PERMUTATION_HPP

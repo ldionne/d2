@@ -3,7 +3,7 @@
  * in a directed graph.
  */
 
-#include <d2/core/cyclic_permutation.hpp>
+#include <d2/detail/cyclic_permutation.hpp>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
@@ -131,7 +131,7 @@ public:
         Algorithm()(graph, gather_cycles(std::back_inserter(actual_)));
         expected_.assign(expected.begin(), expected.end());
 
-        ASSERT_TRUE(d2::core::is_cyclic_permutation(expected_, actual_));
+        ASSERT_TRUE(d2::detail::is_cyclic_permutation(expected_, actual_));
     }
 
     void TearDown() {
