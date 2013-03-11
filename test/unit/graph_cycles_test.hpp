@@ -10,124 +10,139 @@
 #include <boost/graph/directed_graph.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/graphviz.hpp>
-#include <boost/graph/properties.hpp>
 #include <boost/move/utility.hpp>
+#include <boost/operators.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
-#include <utility>
+#include <iterator>
+#include <string>
 #include <vector>
 
 
 namespace d2_test {
 namespace graph_cycles_test_detail {
+typedef char VertexProperty;
+typedef std::string EdgeProperty;
+typedef boost::directed_graph<VertexProperty, EdgeProperty> Graph;
+typedef boost::graph_traits<Graph>::vertex_descriptor VertexDescriptor;
+typedef boost::graph_traits<Graph>::edge_descriptor EdgeDescriptor;
+
+struct CycleElement : boost::equality_comparable<CycleElement> {
+    CycleElement(VertexProperty src, EdgeProperty edge, VertexProperty tgt)
+        : source(src), edge(edge), target(tgt)
+    { }
+
+    VertexProperty source;
+    EdgeProperty edge;
+    VertexProperty target;
+
+    friend bool operator==(CycleElement const& a, CycleElement const& b) {
+        return a.source == b.source && a.edge == b.edge && a.target == b.target;
+    }
+};
+typedef std::vector<CycleElement> Cycle;
+
 /**
- * Visitor transforming each cycle to a sequence made of the properties of the
- * vertices in the cycle. The transformed cycles are then accumulated into
- * a `CycleContainer`.
- *
- * In other words, it transforms cycles of the form
+ * Visitor transforming a cycle of the form:
  * @code
- *      (edge_descriptor1, edge_descriptor2, ..., edge_descriptorN)
+ *      (edge_descriptor 1 2, edge_descriptor 2 3, ..., edge_descriptor N-1 N)
  * @endcode
- *
- * to cycles of the form
+ * to a cycle of the form:
  * @code
  *      (
- *          (vertex_property1, vertex_property2),
- *          (vertex_property2, vertex_property3),
+ *          (vertex_property 1, edge_property 1 2, vertex_property 2),
+ *          (vertex_property 2, edge_property 2 3, vertex_property 3),
  *          ...,
- *          (vertex_propertyN-1, vertex_propertyN)
+ *          (vertex_property N-1, edge_property N-1 N, vertex_property N)
  *      )
  * @endcode
+ * where each 3-tuple `(vertex_property, edge_property, vertex_property)` is
+ * a `CycleElement`.
+ *
+ * Also, the cycles are accumulated into an output iterator.
  */
-template <typename CycleContainer>
-class GatherCycles {
-    typedef typename CycleContainer::value_type Cycle;
-    typedef typename Cycle::value_type Edge;
-
-    CycleContainer& out_;
+template <typename OutputIterator>
+class gather_cycles_type {
+    OutputIterator out_;
 
 public:
-    explicit GatherCycles(CycleContainer& out)
+    explicit gather_cycles_type(OutputIterator const& out)
         : out_(out)
     { }
 
-    template <typename EdgeDescriptorCycle, typename Graph>
-    void cycle(EdgeDescriptorCycle const& cycle, Graph const& graph) const {
-        typedef boost::graph_traits<Graph> Traits;
-        typedef typename Traits::edge_descriptor EdgeDescriptor;
-        typedef typename Traits::vertex_descriptor VertexDescriptor;
-
-        typedef typename boost::property_map<
-                    Graph, boost::vertex_bundle_t
-                >::const_type VertexPropertyMap;
-
-        typedef typename boost::property_traits<
-                    VertexPropertyMap
-                >::value_type VertexProperty;
-
-        Cycle prop_cycle;
+    template <typename EdgeDescriptorCycle>
+    void cycle(EdgeDescriptorCycle const& cycle, Graph const& graph) {
+        Cycle transformed;
         BOOST_FOREACH(EdgeDescriptor e, cycle) {
-            VertexDescriptor source = boost::source(e, graph),
-                             target = boost::target(e, graph);
-            VertexProperty src = boost::get(boost::vertex_bundle, graph, source),
-                           tgt = boost::get(boost::vertex_bundle, graph, target);
+            VertexDescriptor src = boost::source(e, graph),
+                             tgt = boost::target(e, graph);
 
-            prop_cycle.insert(prop_cycle.end(), Edge(src, tgt));
+            CycleElement element(
+                boost::get(boost::vertex_bundle, graph, src),
+                boost::get(boost::edge_bundle, graph, e),
+                boost::get(boost::vertex_bundle, graph, tgt)
+            );
+            transformed.push_back(boost::move(element));
         }
-        out_.insert(out_.end(), boost::move(prop_cycle));
+        *out_++ = boost::move(transformed);
     }
 };
+
+template <typename OutputIterator>
+gather_cycles_type<OutputIterator> gather_cycles(OutputIterator const& out) {
+    return gather_cycles_type<OutputIterator>(out);
+}
 } // end namespace graph_cycles_test_detail
 
 /**
  * Unit test template for algorithms finding cycles in directed graphs.
  *
- * The `TestTraits` template parameters must customize the test using
- * the following elements:
- *  - A nested type named `algorithm` representing a functor that can be
- *    called like `f(graph, visitor)`. The algorithm must accept a visitor
- *    with the interface of `GatherCycles` above.
+ * @tparam Algorithm A functor performing the algorithm under test. It must be
+ *         possible to call the algorithm like `algorithm(graph, visitor)`,
+ *         where visitor has the same interface as that of
+ *         `gather_cycles_type`. The algorithm must yield sequences of
+ *         edge descriptors to the visitor.
  */
-template <typename TestTraits>
+template <typename Algorithm>
 struct graph_cycles_test : testing::Test {
-    typedef typename TestTraits::algorithm Algorithm;
-    typedef boost::directed_graph<char> Graph;
-    typedef boost::graph_traits<Graph>::vertex_descriptor VertexDescriptor;
-    typedef boost::graph_traits<Graph>::edge_descriptor EdgeDescriptor;
+private:
+    typedef graph_cycles_test_detail::Graph Graph;
+    typedef graph_cycles_test_detail::Cycle Cycle;
 
-    typedef std::pair<char, char> Edge;
-    typedef std::vector<Edge> Cycle;
-    typedef std::vector<Cycle> CycleContainer;
+    std::vector<Cycle> expected_, actual_;
 
+public:
     Graph graph;
 
     /**
      * Runs the algorithm on the graph that should have been built in the
-     * unit test and compares the result of the algorithm with `expected_`.
+     * unit test and compares the result of the algorithm with `expected`.
      *
      * If the results don't match, the test fails.
      */
-    void validate_found_cycles(CycleContainer const& expected_) {
-        typedef graph_cycles_test_detail::GatherCycles<CycleContainer> Visitor;
+    template <typename Cycles>
+    void validate_found_cycles(Cycles const& expected) {
+        using namespace graph_cycles_test_detail;
+        actual_.clear();
+        expected_.clear();
+
         // Gather the actual cycles in the graph that should have been
         // constructed in the test.
-        Algorithm()(graph, Visitor(actual));
+        Algorithm()(graph, gather_cycles(std::back_inserter(actual_)));
+        expected_.assign(expected.begin(), expected.end());
 
-        expected = expected_;
-
-        ASSERT_TRUE(d2::core::is_cyclic_permutation(expected, actual));
+        ASSERT_TRUE(d2::core::is_cyclic_permutation(expected_, actual_));
     }
 
     void TearDown() {
         if (HasFailure()) {
             std::clog << "Expected cycles\n"
                          "---------------\n";
-            print_cycles(std::clog, expected);
+            print_cycles(std::clog, expected_);
 
             std::clog << "\nActual cycles\n"
                            "-------------\n";
-            print_cycles(std::clog, actual);
+            print_cycles(std::clog, actual_);
 
             std::clog << "\nGraph\n"
                            "-----\n";
@@ -137,12 +152,14 @@ struct graph_cycles_test : testing::Test {
     }
 
 private:
-    CycleContainer expected, actual;
-
-    static void print_cycles(std::ostream& os, CycleContainer const& cycles) {
+    template <typename Cycles>
+    static void print_cycles(std::ostream& os, Cycles const& cycles) {
+        using namespace graph_cycles_test_detail;
         BOOST_FOREACH(Cycle const& cycle, cycles) {
-            BOOST_FOREACH(Edge const& edge, cycle)
-                os << "(" << edge.first << ", " << edge.second << ") ";
+            BOOST_FOREACH(CycleElement const& elt, cycle)
+                os << "(" << elt.source << ", "
+                          << elt.edge << ", "
+                          << elt.target << ") ";
             os << '\n';
         }
     }
@@ -150,27 +167,8 @@ private:
 
 TYPED_TEST_CASE_P(graph_cycles_test);
 
-/**
- * @internal
- * Because of Gtest's implementation of template unit tests, which uses
- * inheritance, we need to import the names of the base class in order
- * to use them. This macro makes it easy.
- *
- * However, note that we still need to use `this->` to access the `graph`
- * and `validate_found_cycles()` members of `graph_cycles_test`.
- */
-#define D2_I_IMPORT_TEMPLATE_UNIT_TEST_STUFF()                              \
-    typedef graph_cycles_test<TypeParam> GraphCycleTest;                    \
-    typedef typename GraphCycleTest::VertexDescriptor VertexDescriptor;     \
-    typedef typename GraphCycleTest::EdgeDescriptor EdgeDescriptor;         \
-    typedef typename GraphCycleTest::CycleContainer CycleContainer;         \
-    typedef typename GraphCycleTest::Cycle Cycle;                           \
-    typedef typename GraphCycleTest::Edge Edge;                             \
-    typedef typename GraphCycleTest::Graph Graph;                           \
-/**/
-
 TYPED_TEST_P(graph_cycles_test, finds_trivial_cycle_AB) {
-    D2_I_IMPORT_TEMPLATE_UNIT_TEST_STUFF()
+    using namespace graph_cycles_test_detail;
     using namespace boost::assign;
 
     VertexDescriptor A = add_vertex('A', this->graph);
@@ -178,13 +176,14 @@ TYPED_TEST_P(graph_cycles_test, finds_trivial_cycle_AB) {
     add_edge(A, B, this->graph);
     add_edge(B, A, this->graph);
 
-    Cycle AB = list_of(Edge('A', 'B'));
+    Cycle AB = list_of(CycleElement('A', "", 'B'))
+                      (CycleElement('B', "", 'A'));
 
     this->validate_found_cycles(list_of(AB));
 }
 
 TYPED_TEST_P(graph_cycles_test, finds_both_cycles_ABC) {
-    D2_I_IMPORT_TEMPLATE_UNIT_TEST_STUFF()
+    using namespace graph_cycles_test_detail;
     using namespace boost::assign;
 
     VertexDescriptor A = add_vertex('A', this->graph);
@@ -195,17 +194,47 @@ TYPED_TEST_P(graph_cycles_test, finds_both_cycles_ABC) {
     add_edge(C, A, this->graph);
     add_edge(A, C, this->graph);
 
-    Cycle ABC = list_of(Edge('A', 'B'))(Edge('B', 'C'))(Edge('C', 'A'));
-    Cycle AC = list_of(Edge('A', 'C'))(Edge('C', 'A'));
+    Cycle ABC = list_of(CycleElement('A', "", 'B'))
+                       (CycleElement('B', "", 'C'))
+                       (CycleElement('C', "", 'A'));
+
+    Cycle AC = list_of(CycleElement('A', "", 'C'))
+                      (CycleElement('C', "", 'A'));
 
     this->validate_found_cycles(list_of(ABC)(AC));
 }
 
-#undef D2_I_IMPORT_TEMPLATE_UNIT_TEST_STUFF
+TYPED_TEST_P(graph_cycles_test, finds_multiple_cycles_in_multigraph_AB) {
+    using namespace graph_cycles_test_detail;
+    using namespace boost::assign;
+
+    VertexDescriptor A = add_vertex('A', this->graph);
+    VertexDescriptor B = add_vertex('B', this->graph);
+    add_edge(A, B, "AB1", this->graph);
+    add_edge(B, A, "BA1", this->graph);
+
+    add_edge(A, B, "AB2", this->graph);
+    add_edge(B, A, "BA2", this->graph);
+
+    Cycle AB1_BA1 = list_of(CycleElement('A', "AB1", 'B'))
+                           (CycleElement('B', "BA1", 'A'));
+
+    Cycle AB1_BA2 = list_of(CycleElement('A', "AB1", 'B'))
+                           (CycleElement('B', "BA2", 'A'));
+
+    Cycle AB2_BA1 = list_of(CycleElement('A', "AB2", 'B'))
+                           (CycleElement('B', "BA1", 'A'));
+
+    Cycle AB2_BA2 = list_of(CycleElement('A', "AB2", 'B'))
+                           (CycleElement('B', "BA2", 'A'));
+
+    this->validate_found_cycles(list_of(AB1_BA1)(AB1_BA2)(AB2_BA1)(AB2_BA2));
+}
 
 REGISTER_TYPED_TEST_CASE_P(
     graph_cycles_test,
         finds_trivial_cycle_AB,
-        finds_both_cycles_ABC
+        finds_both_cycles_ABC,
+        finds_multiple_cycles_in_multigraph_AB
 );
 } // end namespace d2_test
