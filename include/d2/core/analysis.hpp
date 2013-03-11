@@ -29,13 +29,7 @@ bool unordered_intersects(Unordered1 const& a, Unordered2 const& b) {
     return false;
 }
 
-/**
- * Wrap a `BinaryFunction` to implement a visitor for the goodlock algorithm.
- *
- * @internal If we use an adjacency_matrix to store the segmentation graph, we
- *           should compute its transitive closure to reduce the complexity of
- *           the happens-before relation.
- */
+//! Wrap a `BinaryFunction` to implement a visitor for the goodlock algorithm.
 template <typename LockGraph, typename SegmentationGraph, typename Function>
 class CycleVisitor {
     typedef boost::graph_traits<LockGraph> GraphTraits;

@@ -30,6 +30,9 @@ namespace core {
 /**
  * Directed acyclic graph representing the order of starts and joins between
  * the threads of a program.
+ *
+ * @internal Using an adjacency matrix would allow O(1) access to the
+ *           `happens_before` relation after computing the transitive closure.
  */
 typedef boost::adjacency_list<
             boost::vecS, boost::vecS, boost::directedS, Segment
