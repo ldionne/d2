@@ -133,12 +133,14 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
 
     std::set<Cycle> seen_cycles;
     typedef AllCyclesWrapper<Visitor, Graph, std::set<Cycle> > Wrapper;
-    Wrapper wrapper(visitor, g, seen_cycles);
 
     // Perform a first dfs to find vertices involved in a cycle.
     Vertex first_vertex = *vertices(g).first;
-    boost::depth_first_search(g,
-        boost::root_vertex(first_vertex).visitor(wrapper));
+    {
+        Wrapper wrapper(visitor, g, seen_cycles);
+        boost::depth_first_search(g,
+            boost::root_vertex(first_vertex).visitor(wrapper));
+    }
 
     D2_IMPL_DEBUG_ALL_CYCLES(std::cout <<
         "first dfs done\n"
@@ -160,8 +162,10 @@ void all_cycles(Graph const& g, Visitor const& visitor) {
     // Let's say the first dfs found a->b->a;
     // the subsequent searches will find b->a->b
     vertices_in_a_cycle.erase(first_vertex); // We already visited that one
-    BOOST_FOREACH(Vertex v, vertices_in_a_cycle)
+    BOOST_FOREACH(Vertex v, vertices_in_a_cycle) {
+        Wrapper wrapper(visitor, g, seen_cycles);
         boost::depth_first_search(g, boost::root_vertex(v).visitor(wrapper));
+    }
 }
 #undef D2_IMPL_DEBUG_ALL_CYCLES
 } // end namespace all_cycles_detail
