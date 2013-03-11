@@ -17,18 +17,16 @@
 
 namespace d2 {
 namespace analysis_detail {
-/**
- * Return whether two unordered containers have a non-empty intersection.
- */
+//! Return whether two unordered containers have a non-empty intersection.
 template <typename Unordered1, typename Unordered2>
 bool unordered_intersects(Unordered1 const& a, Unordered2 const& b) {
     typedef typename Unordered1::const_iterator Iterator;
     typename Unordered2::const_iterator not_found(boost::end(b));
     Iterator elem(boost::begin(a)), last(boost::end(a));
     for (; elem != last; ++elem)
-        if (b.find(*elem) == not_found)
-            return false;
-    return true;
+        if (b.find(*elem) != not_found)
+            return true;
+    return false;
 }
 
 /**
