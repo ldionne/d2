@@ -61,7 +61,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
 
     /**
      * Collection of locks held by that thread at the moment of the deadlock.
-     * The locks are ordered in their order of acquisition.
+     * The locks are sorted in their order of acquisition.
      */
     lock_sequence holding;
 
