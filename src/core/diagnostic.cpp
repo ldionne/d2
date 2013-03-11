@@ -3,6 +3,7 @@
  */
 
 #define D2_SOURCE
+#include <d2/core/cyclic_permutation.hpp>
 #include <d2/core/diagnostic.hpp>
 
 #include <boost/assert.hpp>
@@ -15,7 +16,6 @@
 #include <boost/spirit/include/karma.hpp>
 #include <iterator>
 #include <ostream>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -51,10 +51,7 @@ operator<<(std::ostream& os, potential_deadlock const& self) {
 
 D2_DECL bool
 potential_deadlock::is_equivalent_to(potential_deadlock const& other) const {
-    // We just get rid of the order of the threads.
-    typedef std::set<deadlocked_thread> DeadlockedThreads;
-    return DeadlockedThreads(threads.begin(), threads.end()) ==
-           DeadlockedThreads(other.threads.begin(), other.threads.end());
+    return core::is_cyclic_permutation(threads, other.threads);
 }
 
 namespace {
