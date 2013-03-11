@@ -3,6 +3,8 @@
  * in a directed graph.
  */
 
+#include <d2/core/cyclic_permutation.hpp>
+
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 #include <boost/graph/directed_graph.hpp>
@@ -114,7 +116,7 @@ struct graph_cycles_test : testing::Test {
 
         expected = expected_;
 
-        ASSERT_TRUE(expected == actual);
+        ASSERT_TRUE(d2::core::is_cyclic_permutation(expected, actual));
     }
 
     void TearDown() {
