@@ -48,14 +48,6 @@ d2::core::potential_deadlock to_d2_deadlock(potential_deadlock const& dl) {
     return d2::core::potential_deadlock(boost::move(threads));
 }
 
-//! Print a `d2::core::potential_deadlock`.
-void print_potential_deadlock(std::ostream& os,
-                              d2::core::potential_deadlock const& dl) {
-    BOOST_FOREACH(d2::core::deadlocked_thread const& thread, dl.threads)
-        os << thread << '\n';
-    os << '\n';
-}
-
 //! Output the deadlocks that are in `expected` but not in `actual` to `result`.
 template <typename Deadlocks, typename OutputIterator>
 void consume_equivalent_deadlocks(Deadlocks expected, Deadlocks actual,
@@ -88,7 +80,7 @@ bool check_scenario_results(
         else {
             std::cout << "expected deadlocks:\n";
             BOOST_FOREACH(d2::core::potential_deadlock const& dl, expected)
-                print_potential_deadlock(std::cout, dl);
+                std::cout << dl << '\n';
         }
 
         if (actual.empty())
@@ -96,18 +88,14 @@ bool check_scenario_results(
         else {
             std::cout << "actual deadlocks:\n";
             BOOST_FOREACH(d2::core::potential_deadlock const& dl, actual)
-                print_potential_deadlock(std::cout, dl);
+                std::cout << dl << '\n';
         }
 
-        BOOST_FOREACH(d2::core::potential_deadlock const& dl, unseen) {
-            std::cout << "did not find expected deadlock:\n";
-            print_potential_deadlock(std::cout, dl);
-        }
+        BOOST_FOREACH(d2::core::potential_deadlock const& dl, unseen)
+            std::cout << "did not find expected deadlock:\n" << dl << '\n';
 
-        BOOST_FOREACH(d2::core::potential_deadlock const& dl, unexpected) {
-            std::cout << "found unexpected deadlock:\n";
-            print_potential_deadlock(std::cout, dl);
-        }
+        BOOST_FOREACH(d2::core::potential_deadlock const& dl, unexpected)
+            std::cout << "found unexpected deadlock:\n" << dl << '\n';
 
         return false;
     }
