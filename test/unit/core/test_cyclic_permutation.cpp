@@ -5,6 +5,7 @@
 #include <d2/core/cyclic_permutation.hpp>
 
 #include <boost/assign.hpp>
+#include <functional>
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
@@ -82,18 +83,20 @@ TYPED_TEST_P(cyclic_permutation_test, unrelated_strings_are_not_cyclic_perms) {
     ASSERT_FALSE(d2::core::is_cyclic_permutation(s2, s1));
 }
 
-TYPED_TEST_P(cyclic_permutation_test, check_with_range_as_first_param_only) {
+TYPED_TEST_P(cyclic_permutation_test, check_with_iterators) {
     TypeParam s1 = list_of('a')('b')('c')('d')('e')('f'),
               s2 = list_of('e')('f')('a')('b')('c')('d');
-    ASSERT_TRUE(d2::core::is_cyclic_permutation(s1.begin(), s1.end(), s2));
-    ASSERT_TRUE(d2::core::is_cyclic_permutation(s2.begin(), s2.end(), s1));
+    ASSERT_TRUE(d2::core::is_cyclic_permutation(s1.begin(), s1.end(),
+                                                s2.begin(), s2.end()));
+    ASSERT_TRUE(d2::core::is_cyclic_permutation(s2.begin(), s2.end(),
+                                                s1.begin(), s1.end()));
 }
 
-TYPED_TEST_P(cyclic_permutation_test, check_with_range_as_second_param_only) {
+TYPED_TEST_P(cyclic_permutation_test, use_custom_predicate) {
     TypeParam s1 = list_of('a')('b')('c')('d')('e')('f'),
               s2 = list_of('e')('f')('a')('b')('c')('d');
-    ASSERT_TRUE(d2::core::is_cyclic_permutation(s1, s2.begin(), s2.end()));
-    ASSERT_TRUE(d2::core::is_cyclic_permutation(s2, s1.begin(), s1.end()));
+    ASSERT_TRUE(d2::core::is_cyclic_permutation(s1, s2, std::equal_to<char>()));
+    ASSERT_TRUE(d2::core::is_cyclic_permutation(s2, s1, std::equal_to<char>()));
 }
 
 REGISTER_TYPED_TEST_CASE_P(
@@ -107,8 +110,8 @@ REGISTER_TYPED_TEST_CASE_P(
         behaves_well_with_duplicate_values,
         behaves_well_with_shifts_larger_than_one,
         unrelated_strings_are_not_cyclic_perms,
-        check_with_range_as_first_param_only,
-        check_with_range_as_second_param_only
+        check_with_iterators,
+        use_custom_predicate
 );
 
 INSTANTIATE_TYPED_TEST_CASE_P(
