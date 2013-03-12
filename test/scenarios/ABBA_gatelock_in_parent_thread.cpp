@@ -20,8 +20,8 @@ int main(int argc, char const* argv[]) {
     });
 
     d2mock::thread t1([&] {
-        // Here, G prevents t3 from running in parallel with the body of
-        // t2 which could create a deadlock with t3 (if not prevented).
+        // Here, G prevents t3 from running in parallel with the body of t2,
+        // so the deadlock is avoided.
         G.lock();
             t3.start();
             t3.join();
