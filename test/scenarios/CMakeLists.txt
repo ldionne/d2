@@ -17,8 +17,3 @@ foreach(scenario_file ${all_scenarios_files})
     string(REPLACE ".cpp" "" scenario_name ${scenario_file})
     add_scenario(${scenario_name})
 endforeach()
-
-add_executable(scenario_c_api test_c_api.c)
-target_link_libraries(scenario_c_api d2mock)
-add_dependencies(scenario scenario_c_api)
-add_test(NAME c_api COMMAND scenario_c_api)

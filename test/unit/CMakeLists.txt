@@ -20,6 +20,7 @@ function(d2_add_unit_test name source) # boost components...
 endfunction()
 d2_add_unit_test(all_cycles core/test_all_cycles.cpp graph)
 d2_add_unit_test(basic_lockable test_basic_lockable.cpp)
+d2_add_unit_test(c_api test_c_api.c)
 d2_add_unit_test(cyclic_permutation detail/test_cyclic_permutation.cpp)
 d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
 d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
