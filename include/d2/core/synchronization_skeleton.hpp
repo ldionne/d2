@@ -107,16 +107,6 @@ public:
         deadlocks_impl(DeadlockVisitor(boost::forward<Visitor>(visitor)));
     }
 
-private:
-    template <typename BackInsertionSequence>
-    struct accumulate_deadlocks {
-        BackInsertionSequence& out_;
-        void operator()(core::potential_deadlock const& dl) const {
-            out_.push_back(dl);
-        }
-    };
-
-public:
     //! Type of the range returned by the `deadlocks()` method.
     typedef std::vector<core::potential_deadlock> deadlock_range;
 
