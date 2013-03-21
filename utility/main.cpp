@@ -97,24 +97,26 @@ class Driver {
         po::variables_map args;
         po::options_description visible, hidden, all;
         po::positional_options_description positionals;
-        bool help = false;
+        bool help;
 
         visible.add_options()
         (
             "help,h",
-            po::bool_switch(&help),
+            po::bool_switch(&help)->default_value(false, "false"),
             "produce help message and exit"
         )(
             "analyze",
-            po::bool_switch(&analyze)->default_value(true, "true"),
+            // See below; we'll give --analyze its real default value later.
+            po::bool_switch(&analyze)->default_value(false,
+                "enabled by default if --stats is not specified"),
             "perform the analysis for deadlocks"
         )(
             "stats",
-            po::bool_switch(&stats),
+            po::bool_switch(&stats)->default_value(false, "false"),
             "produce statistics about the usage of locks and threads"
         )(
             "debug",
-            po::bool_switch(&debug),
+            po::bool_switch(&debug)->default_value(false, "false"),
             "enable special debugging output"
         )
         ;
@@ -138,6 +140,11 @@ class Driver {
             return false;
         }
         po::notify(args);
+
+        // If neither --stats nor --analyze is specified, --analyze is set
+        // by default.
+        if (!stats && !analyze)
+            analyze = true;
 
         if (help) {
             std::cout << visible;
@@ -187,6 +194,7 @@ public:
         } catch (std::exception const& e) {
             error("unknown problem:");
             error(boost::diagnostic_information(e));
+            return EXIT_FAILURE;
         }
 
         return EXIT_SUCCESS;
