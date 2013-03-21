@@ -97,7 +97,6 @@ class Driver {
         po::variables_map args;
         po::options_description visible, hidden, all;
         po::positional_options_description positionals;
-        bool help;
 
         visible.add_options()
         (
@@ -126,6 +125,14 @@ class Driver {
             "repo-path",
             po::value<std::string>(&repo),
             "path of the repository to examine"
+        )(
+            "show-lock-graph",
+            po::bool_switch(&show_lock_graph)->default_value(false, "false"),
+            "print the lock graph to the standard output"
+        )(
+            "show-seg-graph",
+            po::bool_switch(&show_seg_graph)->default_value(false, "false"),
+            "print the segmentation graph to the standard output"
         )
         ;
 
@@ -141,9 +148,8 @@ class Driver {
         }
         po::notify(args);
 
-        // If neither --stats nor --analyze is specified, --analyze is set
-        // by default.
-        if (!stats && !analyze)
+        // If no other action is specified, --analyze is set by default.
+        if (!stats && !analyze && !show_lock_graph && !show_seg_graph)
             analyze = true;
 
         if (help) {
@@ -160,7 +166,7 @@ class Driver {
     }
 
     std::string repo;
-    bool debug, analyze, stats;
+    bool help, debug, analyze, stats, show_lock_graph, show_seg_graph;
 
     static void print_deadlock(d2::core::potential_deadlock const& dl) {
         std::cout <<
@@ -190,6 +196,12 @@ public:
                     % skeleton->number_of_threads()
                     % skeleton->number_of_locks();
             }
+
+            if (show_lock_graph)
+                skeleton->print_lock_graph(std::cout);
+
+            if (show_seg_graph)
+                skeleton->print_segmentation_graph(std::cout);
 
         } catch (std::exception const& e) {
             error("unknown problem:");
