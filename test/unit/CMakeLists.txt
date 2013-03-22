@@ -31,3 +31,4 @@ d2_add_unit_test(synchronization_skeleton core/test_synchronization_skeleton.cpp
 d2_add_unit_test(thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
 d2_add_unit_test(timed_lockable test_timed_lockable.cpp)
 d2_add_unit_test(unordered_difference detail/test_unordered_difference.cpp)
+d2_add_unit_test(vertex_to_edge_path detail/test_vertex_to_edge_path.cpp)
