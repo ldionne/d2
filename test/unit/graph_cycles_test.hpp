@@ -71,6 +71,11 @@ public:
     { }
 
     template <typename EdgeDescriptorCycle>
+    void operator()(EdgeDescriptorCycle const& c, Graph const& g) {
+        cycle(c, g);
+    }
+
+    template <typename EdgeDescriptorCycle>
     void cycle(EdgeDescriptorCycle const& cycle, Graph const& graph) {
         Cycle transformed;
         BOOST_FOREACH(EdgeDescriptor e, cycle) {
