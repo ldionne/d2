@@ -14,16 +14,71 @@
 #include <boost/graph/properties.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/type_traits/remove_reference.hpp>
+#include <boost/utility/result_of.hpp>
+#include <set>
+#include <utility> // for std::pair
 #include <vector>
 
 
 namespace d2 {
 namespace hawick_circuits_detail {
+//! @internal Functor returning all the vertices adjacent to a vertex.
+struct get_all_adjacent_vertices {
+    template <typename Sig>
+    struct result;
+
+    template <typename This, typename Vertex, typename Graph>
+    struct result<This(Vertex, Graph)> {
+    private:
+        typedef typename boost::remove_reference<Graph>::type RawGraph;
+        typedef boost::graph_traits<RawGraph> Traits;
+        typedef typename Traits::adjacency_iterator AdjacencyIterator;
+
+    public:
+        typedef std::pair<AdjacencyIterator, AdjacencyIterator> type;
+    };
+
+    template <typename Vertex, typename Graph>
+    typename result<
+        get_all_adjacent_vertices(BOOST_FWD_REF(Vertex), BOOST_FWD_REF(Graph))
+    >::type
+    operator()(BOOST_FWD_REF(Vertex) v, BOOST_FWD_REF(Graph) g) const {
+        return adjacent_vertices(boost::forward<Vertex>(v),
+                                 boost::forward<Graph>(g));
+    }
+};
+
+//! @internal Functor returning a set of the vertices adjacent to a vertex.
+struct get_unique_adjacent_vertices {
+    template <typename Sig>
+    struct result;
+
+    template <typename This, typename Vertex, typename Graph>
+    struct result<This(Vertex, Graph)> {
+        typedef std::set<typename boost::remove_reference<Vertex>::type> type;
+    };
+
+    template <typename Vertex, typename Graph>
+    typename result<get_unique_adjacent_vertices(Vertex, Graph const&)>::type
+    operator()(Vertex v, Graph const& g) const {
+        typedef typename result<
+                    get_unique_adjacent_vertices(Vertex, Graph const&)
+                >::type Set;
+        return Set(adjacent_vertices(v, g).first,
+                   adjacent_vertices(v, g).second);
+    }
+};
+
 /*!
  * @internal
  * Implementation of Hawick's algorithm to find circuits.
  */
-template <typename Graph, typename Visitor, typename VertexIndexMap>
+template <
+    typename Graph,
+    typename Visitor,
+    typename VertexIndexMap,
+    typename GetAdjacentVertices
+>
 struct hawick_circuits_algorithm {
     typedef boost::graph_traits<Graph> Traits;
     typedef typename Traits::vertex_descriptor Vertex;
@@ -35,8 +90,9 @@ struct hawick_circuits_algorithm {
             >::reference VertexIndex;
 
     typedef boost::one_bit_color_map<VertexIndexMap> BlockedMap;
-    static boost::one_bit_color_type const blocked_false = boost::one_bit_white;
-    static boost::one_bit_color_type const blocked_true = boost::one_bit_not_white;
+    typedef boost::one_bit_color_type BlockedColor;
+    static BlockedColor const blocked_false = boost::one_bit_white;
+    static BlockedColor const blocked_true = boost::one_bit_not_white;
 
     typedef std::vector<Vertex> Stack;
     typedef std::vector<std::vector<Vertex> > ClosedMatrix;
@@ -103,7 +159,12 @@ struct hawick_circuits_algorithm {
         stack.push_back(v);
         block(v, blocked);
 
-        BOOST_FOREACH(Vertex w, adjacent_vertices(v, graph_)) {
+        typedef typename boost::result_of<
+                    GetAdjacentVertices(Vertex, Graph const&)
+                >::type AdjacentVertices;
+        AdjacentVertices const adj_vertices = GetAdjacentVertices()(v, graph_);
+
+        BOOST_FOREACH(Vertex w, adj_vertices) {
             // Since we're only looking in the subgraph induced by `start` and
             // the vertices with an index higher than `start`, we skip any
             // vertex that does not satisfy that.
@@ -127,7 +188,7 @@ struct hawick_circuits_algorithm {
         if (found_circuit)
             unblock(v, blocked, closed);
         else
-            BOOST_FOREACH(Vertex w, adjacent_vertices(v, graph_)) {
+            BOOST_FOREACH(Vertex w, adj_vertices) {
                 // Like above, we skip vertices that are not in the subgraph
                 // we're considering.
                 if (index_of(w) < index_of(start))
@@ -157,18 +218,19 @@ struct hawick_circuits_algorithm {
         }
     }
 };
-} // end namespace hawick_circuits_detail
 
-namespace detail {
-template <typename Graph, typename Visitor, typename VertexIndexMap>
-void hawick_circuits(BOOST_FWD_REF(Graph) graph,
-                     BOOST_FWD_REF(Visitor) visitor,
-                     BOOST_FWD_REF(VertexIndexMap) vertex_index_map) {
+template <
+    typename GetAdjacentVertices,
+    typename Graph, typename Visitor, typename VertexIndexMap
+>
+void call_hawick_circuits(BOOST_FWD_REF(Graph) graph,
+                          BOOST_FWD_REF(Visitor) visitor,
+                          BOOST_FWD_REF(VertexIndexMap) vertex_index_map) {
     typedef typename boost::remove_reference<Graph>::type RawGraph;
     typedef typename boost::remove_reference<Visitor>::type RawVisitor;
     typedef typename boost::remove_reference<VertexIndexMap>::type RawVIM;
     typedef hawick_circuits_detail::hawick_circuits_algorithm<
-                RawGraph, RawVisitor, RawVIM
+                RawGraph, RawVisitor, RawVIM, GetAdjacentVertices
             > Algorithm;
 
     Algorithm(boost::forward<Graph>(graph),
@@ -176,18 +238,62 @@ void hawick_circuits(BOOST_FWD_REF(Graph) graph,
               boost::forward<VertexIndexMap>(vertex_index_map))();
 }
 
-template <typename Graph, typename Visitor>
-void hawick_circuits(BOOST_FWD_REF(Graph) graph,
-                     BOOST_FWD_REF(Visitor) visitor) {
+template <typename GetAdjacentVertices, typename Graph, typename Visitor>
+void call_hawick_circuits(BOOST_FWD_REF(Graph) graph,
+                          BOOST_FWD_REF(Visitor) visitor) {
     typedef typename boost::remove_reference<Graph>::type RawGraph;
     typedef typename boost::property_map<
                 RawGraph, boost::vertex_index_t
             >::const_type VertexIndexMap;
 
     VertexIndexMap vim = get(boost::vertex_index, graph);
-    hawick_circuits(boost::forward<Graph>(graph),
-                    boost::forward<Visitor>(visitor),
-                    boost::move(vim));
+    call_hawick_circuits<GetAdjacentVertices>(boost::forward<Graph>(graph),
+                                              boost::forward<Visitor>(visitor),
+                                              boost::move(vim));
+}
+} // end namespace hawick_circuits_detail
+
+namespace detail {
+template <typename Graph, typename Visitor, typename VertexIndexMap>
+void hawick_circuits(BOOST_FWD_REF(Graph) graph,
+                     BOOST_FWD_REF(Visitor) visitor,
+                     BOOST_FWD_REF(VertexIndexMap) vertex_index_map) {
+    hawick_circuits_detail::call_hawick_circuits<
+        hawick_circuits_detail::get_all_adjacent_vertices
+    >(
+        boost::forward<Graph>(graph),
+        boost::forward<Visitor>(visitor),
+        boost::forward<VertexIndexMap>(vertex_index_map)
+    );
+}
+
+template <typename Graph, typename Visitor>
+void hawick_circuits(BOOST_FWD_REF(Graph) graph,
+                     BOOST_FWD_REF(Visitor) visitor) {
+    hawick_circuits_detail::call_hawick_circuits<
+        hawick_circuits_detail::get_all_adjacent_vertices
+    >(boost::forward<Graph>(graph), boost::forward<Visitor>(visitor));
+}
+
+template <typename Graph, typename Visitor, typename VertexIndexMap>
+void hawick_unique_circuits(BOOST_FWD_REF(Graph) graph,
+                            BOOST_FWD_REF(Visitor) visitor,
+                            BOOST_FWD_REF(VertexIndexMap) vertex_index_map) {
+    hawick_circuits_detail::call_hawick_circuits<
+        hawick_circuits_detail::get_unique_adjacent_vertices
+    >(
+        boost::forward<Graph>(graph),
+        boost::forward<Visitor>(visitor),
+        boost::forward<VertexIndexMap>(vertex_index_map)
+    );
+}
+
+template <typename Graph, typename Visitor>
+void hawick_unique_circuits(BOOST_FWD_REF(Graph) graph,
+                            BOOST_FWD_REF(Visitor) visitor) {
+    hawick_circuits_detail::call_hawick_circuits<
+        hawick_circuits_detail::get_unique_adjacent_vertices
+    >(boost::forward<Graph>(graph), boost::forward<Visitor>(visitor));
 }
 } // end namespace detail
 } // end namespace d2
