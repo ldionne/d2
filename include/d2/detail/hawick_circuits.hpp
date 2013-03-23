@@ -137,7 +137,7 @@ struct hawick_circuits_algorithm {
         typedef typename ClosedMatrix::value_type::iterator ClosedVertexIter;
 
         put(blocked, u, blocked_false);
-        VertexList& closed_to_u = closed[index_of(u)];
+        VertexList closed_to_u = closed[index_of(u)];
         for (ClosedVertexIter w_it = closed_to_u.begin();
                                         w_it != closed_to_u.end(); ++w_it) {
             Vertex w = *w_it;
