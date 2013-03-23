@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <iterator>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -27,7 +28,7 @@ namespace d2_test {
  *
  * @tparam Algorithm A functor performing the algorithm under test. It must be
  *         possible to call the algorithm like `algorithm(graph, functor)`.
- *         The algorithm must yield sequences of edge descriptors to the
+ *         The algorithm must yield sequences of vertex descriptors to the
  *         functor.
  */
 template <typename Algorithm>
@@ -37,9 +38,9 @@ struct graph_cycles_test
     >
 {
     typedef typename graph_cycles_test::graph_type graph_type;
-    typedef typename graph_cycles_test::edge_info edge_info;
-    typedef typename graph_cycles_test::edge_descriptor edge_descriptor;
-    typedef std::vector<edge_info> cycle_type;
+    typedef typename graph_cycles_test::vertex_property vertex_property;
+    typedef typename graph_cycles_test::vertex_descriptor vertex_descriptor;
+    typedef std::vector<vertex_property> cycle_type;
 
     graph_type graph;
 
@@ -56,25 +57,25 @@ struct graph_cycles_test
         using namespace boost::phoenix::arg_names;
         actual_.clear();
         expected_.clear();
+        expected_.insert(expected.begin(), expected.end());
 
-        // Run the algorithm and gather cycles of edge descriptors.
-        std::vector<std::vector<edge_descriptor> > edesc_cycles;
+        // Run the algorithm and gather cycles of vertex descriptors.
+        std::vector<std::vector<vertex_descriptor> > vdesc_cycles;
         Algorithm()(graph,
-            d2::detail::on_cycle(push_back(boost::ref(edesc_cycles), _1)));
+            d2::detail::on_cycle(push_back(boost::ref(vdesc_cycles), _1)));
 
-        // Transform the cycles of edge descriptors into cycles of edge_info.
-        std::vector<std::vector<edge_info> > einfo_cycles;
-        BOOST_FOREACH(std::vector<edge_descriptor> const& edesc_cycle,
-                                                               edesc_cycles) {
-            std::vector<edge_info> einfo_cycle;
-            BOOST_FOREACH(edge_descriptor edesc, edesc_cycle)
-                einfo_cycle.push_back(edge_info(graph, edesc));
-            actual_.push_back(einfo_cycle);
+        // Transform the cycles of vertex descriptors into cycles of
+        // vertex properties.
+        std::vector<std::vector<vertex_property> > vprop_cycles;
+        BOOST_FOREACH(std::vector<vertex_descriptor> const& vdesc_cycle,
+                                                               vdesc_cycles) {
+            std::vector<vertex_property> vprop_cycle;
+            BOOST_FOREACH(vertex_descriptor vdesc, vdesc_cycle)
+                vprop_cycle.push_back(get(boost::vertex_bundle, graph, vdesc));
+            actual_.insert(vprop_cycle);
         }
 
-        expected_.assign(expected.begin(), expected.end());
-
-        ASSERT_TRUE(d2::detail::is_cyclic_permutation(expected_, actual_));
+        ASSERT_TRUE(expected_ == actual_);
     }
 
     void TearDown() {
@@ -95,35 +96,35 @@ private:
     template <typename Cycles>
     static void print_cycles(std::ostream& os, Cycles const& cycles) {
         typedef typename Cycles::const_reference Cycle;
+        typedef typename Cycles::value_type::value_type T;
         BOOST_FOREACH(Cycle const& cycle, cycles) {
             std::copy(cycle.begin(), cycle.end(),
-                std::ostream_iterator<edge_info>(os, " "));
+                std::ostream_iterator<T>(os, " "));
             os << '\n';
         }
     }
 
-    std::vector<cycle_type> expected_, actual_;
+    std::multiset<cycle_type> expected_, actual_;
 };
 
 TYPED_TEST_CASE_P(graph_cycles_test);
 
 TYPED_TEST_P(graph_cycles_test, finds_trivial_cycle_AB) {
     using namespace boost::assign;
-    typedef typename graph_cycles_test<TypeParam>::edge_info edge_info;
     typedef typename graph_cycles_test<TypeParam>::cycle_type cycle_type;
 
     this->add_edge('A', "", 'B');
     this->add_edge('B', "", 'A');
 
-    cycle_type AB = list_of(edge_info('A', "", 'B'))
-                           (edge_info('B', "", 'A'));
-
-    this->validate_found_cycles(list_of(AB));
+    this->validate_found_cycles(
+            list_of<cycle_type>
+            (
+                list_of('A')('B')
+            ));
 }
 
 TYPED_TEST_P(graph_cycles_test, finds_both_cycles_ABC) {
     using namespace boost::assign;
-    typedef typename graph_cycles_test<TypeParam>::edge_info edge_info;
     typedef typename graph_cycles_test<TypeParam>::cycle_type cycle_type;
 
     this->add_edge('A', "", 'B');
@@ -131,46 +132,18 @@ TYPED_TEST_P(graph_cycles_test, finds_both_cycles_ABC) {
     this->add_edge('C', "", 'A');
     this->add_edge('A', "", 'C');
 
-    cycle_type ABC = list_of(edge_info('A', "", 'B'))
-                            (edge_info('B', "", 'C'))
-                            (edge_info('C', "", 'A'));
-
-    cycle_type AC = list_of(edge_info('A', "", 'C'))
-                           (edge_info('C', "", 'A'));
-
-    this->validate_found_cycles(list_of(ABC)(AC));
-}
-
-TYPED_TEST_P(graph_cycles_test, finds_multiple_cycles_in_multigraph_AB) {
-    using namespace boost::assign;
-    typedef typename graph_cycles_test<TypeParam>::edge_info edge_info;
-    typedef typename graph_cycles_test<TypeParam>::cycle_type cycle_type;
-
-    this->add_edge('A', "AB1", 'B');
-    this->add_edge('B', "BA1", 'A');
-
-    this->add_edge('A', "AB2", 'B');
-    this->add_edge('B', "BA2", 'A');
-
-    cycle_type AB1_BA1 = list_of(edge_info('A', "AB1", 'B'))
-                                (edge_info('B', "BA1", 'A'));
-
-    cycle_type AB1_BA2 = list_of(edge_info('A', "AB1", 'B'))
-                                (edge_info('B', "BA2", 'A'));
-
-    cycle_type AB2_BA1 = list_of(edge_info('A', "AB2", 'B'))
-                                (edge_info('B', "BA1", 'A'));
-
-    cycle_type AB2_BA2 = list_of(edge_info('A', "AB2", 'B'))
-                                (edge_info('B', "BA2", 'A'));
-
-    this->validate_found_cycles(list_of(AB1_BA1)(AB1_BA2)(AB2_BA1)(AB2_BA2));
+    this->validate_found_cycles(
+            list_of<cycle_type>
+            (
+                list_of('A')('B')('C')
+            )(
+                list_of('A')('C')
+            ));
 }
 
 REGISTER_TYPED_TEST_CASE_P(
     graph_cycles_test,
         finds_trivial_cycle_AB,
-        finds_both_cycles_ABC,
-        finds_multiple_cycles_in_multigraph_AB
+        finds_both_cycles_ABC
 );
 } // end namespace d2_test
