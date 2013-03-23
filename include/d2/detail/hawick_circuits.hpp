@@ -69,9 +69,19 @@ struct get_unique_adjacent_vertices {
     }
 };
 
+//! @internal Return whether a container contains a given value.
+template <typename Container, typename Value>
+bool contains(Container const& cont, BOOST_FWD_REF(Value) value) {
+    return std::find(cont.begin(), cont.end(), boost::forward<Value>(value))
+            != cont.end();
+}
+
 /*!
  * @internal
- * Implementation of Hawick's algorithm to find circuits.
+ * Algorithm finding all the cycles starting from a given vertex.
+ *
+ * The search is only done in the subgraph induced by the starting vertex
+ * and the vertices with an index higher than the starting vertex.
  */
 template <
     typename Graph,
@@ -79,15 +89,18 @@ template <
     typename VertexIndexMap,
     typename GetAdjacentVertices
 >
-struct hawick_circuits_algorithm {
+struct hawick_circuits_from {
+private:
     typedef boost::graph_traits<Graph> Traits;
     typedef typename Traits::vertex_descriptor Vertex;
     typedef typename Traits::edge_descriptor Edge;
-    typedef typename Traits::adjacency_iterator AdjacencyIterator;
     typedef typename Traits::vertices_size_type VerticesSize;
     typedef typename boost::property_traits<
                 VertexIndexMap
             >::reference VertexIndex;
+    typedef typename boost::result_of<
+                GetAdjacentVertices(Vertex, Graph const&)
+            >::type AdjacentVertices;
 
     typedef boost::one_bit_color_map<VertexIndexMap> BlockedMap;
     typedef boost::one_bit_color_type BlockedColor;
@@ -97,73 +110,70 @@ struct hawick_circuits_algorithm {
     typedef std::vector<Vertex> Stack;
     typedef std::vector<std::vector<Vertex> > ClosedMatrix;
 
-    Graph const& graph_;
-    // We use mutable to avoid being affected by the constness
-    // of the visitor's `cycle` method.
-    Visitor mutable visitor_;
-    VertexIndexMap const vim_;
+public:
+    hawick_circuits_from(Graph const& graph, Visitor& visitor,
+                         VertexIndexMap const& vim, VerticesSize n_vertices)
+        : graph_(graph), visitor_(visitor), vim_(vim),
+          blocked_(n_vertices, vim_), closed_(n_vertices)
+        {
+            stack_.reserve(n_vertices);
+        }
 
-    hawick_circuits_algorithm(Graph const& graph,
-                              Visitor const& visitor,
-                              VertexIndexMap const& vertex_index_map)
-        : graph_(graph), visitor_(visitor), vim_(vertex_index_map)
-    { }
-
-    VertexIndex index_of(Vertex u) const {
-        return get(vim_, u);
+private:
+    //! Return the index of a given vertex.
+    VertexIndex index_of(Vertex v) const {
+        return get(vim_, v);
     }
 
-    //! Return whether a container contains a given value.
-    template <typename Container, typename Value>
-    static bool contains(Container const& cont, BOOST_FWD_REF(Value) value) {
-        return std::find(cont.begin(), cont.end(),
-                                boost::forward<Value>(value)) != cont.end();
-    }
 
     //! Return whether a vertex `v` is closed to a vertex `u`.
-    bool is_closed_to(Vertex u, Vertex v, ClosedMatrix const& closed) const {
+    bool is_closed_to(Vertex u, Vertex v) const {
         typedef typename ClosedMatrix::const_reference VertexList;
-        VertexList list_of_closed_to_u = closed[index_of(u)];
-        return contains(list_of_closed_to_u, v);
+        VertexList closed_to_u = closed_[index_of(u)];
+        return contains(closed_to_u, v);
     }
 
-    // Close a vertex `v` to a vertex `u`.
-    void make_closed_to(Vertex u, Vertex v, ClosedMatrix& closed) const {
-        closed[index_of(u)].push_back(v);
+    //! Close a vertex `v` to a vertex `u`.
+    void close_to(Vertex u, Vertex v) {
+        BOOST_ASSERT(!is_closed_to(u, v));
+        closed_[index_of(u)].push_back(v);
     }
 
-    void unblock(Vertex u, BlockedMap& blocked, ClosedMatrix& closed) const {
+
+    //! Return whether a given vertex is blocked.
+    bool is_blocked(Vertex v) const {
+        return get(blocked_, v) == blocked_true;
+    }
+
+    //! Block a given vertex.
+    void block(Vertex v) {
+        put(blocked_, v, blocked_true);
+    }
+
+    //! Unblock a given vertex.
+    void unblock(Vertex u) {
         typedef typename ClosedMatrix::reference VertexList;
         typedef typename ClosedMatrix::value_type::iterator ClosedVertexIter;
 
-        put(blocked, u, blocked_false);
-        VertexList closed_to_u = closed[index_of(u)];
-        for (ClosedVertexIter w_it = closed_to_u.begin();
-                                        w_it != closed_to_u.end(); ++w_it) {
-            Vertex w = *w_it;
-            closed_to_u.erase(
-                std::remove(w_it, closed_to_u.end(), w), closed_to_u.end());
+        put(blocked_, u, blocked_false);
+        VertexList closed_to_u = closed_[index_of(u)];
 
-            if (get(blocked, w))
-                unblock(w, blocked, closed);
+        while (!closed_to_u.empty()) {
+            Vertex w = closed_to_u.back();
+            closed_to_u.pop_back();
+            if (is_blocked(w))
+                unblock(w);
         }
+        BOOST_ASSERT(closed_to_u.empty());
     }
 
-    static void block(Vertex u, BlockedMap& blocked) {
-        put(blocked, u, blocked_true);
-    }
 
-    bool circuit(Vertex start, Vertex v, BlockedMap& blocked,
-                 ClosedMatrix& closed, Stack& stack) const {
+    bool circuit(Vertex start, Vertex v) {
         bool found_circuit = false;
-        stack.push_back(v);
-        block(v, blocked);
+        stack_.push_back(v);
+        block(v);
 
-        typedef typename boost::result_of<
-                    GetAdjacentVertices(Vertex, Graph const&)
-                >::type AdjacentVertices;
         AdjacentVertices const adj_vertices = GetAdjacentVertices()(v, graph_);
-
         BOOST_FOREACH(Vertex w, adj_vertices) {
             // Since we're only looking in the subgraph induced by `start` and
             // the vertices with an index higher than `start`, we skip any
@@ -174,19 +184,18 @@ struct hawick_circuits_algorithm {
             // If the last vertex is equal to `start`, we have a circuit.
             else if (w == start) {
                 // const_cast to ensure the visitor does not modify the stack
-                visitor_.cycle(const_cast<Stack const&>(stack), graph_);
+                visitor_.cycle(const_cast<Stack const&>(stack_), graph_);
                 found_circuit = true;
             }
 
             // If `w` is not blocked, we continue searching further down the
             // same path for a cycle with `w` in it.
-            else if (!get(blocked, w) &&
-                     circuit(start, w, blocked, closed, stack))
+            else if (!is_blocked(w) && circuit(start, w))
                 found_circuit = true;
         }
 
         if (found_circuit)
-            unblock(v, blocked, closed);
+            unblock(v);
         else
             BOOST_FOREACH(Vertex w, adj_vertices) {
                 // Like above, we skip vertices that are not in the subgraph
@@ -195,47 +204,50 @@ struct hawick_circuits_algorithm {
                     continue;
 
                 // If `v` is not closed to `w`, we make it so.
-                if (!is_closed_to(w, v, closed))
-                    make_closed_to(w, v, closed);
+                if (!is_closed_to(w, v))
+                    close_to(w, v);
             }
 
-        BOOST_ASSERT(v == stack.back());
-        stack.pop_back();
+        BOOST_ASSERT(v == stack_.back());
+        stack_.pop_back();
         return found_circuit;
     }
 
-    void operator()() {
-        VerticesSize const n_vertices = num_vertices(graph_);
-        BOOST_FOREACH(Vertex start, vertices(graph_)) {
-            BlockedMap blocked(n_vertices, vim_);
-            ClosedMatrix closed(n_vertices);
-            Stack stack;
-            stack.reserve(n_vertices);
-
-            // Find the circuits in the subgraph induced by `start` and the
-            // vertices with an index higher than `start`.
-            circuit(start, start, blocked, closed, stack);
-        }
+public:
+    void operator()(Vertex start) {
+        circuit(start, start);
     }
+
+private:
+    Graph const& graph_;
+    Visitor& visitor_;
+    VertexIndexMap const& vim_;
+
+    BlockedMap blocked_;
+    ClosedMatrix closed_;
+    Stack stack_;
 };
 
 template <
     typename GetAdjacentVertices,
     typename Graph, typename Visitor, typename VertexIndexMap
 >
-void call_hawick_circuits(BOOST_FWD_REF(Graph) graph,
-                          BOOST_FWD_REF(Visitor) visitor,
-                          BOOST_FWD_REF(VertexIndexMap) vertex_index_map) {
-    typedef typename boost::remove_reference<Graph>::type RawGraph;
-    typedef typename boost::remove_reference<Visitor>::type RawVisitor;
-    typedef typename boost::remove_reference<VertexIndexMap>::type RawVIM;
-    typedef hawick_circuits_detail::hawick_circuits_algorithm<
-                RawGraph, RawVisitor, RawVIM, GetAdjacentVertices
-            > Algorithm;
+void call_hawick_circuits(Graph const& graph, Visitor /* by value */ visitor,
+                          VertexIndexMap const& vertex_index_map) {
 
-    Algorithm(boost::forward<Graph>(graph),
-              boost::forward<Visitor>(visitor),
-              boost::forward<VertexIndexMap>(vertex_index_map))();
+    typedef boost::graph_traits<Graph> Traits;
+    typedef typename Traits::vertex_descriptor Vertex;
+    typedef typename Traits::vertices_size_type VerticesSize;
+    typedef hawick_circuits_from<
+                Graph, Visitor, VertexIndexMap, GetAdjacentVertices
+            > SubAlgorithm;
+
+    VerticesSize const n_vertices = num_vertices(graph);
+    BOOST_FOREACH(Vertex start, vertices(graph)) {
+        // We may NOT reuse sub_algo once it has been called.
+        SubAlgorithm sub_algo(graph, visitor, vertex_index_map, n_vertices);
+        sub_algo(boost::move(start));
+    }
 }
 
 template <typename GetAdjacentVertices, typename Graph, typename Visitor>
