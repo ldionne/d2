@@ -1,4 +1,5 @@
-/**
+/*!
+ * @file
  * This file defines utilities to provide diagnostics to the user from the
  * result of the analysis.
  */
@@ -13,6 +14,7 @@
 #include <boost/assert.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/operators.hpp>
+#include <boost/type_traits/remove_reference.hpp>
 #include <iosfwd>
 #include <vector>
 
@@ -21,7 +23,7 @@ namespace d2 {
 namespace diagnostic_detail {
 //! Class representing the state of a single deadlocked thread.
 struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
-    /**
+    /*!
      * Create a `deadlocked_thread` with the thread identifier `tid`,
      * holding a sequence of `locks` and waiting for the `waiting_for` lock.
      */
@@ -36,7 +38,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
             "lock while waiting for another one");
     }
 
-    /**
+    /*!
      * Create a `deadlocked_thread` with the thread identifier `tid`,
      * holding a sequence of `locks` in the range delimited by [first, last)
      * and waiting for the `waiting_for` lock.
@@ -59,7 +61,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     //! Type of the sequence of locks held by the thread.
     typedef std::vector<LockId> lock_sequence;
 
-    /**
+    /*!
      * Collection of locks held by that thread at the moment of the deadlock.
      * The locks are sorted in their order of acquisition.
      */
@@ -68,7 +70,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     //! Identifier of the lock the thread is waiting after.
     LockId waiting_for;
 
-    /**
+    /*!
      * Return whether two `deadlocked_thread`s represent the same thread
      * holding the same sequence of locks in the same order and waiting for
      * the same lock.
@@ -80,7 +82,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
                a.holding == b.holding;
     }
 
-    /**
+    /*!
      * Return whether `a`'s thread identifier is smaller than `b`'s.
      *
      * If both have the same thread identifier, the lock they are waiting
@@ -106,7 +108,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     std::ostream& operator<<(std::ostream&, deadlocked_thread const&);
 };
 
-/**
+/*!
  * Type representing a state which, if reached, would create a
  * deadlock in the program.
  *
@@ -123,14 +125,14 @@ class potential_deadlock : boost::less_than_comparable<potential_deadlock> {
             "once in the sequence of deadlocked threads");
     }
 
-    /**
+    /*!
      * Return whether the sequence of threads contains more than one thread
      * with the same identifier.
      */
     D2_DECL bool has_duplicate_threads() const;
 
 public:
-    /**
+    /*!
      * Create a `potential_deadlock` from a sequence of `deadlocked_thread`s
      * delimited by [first, last).
      *
@@ -147,22 +149,27 @@ public:
         invariants();
     }
 
-    /**
+    /*!
      * Create a `potential_deadlock` from the `deadlocked_thread`s contained
      * in `threads`.
      *
      * @pre A thread identifier appears at most once in the sequence.
      * @pre There are at least two threads in the sequence, otherwise a
      *      deadlock is impossible.
+     *
+     * @internal We use SFINAE to disable this constructor if `Container` is
+     *           not a container to avoid hiding the copy constructor.
      */
     template <typename Container>
-    explicit potential_deadlock(BOOST_FWD_REF(Container) threads)
+    explicit potential_deadlock(BOOST_FWD_REF(Container) threads,
+        typename boost::remove_reference<Container>::type::value_type* =0)
+
         : threads(boost::forward<Container>(threads))
     {
         invariants();
     }
 
-    /**
+    /*!
      * Return the lexicographical comparison of the sequences of threads of
      * two `potential_deadlock`s.
      *
@@ -174,7 +181,7 @@ public:
         return a.threads < b.threads;
     }
 
-    /**
+    /*!
      * Return whether a deadlock is equivalent to another, i.e. if it consists
      * of the same sequence of threads in a possibly different order.
      */
@@ -191,7 +198,7 @@ public:
     std::ostream& operator<<(std::ostream&, potential_deadlock const&);
 };
 
-/**
+/*!
  * Write an explanation of the potential deadlock state in plain text to
  * an output stream.
  *
