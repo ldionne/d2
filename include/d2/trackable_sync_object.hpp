@@ -48,13 +48,39 @@ struct non_recursive;
  * Class providing basic facilities to notify the acquisition and the release
  * of synchronization objects to `d2`.
  *
- * Deriving from this class will provide the derived class with
- * `notify_lock()` and `notify_unlock()` protected methods. These methods
- * should be called as appropriate to notify `d2` of an acquisition or a
- * release of `*this`.
+ * An instance of this class must be associated with a single synchronization
+ * object. The `notify_lock()` and `notify_unlock()` methods must be called
+ * as appropriate to notify the library of an acquisition or release of the
+ * associated synchronization object.
+ *
+ * The easiest way to achieve this is the following:
+ * @code
+ *
+ *  class my_sync_object : private d2::trackable_sync_object<d2::non_recursive>
+ *  {
+ *  public:
+ *      void lock() {
+ *          // ...
+ *          this->notify_lock();
+ *      }
+ *
+ *      void unlock() {
+ *          // ...
+ *          this->notify_unlock();
+ *      }
+ *  };
+ *
+ * @endcode
+ *
+ * @note Using private inheritance should be preferred when possible for
+ *       the following reasons:
+ *          - It opens the door for the empty base class optimization.
+ *          - It ensures a one-to-one correspondence between synchronization
+ *            objects and `d2::trackable_sync_object`s without hassle.
+ *          - It does not alter the public interface of the derived class.
  *
  * @tparam Recursive
- *         Tag signaling whether it is legal for a synchronization object
+ *         Tag signalling whether it is legal for a synchronization object
  *         to be acquired recursively by the same thread. It must be one of
  *         `d2::non_recursive` and `d2::recursive`.
  */
@@ -68,7 +94,7 @@ class trackable_sync_object {
 
     BOOST_MPL_ASSERT((boost::mpl::or_<is_recursive, is_non_recursive>));
 
-protected:
+public:
     /*!
      * Notify `d2` of the acquisition of this synchronization object by the
      * current thread.

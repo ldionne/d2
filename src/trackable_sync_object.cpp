@@ -1,5 +1,6 @@
-/**
- * This file implements the `this_thread_id()` function.
+/*!
+ * @file
+ * This file implements the d2/trackable_sync_object.hpp header.
  */
 
 #define D2_SOURCE
@@ -13,8 +14,11 @@
 
 namespace d2 { namespace trackable_sync_object_detail {
     D2_DECL extern std::size_t this_thread_id() {
-        // TODO: Find a better way to do this portably, or at least
-        //       trigger an error when it would yield invalid results.
+        /*!
+         * @todo
+         * Find a better way to do this portably, or at least
+         * trigger an error when it would yield invalid results.
+         */
         using boost::hash_value;
         return hash_value(boost::this_thread::get_id());
     }
