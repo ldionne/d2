@@ -1,4 +1,5 @@
-/**
+/*!
+ * @file
  * Wrapper around the C API to make it more C++ish.
  */
 
@@ -13,11 +14,11 @@
 
 
 namespace d2 {
-
-/**
+/*!
  * Forwards to `d2_set_log_repository`.
  *
  * @see `d2_set_log_repository`
+ *
  * @internal The C-style return type is conserved because we might want to use
  *           error codes in the future.
  */
@@ -29,7 +30,7 @@ inline int set_log_repository(std::string const& path) {
     return set_log_repository(path.c_str());
 }
 
-/**
+/*!
  * Forwards to `d2_unset_log_repository`.
  *
  * @see `d2_unset_log_repository`
@@ -38,7 +39,7 @@ inline void unset_log_repository() {
     d2_unset_log_repository();
 }
 
-/**
+/*!
  * Forwards to `d2_disable_event_logging`.
  *
  * @see `d2_disable_event_logging`
@@ -47,7 +48,7 @@ inline void disable_event_logging() {
     d2_disable_event_logging();
 }
 
-/**
+/*!
  * Forwards to `d2_enable_event_logging`.
  *
  * @see `d2_enable_event_logging`
@@ -56,7 +57,7 @@ inline void enable_event_logging() {
     d2_enable_event_logging();
 }
 
-/**
+/*!
  * Forwards to `d2_is_enabled`.
  *
  * @see `d2_is_enabled`
@@ -65,7 +66,7 @@ inline bool is_enabled() {
     return d2_is_enabled() == 1;
 }
 
-/**
+/*!
  * Forwards to d2_is_disabled`.
  *
  * @see `d2_is_disabled`
@@ -74,10 +75,12 @@ inline bool is_disabled() {
     return d2_is_disabled() == 1;
 }
 
-/**
- * Forwards to `d2_notify_acquire`. Additionally, both objects may define a
- * `unique_id` function that can be found via ADL and that must return an
- * unsigned integral type representing the unique identifier of the object.
+/*!
+ * Forwards to `d2_notify_acquire`.
+ *
+ * Additionally, both objects may define a `unique_id` function that can be
+ * found via ADL and that must return an unsigned integral type representing
+ * the unique identifier of the object.
  *
  * @see `d2_notify_acquire`
  */
@@ -87,9 +90,10 @@ void notify_acquire(Thread const& thread, Lock const& lock) {
                       api_detail::unique_id_impl(lock));
 }
 
-/**
- * Forwards to `d2_notify_recursive_acquire`. Arguments may support the same
- * as with `notify_acquire`.
+/*!
+ * Forwards to `d2_notify_recursive_acquire`.
+ *
+ * Arguments may support the same as with `notify_acquire`.
  *
  * @see `notify_acquire`
  * @see `d2_notify_recursive_acquire`
@@ -100,9 +104,10 @@ void notify_recursive_acquire(Thread const& thread, Lock const& lock) {
                                 api_detail::unique_id_impl(lock));
 }
 
-/**
- * Forwards to `d2_notify_release`. Arguments may support the same as with
- * `notify_acquire`.
+/*!
+ * Forwards to `d2_notify_release`.
+ *
+ * Arguments may support the same as with `notify_acquire`.
  *
  * @see `notify_acquire`
  * @see `d2_notify_release`
@@ -113,9 +118,10 @@ void notify_release(Thread const& thread, Lock const& lock) {
                       api_detail::unique_id_impl(lock));
 }
 
-/**
- * Forwards to `d2_notify_recursive_release`. Arguments may support the same
- * as with `notify_acquire`.
+/*!
+ * Forwards to `d2_notify_recursive_release`.
+ *
+ * Arguments may support the same as with `notify_acquire`.
  *
  * @see `notify_acquire`
  * @see `d2_notify_recursive_release`
@@ -126,9 +132,10 @@ void notify_recursive_release(Thread const& thread, Lock const& lock) {
                                 api_detail::unique_id_impl(lock));
 }
 
-/**
- * Forwards to `d2_notify_start`. Arguments may support the same as with
- * `notify_acquire`.
+/*!
+ * Forwards to `d2_notify_start`.
+ *
+ * Arguments may support the same as with `notify_acquire`.
  *
  * @see `notify_acquire`
  * @see `d2_notify_start`
@@ -139,9 +146,10 @@ void notify_start(Thread const& parent, Thread const& child) {
                     api_detail::unique_id_impl(child));
 }
 
-/**
- * Forwards to `d2_notify_join`. Arguments may support the same as with
- * `notify_acquire`.
+/*!
+ * Forwards to `d2_notify_join`.
+ *
+ * Arguments may support the same as with `notify_acquire`.
  *
  * @see `notify_acquire`
  * @see `d2_notify_join`
@@ -152,7 +160,7 @@ void notify_join(Thread const& parent, Thread const& child) {
                    api_detail::unique_id_impl(child));
 }
 
-/**
+/*!
  * Forwards to `d2_get_lock_id`.
  *
  * @see `d2_get_lock_id`
@@ -160,32 +168,6 @@ void notify_join(Thread const& parent, Thread const& child) {
 inline std::size_t get_lock_id() {
     return d2_get_lock_id();
 }
-
-/**
- * Class used to ease the integration of the framework with existing
- * synchronization object classes.
- *
- * Using this as a base class will make the `Derived` class model the
- * `UniquelyIdentifiable` concept. In other words, the `Derived` will be
- * compatible with the `notify_*` calls from the API.
- *
- * @note Public inheritance must be used.
- * @see `UniquelyIdentifiable`
- */
-template <typename Derived>
-class deadlock_detectable {
-    std::size_t id_;
-
-public:
-    deadlock_detectable()
-        : id_(get_lock_id())
-    { }
-
-    friend std::size_t unique_id(deadlock_detectable const& self) {
-        return self.id_;
-    }
-};
-
 } // end namespace d2
 
 #endif // !D2_API_HPP
