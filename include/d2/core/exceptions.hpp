@@ -5,8 +5,8 @@
 #ifndef D2_CORE_EXCEPTIONS_HPP
 #define D2_CORE_EXCEPTIONS_HPP
 
-#include <d2/lock_id.hpp>
-#include <d2/thread_id.hpp>
+#include <d2/core/lock_id.hpp>
+#include <d2/core/thread_id.hpp>
 
 #include <boost/exception/all.hpp>
 #include <boost/throw_exception.hpp>

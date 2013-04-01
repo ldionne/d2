@@ -6,9 +6,9 @@
 #define D2_SOURCE
 #include <d2/core/analysis.hpp>
 #include <d2/core/diagnostic.hpp>
+#include <d2/core/lock_id.hpp>
 #include <d2/core/synchronization_skeleton.hpp>
 #include <d2/detail/decl.hpp>
-#include <d2/lock_id.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>

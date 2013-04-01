@@ -2,8 +2,8 @@
  * This file defines the `ThreadId` class.
  */
 
-#ifndef D2_THREAD_ID_HPP
-#define D2_THREAD_ID_HPP
+#ifndef D2_CORE_THREAD_ID_HPP
+#define D2_CORE_THREAD_ID_HPP
 
 #include <d2/uniquely_identifiable.hpp>
 
@@ -99,4 +99,4 @@ public:
 
 } // end namespace d2
 
-#endif // !D2_THREAD_ID_HPP
+#endif // !D2_CORE_THREAD_ID_HPP

@@ -9,10 +9,10 @@
 #include <d2/core/events.hpp>
 #include <d2/core/exceptions.hpp>
 #include <d2/core/lock_graph.hpp>
+#include <d2/core/lock_id.hpp>
+#include <d2/core/segment.hpp>
+#include <d2/core/thread_id.hpp>
 #include <d2/detail/lock_debug_info.hpp>
-#include <d2/lock_id.hpp>
-#include <d2/segment.hpp>
-#include <d2/thread_id.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/concept/assert.hpp>

@@ -5,11 +5,11 @@
 #ifndef D2_CORE_EVENTS_HPP
 #define D2_CORE_EVENTS_HPP
 
+#include <d2/core/lock_id.hpp>
+#include <d2/core/segment.hpp>
+#include <d2/core/thread_id.hpp>
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/detail/lock_debug_info.hpp>
-#include <d2/lock_id.hpp>
-#include <d2/segment.hpp>
-#include <d2/thread_id.hpp>
 
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/contains.hpp>

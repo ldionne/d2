@@ -2,8 +2,8 @@
  * This file defines the `Segment` class.
  */
 
-#ifndef D2_SEGMENT_HPP
-#define D2_SEGMENT_HPP
+#ifndef D2_CORE_SEGMENT_HPP
+#define D2_CORE_SEGMENT_HPP
 
 #include <boost/operators.hpp>
 #include <boost/serialization/access.hpp>
@@ -81,4 +81,4 @@ private:
 
 } // end namespace d2
 
-#endif // !D2_SEGMENT_HPP
+#endif // !D2_CORE_SEGMENT_HPP

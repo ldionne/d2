@@ -11,7 +11,7 @@
 #include <boost/function.hpp>
 #include <boost/move/utility.hpp>
 #include <d2/core/diagnostic.hpp>
-#include <d2/lock_id.hpp>
+#include <d2/core/lock_id.hpp>
 #include <vector>
 
 

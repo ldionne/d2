@@ -6,7 +6,7 @@
 #ifndef D2_CORE_SEGMENTATION_GRAPH_HPP
 #define D2_CORE_SEGMENTATION_GRAPH_HPP
 
-#include <d2/segment.hpp>
+#include <d2/core/segment.hpp>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/named_graph.hpp>

@@ -6,11 +6,11 @@
 #include <d2/api.h>
 #include <d2/core/events.hpp>
 #include <d2/core/filesystem_dispatcher.hpp>
+#include <d2/core/lock_id.hpp>
+#include <d2/core/thread_id.hpp>
 #include <d2/detail/atomic.hpp>
 #include <d2/detail/config.hpp>
 #include <d2/detail/mutex.hpp>
-#include <d2/lock_id.hpp>
-#include <d2/thread_id.hpp>
 
 #include <stddef.h>
 

@@ -91,7 +91,7 @@ namespace boost
 struct cycle_visitor
 {
     template <typename Path, typename Graph>
-    inline void cycle(const Path& p, const Graph& g)
+    inline void cycle(const Path&, const Graph&)
     { }
 };
 
@@ -106,7 +106,7 @@ struct min_max_cycle_visitor
     { }
 
     template <typename Path, typename Graph>
-    inline void cycle(const Path& p, const Graph& g)
+    inline void cycle(const Path& p, const Graph&)
     {
         BOOST_USING_STD_MIN();
         BOOST_USING_STD_MAX();

@@ -7,9 +7,9 @@
 #ifndef D2_CORE_DIAGNOSTIC_HPP
 #define D2_CORE_DIAGNOSTIC_HPP
 
+#include <d2/core/lock_id.hpp>
+#include <d2/core/thread_id.hpp>
 #include <d2/detail/decl.hpp>
-#include <d2/lock_id.hpp>
-#include <d2/thread_id.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/move/utility.hpp>
