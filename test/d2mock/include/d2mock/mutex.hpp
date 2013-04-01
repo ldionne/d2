@@ -18,7 +18,7 @@ struct mutex : boost::noncopyable {
 };
 } // end namespace mutex_detail
 
-typedef d2::basic_lockable<mutex_detail::mutex, false> mutex;
+typedef d2::basic_lockable<mutex_detail::mutex> mutex;
 } // end namespace d2
 
 #endif // !D2MOCK_MUTEX_HPP

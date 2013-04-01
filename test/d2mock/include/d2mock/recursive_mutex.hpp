@@ -18,8 +18,8 @@ struct recursive_mutex : boost::noncopyable {
 };
 } // end namespace recursive_mutex_detail
 
-typedef d2::basic_lockable<
-            recursive_mutex_detail::recursive_mutex, true
+typedef d2::recursive_basic_lockable<
+            recursive_mutex_detail::recursive_mutex
         > recursive_mutex;
 } // end namespace d2mock
 

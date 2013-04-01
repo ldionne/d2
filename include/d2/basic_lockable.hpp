@@ -1,5 +1,6 @@
-/**
- * This file implements the `basic_lockable` class.
+/*!
+ * @file
+ * This file implements wrappers for the `BasicLockable` concept.
  */
 
 #ifndef D2_BASIC_LOCKABLE_HPP
@@ -14,29 +15,44 @@
 
 
 namespace d2 {
-/**
+/*!
  * Wrapper over a synchronization object modeling the `BasicLockable` concept.
  *
  * When the object is `lock()`ed or `unlock()`ed, `d2` will be notified
  * automatically. Intended usage of this class goes as follow:
  * @code
  *
- *      namespace impl {
- *          class my_basic_lockable { ... };
- *      }
+ *  namespace impl {
+ *      class my_basic_lockable {
+ *      public:
+ *          void lock() {
+ *              // ...
+ *          }
  *
- *      typedef d2::basic_lockable<impl::my_basic_lockable> my_basic_lockable;
+ *          void unlock() {
+ *              // ...
+ *          }
+ *      };
+ *  } // end namespace impl
+ *
+ *  typedef d2::basic_lockable<impl::my_basic_lockable> my_basic_lockable;
  *
  * @endcode
  *
  * @tparam BasicLockable The type of the wrapped synchronization object.
- * @tparam recursive Whether the synchronization object is recursive.
+ * @tparam Recursive
+ *         Whether the synchronization object is recursive. It defaults to
+ *         `d2::non_recursive`.
  */
-template <typename BasicLockable, bool recursive = false>
-struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
+template <typename BasicLockable, typename Recursive = non_recursive>
+class basic_lockable
+    : public BasicLockable,
+      protected trackable_sync_object<Recursive>
+{
+public:
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
-    /**
+    /*!
      * Call the `lock()` method of `BasicLockable` and notify `d2` of the
      * acquisition of `*this`.
      */
@@ -45,7 +61,7 @@ struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
         this->notify_lock();
     }
 
-    /**
+    /*!
      * Call the `unlock()` method of `BasicLockable` and notify `d2` of the
      * release of `*this`.
      */
@@ -55,12 +71,23 @@ struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
     }
 };
 
-/**
+//! Shortcut for `d2::basic_lockable<RecursiveBasicLockable, d2::recursive>`.
+template <typename RecursiveBasicLockable>
+class recursive_basic_lockable
+    : public basic_lockable<RecursiveBasicLockable, recursive>
+{
+    typedef basic_lockable<RecursiveBasicLockable, recursive> Base;
+
+public:
+    D2_INHERIT_CONSTRUCTORS(recursive_basic_lockable, Base)
+};
+
+/*!
  * @internal
  * Code required to create a mixin for the `BasicLockable` concept.
- * Additionally, the class must also derive from `trackable_sync_object`.
+ * The class must also derive from `d2::trackable_sync_object`.
  */
-#define D2_BASIC_LOCKABLE_MIXIN_CODE(Derived)                               \
+#define D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)                             \
     void lock() {                                                           \
         static_cast<Derived*>(this)->lock_impl();                           \
         this->notify_lock();                                                \
@@ -72,25 +99,79 @@ struct basic_lockable : BasicLockable, trackable_sync_object<recursive> {
     }                                                                       \
 /**/
 
-//! Mixin version of the `basic_lockable` wrapper.
-template <typename Derived, bool recursive = false>
-struct basic_lockable_mixin : trackable_sync_object<recursive> {
-    D2_BASIC_LOCKABLE_MIXIN_CODE(Derived)
+/*!
+ * Mixin augmenting its derived class with `d2` tractability.
+ *
+ * By implementing `lock_impl()` and `unlock_impl()` methods, the derived
+ * class automatically gets augmented with `lock()` and `unlock()` methods
+ * notifying `d2` after forwarding to the `*_impl()` implementation.
+ *
+ * Intended usage of this class goes as follow:
+ * @code
+ *
+ *  class my_basic_lockable
+ *      : public d2::basic_lockable_mixin<my_basic_lockable>
+ *  {
+ *      friend class d2::basic_lockable_mixin<my_basic_lockable>;
+ *
+ *      void lock_impl() {
+ *          // ...
+ *      }
+ *
+ *      void unlock_impl() {
+ *          // ...
+ *      }
+ *  };
+ *
+ * @endcode
+ *
+ * @tparam Derived The derived class to augment with tracking.
+ * @tparam Recursive
+ *         Whether the tracking should assume a recursive locking policy. It
+ *         defaults to `d2::non_recursive`.
+ *
+ * @note The `lock_impl()` and `unlock_impl()` methods must both be visible
+ *       to the base class. Granting friendship to the mixin may be required.
+ *
+ * @note The `boost::is_recursive_mutex_sur_parolle` trait will _not_ be
+ *       specialized automatically when using this mixin. This differs from
+ *       the behavior of using `d2::basic_lockable` and is caused by
+ *       implementation issues.
+ */
+template <typename Derived, typename Recursive = non_recursive>
+class basic_lockable_mixin : private trackable_sync_object<Recursive> {
+public:
+    D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)
+};
+
+//! Shortcut for `d2::basic_lockable_mixin<Derived, d2::recursive>`.
+template <typename Derived>
+class recursive_basic_lockable_mixin : public trackable_sync_object<recursive>{
+public:
+    D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)
 };
 } // end namespace d2
 
-namespace boost {
-    namespace sync {
-        template <typename L, bool recursive>
-        class is_basic_lockable<d2::basic_lockable<L, recursive> >
-            : public boost::mpl::true_
-        { };
+namespace boost { namespace sync {
+    template <typename L, typename Recursive>
+    class is_basic_lockable<d2::basic_lockable<L, Recursive> >
+        : public boost::mpl::true_
+    { };
 
-        template <typename L>
-        class is_recursive_mutex_sur_parolle<d2::basic_lockable<L, true> >
-            : public boost::mpl::true_
-        { };
-    }
-}
+    template <typename L>
+    class is_basic_lockable<d2::recursive_basic_lockable<L> >
+        : public boost::mpl::true_
+    { };
+
+    template <typename L>
+    class is_recursive_mutex_sur_parolle<d2::basic_lockable<L, d2::recursive> >
+        : public boost::mpl::true_
+    { };
+
+    template <typename L>
+    class is_recursive_mutex_sur_parolle<d2::recursive_basic_lockable<L> >
+        : public boost::mpl::true_
+    { };
+}} // end namespace boost::sync
 
 #endif // !D2_BASIC_LOCKABLE_HPP

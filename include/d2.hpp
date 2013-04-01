@@ -1,5 +1,6 @@
-/**
- * Master header for the `d2` project.
+/*!
+ * @file
+ * Master header for the `d2` library.
  */
 
 #ifndef D2_HPP
