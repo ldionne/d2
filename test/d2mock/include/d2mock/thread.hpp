@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/thread.hpp>
 #include <cstddef>
+#include <d2/trackable_thread.hpp>
 
 
 namespace d2mock {
@@ -32,6 +33,7 @@ struct thread_id : boost::equality_comparable<thread_id> {
 
 private:
     boost::thread::id id_;
+    d2::thread_bridge bridge_;
 };
 
 struct thread {

@@ -1,163 +1,101 @@
 /*!
  * @file
- * This file implements the `d2::trackable_thread` and the
- * `d2::thread_function` classes.
+ * This file defines the `d2::trackable_thread` class.
  */
 
 #ifndef D2_TRACKABLE_THREAD_HPP
 #define D2_TRACKABLE_THREAD_HPP
 
-#include <d2/api.hpp>
-#include <d2/detail/inherit_constructors.hpp>
-#include <d2/trackable_sync_object.hpp>
+#include <d2/thread_function.hpp>
+#include <d2/thread_lifetime.hpp>
 
-#include <boost/fusion/functional/adapter/unfused.hpp>
-#include <boost/fusion/functional/generation/make_fused.hpp>
-#include <boost/move/utility.hpp>
-#include <boost/type_traits/decay.hpp>
-#include <boost/utility/result_of.hpp>
-#include <cstddef>
+#include <boost/config.hpp>
+#include <boost/move/move.hpp>
+#include <boost/utility/swap.hpp>
 
 
 namespace d2 {
 namespace trackable_thread_detail {
-namespace fsn = boost::fusion;
+    struct lifetime_as_member {
+        lifetime_as_member() BOOST_NOEXCEPT { }
 
-template <typename Function_>
-class thread_function_impl {
-    typedef typename boost::decay<Function_>::type Function;
-    typedef std::size_t ThreadId;
+        lifetime_as_member(BOOST_RV_REF(lifetime_as_member) other)
+            : lifetime_(boost::move(other.lifetime_))
+        { }
 
-    static ThreadId this_thread_id() {
-        return trackable_sync_object_detail::this_thread_id();
-    }
+        lifetime_as_member& operator=(BOOST_RV_REF(lifetime_as_member) other) {
+            lifetime_ = boost::move(other.lifetime_);
+            return *this;
+        }
 
-    Function function_;
-    ThreadId parent_;
+        thread_lifetime lifetime_;
 
-public:
-    thread_function_impl()
-        : parent_(this_thread_id())
-    { }
-
-    /*!
-     * @internal
-     * Implicit is required because we perform a long-shot conversion from
-     * `Function` to `thread_function_impl` when we create a
-     * `d2::thread_function`.
-     */
-    /* implicit */ thread_function_impl(Function const& f)
-        : function_(f)
-        , parent_(this_thread_id())
-    { }
-
-    /* implicit */ thread_function_impl(BOOST_RV_REF(Function) f)
-        : function_(boost::move(f))
-        , parent_(this_thread_id())
-    { }
-
-    template <typename Sig>
-    struct result;
-
-    template <typename This, typename Args>
-    struct result<This(Args)>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function&>::type(Args)
-        >
-    { };
-
-    template <typename This, typename Args>
-    struct result<This const(Args)>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function const&>::type(Args)
-        >
-    { };
-
-    template <typename Args>
-    typename boost::result_of<thread_function_impl(BOOST_FWD_REF(Args))>::type
-    operator()(BOOST_FWD_REF(Args) args) {
-        ThreadId const child = this_thread_id();
-        d2::notify_start(parent_, child);
-        return fsn::make_fused(function_)(boost::forward<Args>(args));
-    }
-
-    template <typename Args>
-    typename boost::result_of<
-        thread_function_impl const(BOOST_FWD_REF(Args))
-    >::type operator()(BOOST_FWD_REF(Args) args) const {
-        ThreadId const child = this_thread_id();
-        d2::notify_start(parent_, child);
-        return fsn::make_fused(function_)(boost::forward<Args>(args));
-    }
-};
+    private:
+        BOOST_MOVABLE_BUT_NOT_COPYABLE(lifetime_as_member)
+    };
 } // end namespace trackable_thread_detail
 
 /*!
- * Wrapper over a function meant to be executed in a different thread.
+ * Wrapper over a standard conformant thread class to add tracking of the
+ * thread's lifetime.
  *
- * When it is called, the wrapper will notify the library that a thread was
- * started. All functions executed in a different thread should be wrapped
- * with this to ensure the library can track the threads correctly.
+ * @warning If the wrapped thread is not standard conformant, the behavior is
+ *          undefined.
  *
- * Intended usage is as follows:
- * @code
- *
- *  class thread {
- *  public:
- *      template <typename F, typename ...Args>
- *      void start(F&& f_, Args&& ...args) {
- *          d2::thread_function<F> f(boost::forward<F>(f_));
- *          // now, proceed with `f` exactly as if you would normally
- *      }
- *  };
- *
- * @endcode
- *
- * @tparam Function
- *         The type of the wrapped function. Before being used, `Function` is
- *         decayed. Thus, `Function` being a function type, a reference to a
- *         function or something similar is not an error because it will
- *         be taken away by `boost::decay`.
- *
- * @internal This should be a template alias, but we want to stay portable.
- */
-template <typename Function>
-class thread_function
-    : public boost::fusion::unfused<
-        trackable_thread_detail::thread_function_impl<Function>,
-        true /* allow nullary */
-    >
-{
-    typedef boost::fusion::unfused<
-                trackable_thread_detail::thread_function_impl<Function>,
-                true /* allow nullary */
-            > Base;
-public:
-    thread_function() { }
-    D2_INHERIT_CONSTRUCTORS(thread_function, Base)
-};
-
-//! Helper to create a `d2::thread_function` with a deduced `Function` type.
-template <typename Function>
-thread_function<Function> make_thread_function(BOOST_FWD_REF(Function) f) {
-    return thread_function<Function>(boost::forward<Function>(f));
-}
-
-/*!
- *
+ * @internal Private inheritance is for the base-from-member idiom.
  */
 template <typename Thread>
-class trackable_thread {
+class trackable_thread
+    : private trackable_thread_detail::lifetime_as_member,
+      public Thread
+{
+    typedef trackable_thread_detail::lifetime_as_member lifetime_as_member;
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(trackable_thread)
+
 public:
+    trackable_thread() BOOST_NOEXCEPT { }
+
+    template <typename F, typename ...Args>
+    explicit trackable_thread(BOOST_FWD_REF(F) f, BOOST_FWD_REF(Args) ...args)
+        : lifetime_as_member(),
+          Thread(
+            (this->lifetime_.about_to_start(),
+                make_thread_function(this->lifetime_, boost::forward<F>(f))),
+                 boost::forward<Args>(args)...)
+    { }
+
+    trackable_thread(BOOST_RV_REF(trackable_thread) other) BOOST_NOEXCEPT
+        : lifetime_as_member(
+            boost::move(static_cast<lifetime_as_member&>(other))),
+          Thread(boost::move(static_cast<Thread&>(other)))
+    { }
+
+    trackable_thread&
+    operator=(BOOST_RV_REF(trackable_thread) other) BOOST_NOEXCEPT {
+        lifetime_as_member::operator=(
+            boost::move(static_cast<lifetime_as_member&>(other)));
+        Thread::operator=(boost::move(static_cast<Thread&>(other)));
+        return *this;
+    }
+
+    void swap(trackable_thread& other) BOOST_NOEXCEPT {
+        boost::swap(static_cast<lifetime_as_member&>(*this),
+                    static_cast<lifetime_as_member&>(other));
+        boost::swap(static_cast<Thread&>(*this), static_cast<Thread&>(other));
+    }
+
+    friend void swap(thread& x, thread& y) BOOST_NOEXCEPT {
+        x.swap(y);
+    }
 
     void join() {
         Thread::join();
-        d2::notify_join(this_thread_id(), joined.get_id());
+        this->lifetime_.just_joined();
     }
 
     void detach() {
-        //! @todo Add support for detached threads. issue #18
         Thread::detach();
+        this->lifetime_.just_detached();
     }
 };
 } // end namespace d2

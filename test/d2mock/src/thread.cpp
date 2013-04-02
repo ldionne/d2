@@ -65,7 +65,9 @@ D2MOCK_DECL void thread::start() {
         f();
     };
 
-    actual_.reset(new boost::thread(d2::make_thread_function(thread_start));
+    bridge_.about_to_start();
+    actual_.reset(new boost::thread(
+                        d2::make_thread_function(bridge_, thread_start));
 }
 
 D2MOCK_DECL void thread::join() {
@@ -74,7 +76,7 @@ D2MOCK_DECL void thread::join() {
     // actual_->join(), we may or may not have a thread id, depending
     // on the thread scheduling.
     actual_->join();
-    d2::notify_join(this_thread::get_id(), get_id());
+    bridge_.just_joined();
 }
 
 D2MOCK_DECL extern std::size_t unique_id(thread const& self) {
