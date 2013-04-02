@@ -58,15 +58,14 @@ D2MOCK_DECL void thread::start() {
     BOOST_ASSERT_MSG(!was_started(),
         "starting a thread that was already started");
 
-    thread::id parent = this_thread::get_id();
     boost::shared_ptr<boost::atomic<id> > child = this->id_;
     boost::function<void()> f = this->f_;
-    actual_.reset(new boost::thread([f, parent, child] {
-        *child = this_thread::get_id(); // initialize the child thread's id
-                            // atomic cast to thread::id
-        d2::notify_start(parent, static_cast<thread::id>(*child));
+    auto thread_start = [f, child] {
+        *child = this_thread::get_id(); // initialize the child thread's tid
         f();
-    }));
+    };
+
+    actual_.reset(new boost::thread(d2::make_thread_function(thread_start));
 }
 
 D2MOCK_DECL void thread::join() {
