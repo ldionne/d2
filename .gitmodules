@@ -4,3 +4,6 @@
 [submodule "ext/backward-cpp"]
 	path = ext/backward-cpp
 	url = https://github.com/ldionne/backward-cpp.git
+[submodule "ext/gtest"]
+	path = ext/gtest
+	url = https://github.com/ldionne/gtest.git
