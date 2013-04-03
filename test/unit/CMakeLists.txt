@@ -1,40 +1,46 @@
-# Add standalone unit tests with optional boost dependencies.
-# Unit tests will depend on the `unit' target.
-add_custom_target(unit)
-function(d2_add_standalone_unit_test name sources) # boost components...
-    d2_add_executable(test_${name} ${sources} ${ARGN})
-    add_test(NAME ${name} COMMAND test_${name})
-    add_dependencies(unit test_${name})
-endfunction()
-d2_add_standalone_unit_test(basic_lockable test_basic_lockable.cpp)
-d2_add_standalone_unit_test(lockable test_lockable.cpp)
-d2_add_standalone_unit_test(partition_by_index detail/partition_by_index.cpp)
-d2_add_standalone_unit_test(timed_lockable test_timed_lockable.cpp)
-d2_add_standalone_unit_test(uniquely_identifiable test_uniquely_identifiable.cpp)
-target_link_libraries(test_basic_lockable ${Boost_SYSTEM_LIBRARY})
-target_link_libraries(test_lockable ${Boost_SYSTEM_LIBRARY})
-target_link_libraries(test_timed_lockable ${Boost_SYSTEM_LIBRARY})
+#=============================================================================
+# Setup unit tests
+#=============================================================================
+include(GoogleTest)
+find_package(Boost 1.53 REQUIRED filesystem system graph)
 
-# Add unit tests requiring Google test and d2.
-function(d2_add_unit_test name source) # boost components...
-    if(NOT ${GTEST_FOUND})
-        message("Missing Google Test library: ${name} will be unavailable.")
-    else()
-        d2_add_standalone_unit_test(${name} ${source} ${ARGN})
-        target_link_libraries(test_${name} ${GTEST_BOTH_LIBRARIES} d2)
-    endif()
+add_custom_target(unit COMMENT "build all the unit tests")
+add_custom_target(check_unit
+    DEPENDS unit
+    COMMAND ${CMAKE_CTEST_COMMAND}
+    COMMENT "build and then run all the unit tests"
+)
+function(d2_add_unit_test name sources)
+    add_executable(${name} EXCLUDE_FROM_ALL ${sources})
+    set_property(TARGET ${name}
+        APPEND PROPERTY INCLUDE_DIRECTORIES ${GTEST_INCLUDE_DIRS}
+    )
+    target_link_libraries(${name} d2 ${GTEST_BOTH_LIBRARIES} ${ARGN})
+    add_test(NAME ${name} COMMAND ${name})
+    add_dependencies(unit ${name})
 endfunction()
-d2_add_unit_test(c_api test_c_api.c)
-d2_add_unit_test(cyclic_permutation detail/test_cyclic_permutation.cpp)
-d2_add_unit_test(filesystem core/test_filesystem.cpp filesystem system)
-d2_add_unit_test(hawick_circuits detail/test_hawick_circuits.cpp graph)
-d2_add_unit_test(lock_debug_info detail/lock_debug_info.cpp)
-d2_add_unit_test(segmentation_graph core/test_segmentation_graph.cpp graph)
-d2_add_unit_test(synchronization_skeleton core/test_synchronization_skeleton.cpp filesystem system)
-d2_add_unit_test(thread_function test_thread_function.cpp)
-d2_add_unit_test(thread_lifetime test_thread_lifetime.cpp)
-d2_add_unit_test(thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
-d2_add_unit_test(tiernan_all_cycles detail/test_tiernan_all_cycles.cpp graph)
-d2_add_unit_test(trackable_thread test_trackable_thread.cpp)
-d2_add_unit_test(unordered_difference detail/test_unordered_difference.cpp)
-d2_add_unit_test(vertex_to_edge_path detail/test_vertex_to_edge_path.cpp)
+
+# Shortcuts for boost libraries
+set(bfs ${Boost_FILESYSTEM_LIBRARY})
+set(bsys ${Boost_SYSTEM_LIBRARY})
+set(bgraph ${Boost_GRAPH_LIBRARY})
+
+d2_add_unit_test(test_basic_lockable             test_basic_lockable.cpp ${bsys})
+d2_add_unit_test(test_c_api                      test_c_api.c)
+d2_add_unit_test(test_cyclic_permutation         detail/test_cyclic_permutation.cpp)
+d2_add_unit_test(test_filesystem                 core/test_filesystem.cpp ${bfs} ${bsys})
+d2_add_unit_test(test_hawick_circuits            detail/test_hawick_circuits.cpp ${bgraph})
+d2_add_unit_test(test_lock_debug_info            detail/lock_debug_info.cpp)
+d2_add_unit_test(test_lockable                   test_lockable.cpp ${bsys})
+d2_add_unit_test(test_partition_by_index         detail/partition_by_index.cpp)
+d2_add_unit_test(test_segmentation_graph         core/test_segmentation_graph.cpp ${bgraph})
+d2_add_unit_test(test_synchronization_skeleton   core/test_synchronization_skeleton.cpp ${bfs} ${bsys})
+d2_add_unit_test(test_thread_function            test_thread_function.cpp)
+d2_add_unit_test(test_thread_lifetime            test_thread_lifetime.cpp)
+d2_add_unit_test(test_thread_lockable_archetypes detail/test_thread_lockable_archetypes.cpp)
+d2_add_unit_test(test_tiernan_all_cycles         detail/test_tiernan_all_cycles.cpp ${bgraph})
+d2_add_unit_test(test_timed_lockable             test_timed_lockable.cpp ${bsys})
+d2_add_unit_test(test_trackable_thread           test_trackable_thread.cpp)
+d2_add_unit_test(test_uniquely_identifiable      test_uniquely_identifiable.cpp)
+d2_add_unit_test(test_unordered_difference       detail/test_unordered_difference.cpp)
+d2_add_unit_test(test_vertex_to_edge_path        detail/test_vertex_to_edge_path.cpp)

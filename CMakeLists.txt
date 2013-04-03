@@ -1,104 +1,113 @@
-cmake_minimum_required(VERSION 2.8.8)
-cmake_policy(VERSION 2.8.8)
+#=============================================================================
+# Setup project
+#=============================================================================
+project(d2 CXX C) # C required for the test_c_api unit test
+cmake_minimum_required(VERSION 2.8)
 
-project(d2)
-enable_testing()
+set(PACKAGE_NAME d2)
+set(PACKAGE_VERSION 1.0)
+set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 
+# Add path for custom modules
+set(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH}
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+)
 
-# Default the build type to Debug
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(D2_IS_NESTED FALSE)
+else()
+    set(D2_IS_NESTED TRUE)
 endif()
 
 
-# Function linking boost components to a target.
-function(d2_link_boost target) # boost components
-    foreach(component ${ARGN})
-        string(TOUPPER ${component} COMPONENT)
-        if(${Boost_${COMPONENT}_FOUND})
-            target_link_libraries(${target} ${Boost_${COMPONENT}_LIBRARY})
-        endif()
-    endforeach()
-endfunction()
+#=============================================================================
+# Setup CMake options
+#=============================================================================
+include(CMakeDependentOption)
+option(D2_ENABLE_PEDANTIC   "Compile with pedantic enabled." ON)
+option(D2_ENABLE_WERROR     "Fail and stop if a warning is triggered." OFF)
+option(D2_ENABLE_CXX0X      "Enable -std=c++0x and use of c++0x language features if the compiler supports it." OFF)
+option(D2_ENABLE_LIBCXX     "Enable -stdlib=libc++ if the compiler supports it (I think only clang does)." OFF)
+option(D2_ENABLE_SHARED     "Build d2 as a shared library." ON)
+CMAKE_DEPENDENT_OPTION(
+    D2_ENABLE_TESTS "Enable the unit tests. To avoid target name conflicts and cluttering the list of targets, unit tests are disabled when d2 is nested inside another project."
+    OFF "D2_IS_NESTED" # OFF when D2_IS_NESTED
+    ON                 # ON otherwise
+)
 
 
-# Function adding an executable with optional boost dependencies. The
-# executable is added only if all the boost dependencies are satisfied. If so,
-# all the boost libraries upon which the executable depends are linked into it.
-function(d2_add_executable target sources) # boost components...
-    foreach(component ${ARGN})
-        string(TOUPPER ${component} COMPONENT)
-        if(NOT ${Boost_${COMPONENT}_FOUND})
-            set(missing "${component}, ${missing}")
-        else()
-            list(APPEND boost_dependencies ${Boost_${COMPONENT}_LIBRARY})
-        endif()
-    endforeach()
+#=============================================================================
+# Setup warning flags
+#=============================================================================
+include(ConfigureCompilerAndSystem)
 
-    if(missing)
-        message("Missing dependencies ${missing}: ${target} will be unavailable.")
-    else()
-        add_executable(${target} ${sources})
-        d2_link_boost(${target} ${ARGN})
+macro(append_if condition lst var)
+    if (${condition})
+        list(APPEND ${lst} ${var})
     endif()
-endfunction()
+endmacro()
 
+append_if(D2_HAS_WALL_FLAG                      D2_CXX_WARNING_FLAGS -Wall)
+append_if(D2_HAS_WEXTRA_FLAG                    D2_CXX_WARNING_FLAGS -Wextra)
+append_if(D2_HAS_W_FLAG                         D2_CXX_WARNING_FLAGS -W)
+append_if(D2_HAS_WNO_UNUSED_LOCAL_TYPEDEF_FLAG  D2_CXX_WARNING_FLAGS -Wno-unused-local-typedefs)
+append_if(D2_HAS_WNO_UNUSED_PARAMETER_FLAG      D2_CXX_WARNING_FLAGS -Wno-unused-parameter)
+append_if(D2_HAS_WWRITE_STRINGS_FLAG            D2_CXX_WARNING_FLAGS -Wwrite-strings)
+append_if(D2_HAS_WNO_LONG_LONG_FLAG             D2_CXX_WARNING_FLAGS -Wno-long-long)
 
-# Determine whether we are on clang.
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(D2_WE_ARE_ON_CLANG TRUE)
-else()
-    set(D2_WE_ARE_ON_CLANG FALSE)
+if (D2_ENABLE_WERROR)
+    append_if(D2_HAS_WERROR_FLAG                D2_CXX_WARNING_FLAGS -Werror)
+    append_if(D2_HAS_WX_FLAG                    D2_CXX_WARNING_FLAGS -WX)
+endif()
+
+if (D2_ENABLE_PEDANTIC)
+    append_if(D2_HAS_PEDANTIC_FLAG              D2_CXX_WARNING_FLAGS -pedantic)
 endif()
 
 
-# Add some custom compiler flags.
-if(${CMAKE_COMPILER_IS_GNUCXX})
-    add_definitions(-Wno-unused-local-typedefs)
-endif()
-if((${D2_WE_ARE_ON_CLANG}) OR (${CMAKE_COMPILER_IS_GNUCXX}))
-    add_definitions(-Wall -Wextra -pedantic)
-elseif(MSVC)
-    add_definitions(-W3 # -W4 and above is just crazy
-                    -D_SCL_SECURE_NO_WARNINGS  # disable non standard MSVC
-                    -D_CRT_SECURE_NO_WARNINGS) # warnings
+#=============================================================================
+# Setup feature flags
+#=============================================================================
+# Compile with c++0x or not
+if (D2_ENABLE_CXX0X AND D2_HAS_STDCXX0X_FLAG)
+    list(APPEND D2_CXX_FEATURE_FLAGS -std=c++0x)
 endif()
 
-
-# Try finding Boost libraries.
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.53.0 OPTIONAL_COMPONENTS graph thread program_options filesystem system serialization)
-if(NOT Boost_INCLUDE_DIR)
-    message(FATAL_ERROR "Boost include directory was not found. Since Boost is used everywhere in d2, CMake generation will now stop.")
-else()
-    include_directories(${Boost_INCLUDE_DIR})
-    link_directories(${Boost_LIBRARY_DIRS})
-    add_definitions(-DBOOST_SPIRIT_USE_PHOENIX_V3
-                    -DBOOST_ALL_NO_LIB
-                    -DBOOST_ALL_DYN_LINK
-                    -DBOOST_UNORDERED_USE_MOVE)
+# Dynamic or static library
+if (D2_ENABLE_SHARED)
+    list(APPEND D2_CXX_FEATURE_FLAGS -DD2_DYN_LINK)
 endif()
 
-
-# Add dbg (we should use find_package, but we don't have a FindFungo.cmake)
-add_subdirectory(ext/dbg EXCLUDE_FROM_ALL)
-include_directories(ext/dbg/include)
-
-add_subdirectory(ext/dyno EXCLUDE_FROM_ALL)
-include_directories(ext/dyno/include)
-
-
-# Try finding Google test.
-find_package(GTest 1.50.0)
-if(${GTEST_FOUND})
-    include_directories(${GTEST_INCLUDE_DIRS})
-    add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+# Whether to use libc++
+if (D2_ENABLE_LIBCXX AND D2_HAS_STDLIB_LIBCXX_FLAG)
+    list(APPEND D2_CXX_FEATURE_FLAGS -stdlib=libc++)
 endif()
 
+# This is the only place where add_definitions is called.
+add_definitions(
+    ${D2_CXX_WARNING_FLAGS}
+    ${D2_CXX_FEATURE_FLAGS}
+)
 
+
+#=============================================================================
+# Setup the d2 library
+#=============================================================================
 include_directories(include)
 add_subdirectory(src)
-add_subdirectory(test)
-add_subdirectory(utility)
+
+
+#=============================================================================
+# Setup the d2tool utility
+#=============================================================================
+add_subdirectory(d2tool)
+
+
+#=============================================================================
+# Setup tests
+#=============================================================================
+if (D2_ENABLE_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()

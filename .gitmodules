@@ -1,3 +1,6 @@
 [submodule "ext/dyno"]
 	path = ext/dyno
 	url = https://github.com/ldionne/dyno.git
+[submodule "ext/backward-cpp"]
+	path = ext/backward-cpp
+	url = https://github.com/ldionne/backward-cpp.git

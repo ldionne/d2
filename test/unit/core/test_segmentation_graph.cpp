@@ -5,8 +5,8 @@
 #include <d2/core/build_segmentation_graph.hpp>
 #include <d2/core/events.hpp>
 #include <d2/core/exceptions.hpp>
+#include <d2/core/segment.hpp>
 #include <d2/core/segmentation_graph.hpp>
-#include <d2/segment.hpp>
 
 #include <boost/assign.hpp>
 #include <boost/graph/graphviz.hpp>
