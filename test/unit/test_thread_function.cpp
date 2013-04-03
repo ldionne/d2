@@ -5,12 +5,11 @@
 
 #include <d2/thread_function.hpp>
 
+#include <gtest/gtest.h>
+
 
 namespace {
-
-} // end anonymous namespace
-
-
-int main() {
-
+TEST(thread_function, pending) {
+    FAIL();
 }
+} // end anonymous namespace

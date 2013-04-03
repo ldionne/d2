@@ -6,6 +6,7 @@
 #include <d2/trackable_thread.hpp>
 
 #include <boost/move/move.hpp>
+#include <gtest/gtest.h>
 
 
 namespace {
@@ -38,9 +39,8 @@ struct thread {
 private:
     BOOST_MOVABLE_BUT_NOT_COPYABLE(thread)
 };
-} // end anonymous namespace
 
-
-int main() {
-    typedef d2::trackable_thread<thread> Thread;
+TEST(trackable_thread, pending) {
+    FAIL();
 }
+} // end anonymous namespace

@@ -84,7 +84,7 @@ public:
         boost::swap(static_cast<Thread&>(*this), static_cast<Thread&>(other));
     }
 
-    friend void swap(thread& x, thread& y) BOOST_NOEXCEPT {
+    friend void swap(trackable_thread& x, trackable_thread& y) BOOST_NOEXCEPT{
         x.swap(y);
     }
 

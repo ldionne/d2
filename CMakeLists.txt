@@ -28,7 +28,7 @@ include(CMakeDependentOption)
 option(D2_ENABLE_PEDANTIC   "Compile with pedantic enabled." ON)
 option(D2_ENABLE_WERROR     "Fail and stop if a warning is triggered." OFF)
 option(D2_ENABLE_CXX0X      "Enable -std=c++0x and use of c++0x language features if the compiler supports it." OFF)
-option(D2_ENABLE_LIBCXX     "Enable -stdlib=libc++ if the compiler supports it (I think only clang does)." OFF)
+option(D2_ENABLE_LIBCXX     "Enable -stdlib=libc++ if the compiler supports it." OFF)
 option(D2_ENABLE_SHARED     "Build d2 as a shared library." ON)
 CMAKE_DEPENDENT_OPTION(
     D2_ENABLE_TESTS "Enable the unit tests. To avoid target name conflicts and cluttering the list of targets, unit tests are disabled when d2 is nested inside another project."
@@ -109,5 +109,12 @@ add_subdirectory(d2tool)
 #=============================================================================
 if (D2_ENABLE_TESTS)
     enable_testing()
-    add_subdirectory(test)
+    # Test executables must make the `check` target dependent on them so that
+    # issuing `make check` will build the tests before running them.
+    add_custom_target(check
+        COMMAND ${CMAKE_CTEST_COMMAND}
+        COMMENT "build and then run all the tests"
+    )
+    add_subdirectory(test/scenarios)
+    add_subdirectory(test/unit)
 endif()

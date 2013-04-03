@@ -4,12 +4,13 @@
 include(GoogleTest)
 find_package(Boost 1.53 REQUIRED filesystem system graph)
 
-add_custom_target(unit COMMENT "build all the unit tests")
+add_custom_target(build_unit COMMENT "build all the unit tests")
 add_custom_target(check_unit
-    DEPENDS unit
+    DEPENDS build_unit
     COMMAND ${CMAKE_CTEST_COMMAND}
     COMMENT "build and then run all the unit tests"
 )
+add_dependencies(check check_unit)
 function(d2_add_unit_test name sources)
     add_executable(${name} EXCLUDE_FROM_ALL ${sources})
     set_property(TARGET ${name}
@@ -17,7 +18,7 @@ function(d2_add_unit_test name sources)
     )
     target_link_libraries(${name} d2 ${GTEST_BOTH_LIBRARIES} ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
-    add_dependencies(unit ${name})
+    add_dependencies(build_unit ${name})
 endfunction()
 
 # Shortcuts for boost libraries
