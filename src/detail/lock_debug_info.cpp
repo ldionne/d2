@@ -9,8 +9,7 @@
 #include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
 #include <cstddef>
-#include <dbg/frames.hpp>
-#include <dbg/symbols.hpp>
+#include <backward.hpp>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -18,37 +17,18 @@
 
 namespace d2 {
 namespace detail {
-
-namespace {
-    template <typename OutputIterator>
-    class StackFrameSink : public dbg::symsink {
-        OutputIterator out_;
-
-    public:
-        explicit StackFrameSink(OutputIterator const& out) : out_(out) { }
-
-        virtual void process_function(void const* ip, char const* name,
-                                                      char const* module) {
-            BOOST_STATIC_ASSERT(sizeof(std::size_t) >= sizeof(void const*));
-            *out_++ = StackFrame(reinterpret_cast<std::size_t>(ip), name, module);
-        }
-    };
-} // end anonymous namespace
-
 void LockDebugInfo::init_call_stack(unsigned int ignore /*= 0*/) {
-    dbg::call_stack<100> stack;
-    dbg::symdb symbols;
-    stack.collect(ignore + 1); // ignore our frame
-    call_stack.reserve(stack.size());
+    backward::StackTrace st;
+    st.load_here(100);
+    backward::TraceResolver tr;
+    tr.load_stacktrace(st);
 
-    StackFrameSink<std::back_insert_iterator<CallStack> >
-                                    sink(std::back_inserter(call_stack));
-    for (unsigned int frame = 0; frame < stack.size(); ++frame)
-        symbols.lookup_function(stack.pc(frame), sink);
-
-    BOOST_ASSERT_MSG(call_stack.size() == stack.size(),
-                    "not all the frames from the dbg::call_stack "
-                    "were copied to this->call_stack");
+    call_stack.reserve(st.size());
+    for (unsigned int frame = 0; frame < st.size(); ++frame) {
+        backward::ResolvedTrace trace = tr.resolve(st[frame]);
+        call_stack.push_back(
+            StackFrame(reinterpret_cast<std::size_t>(trace.addr), trace.object_function, trace.object_filename));
+    }
 }
 
 namespace {
