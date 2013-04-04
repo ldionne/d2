@@ -82,6 +82,10 @@ endif()
 # Whether to use libc++
 if (D2_ENABLE_LIBCXX AND D2_HAS_STDLIB_LIBCXX_FLAG)
     list(APPEND D2_CXX_FEATURE_FLAGS -stdlib=libc++)
+    # the flag has to be passed to the linker too.
+    set(CMAKE_EXE_LINKER_FLAGS -stdlib=libc++)
+    set(CMAKE_SHARED_LINKER_FLAGS -stdlib=libc++)
+    set(CMAKE_MODULE_LINKER_FLAGS -stdlib=libc++)
 endif()
 
 # This is the only place where add_definitions is called.

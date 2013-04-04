@@ -1,5 +1,5 @@
 if (NOT D2_HAS_STDCXX0X_FLAG)
-    message(SEND_ERROR "the scenario tests require c++0x support. it looks like your compiler does not support it, so they will be skipped.")
+    message(SEND_ERROR "The scenario tests require c++0x support. It looks like your compiler does not support it, so they will be skipped.")
     return()
 endif()
 

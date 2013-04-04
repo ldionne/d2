@@ -20,6 +20,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex/v4/iterator_category.hpp>
+#include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <iterator>
 #include <utility>
@@ -43,48 +44,58 @@ struct dont_know_if_same_length { };
 struct use_operator_equal { };
 
 //! @internal Dispatch to the right implementation of `std::equal`.
-template <typename Iterator1, typename Iterator2, typename BinaryPredicate>
+template <
+    typename Iterator1, typename Iterator1x,
+    typename Iterator2, typename BinaryPredicate
+>
 bool std_equal_dispatch(BOOST_FWD_REF(Iterator1) first1,
-                        BOOST_FWD_REF(Iterator1) last1,
+                        BOOST_FWD_REF(Iterator1x) last1,
                         BOOST_FWD_REF(Iterator2) first2,
                         BOOST_FWD_REF(BinaryPredicate) pred) {
     return std::equal(boost::forward<Iterator1>(first1),
-                      boost::forward<Iterator1>(last1),
+                      boost::forward<Iterator1x>(last1),
                       boost::forward<Iterator2>(first2),
                       boost::forward<BinaryPredicate>(pred));
 }
 
-template <typename Iterator1, typename Iterator2>
+template <typename Iterator1, typename Iterator1x, typename Iterator2>
 bool std_equal_dispatch(BOOST_FWD_REF(Iterator1) first1,
-                        BOOST_FWD_REF(Iterator1) last1,
+                        BOOST_FWD_REF(Iterator1x) last1,
                         BOOST_FWD_REF(Iterator2) first2,
                         use_operator_equal) {
     return std::equal(boost::forward<Iterator1>(first1),
-                      boost::forward<Iterator1>(last1),
+                      boost::forward<Iterator1x>(last1),
                       boost::forward<Iterator2>(first2));
 }
 
 //! @internal Dispatch to the right implementation of `std::mismatch`.
-template <typename Iterator1, typename Iterator2, typename BinaryPredicate>
-std::pair<Iterator1, Iterator2>
-std_mismatch_dispatch(BOOST_FWD_REF(Iterator1) first1,
-                      BOOST_FWD_REF(Iterator1) last1,
-                      BOOST_FWD_REF(Iterator2) first2,
-                      BOOST_FWD_REF(BinaryPredicate) pred) {
+template <
+    typename Iterator1, typename Iterator1x,
+    typename Iterator2, typename BinaryPredicate
+>
+std::pair<
+    typename boost::remove_reference<Iterator1>::type,
+    typename boost::remove_reference<Iterator2>::type
+> std_mismatch_dispatch(BOOST_FWD_REF(Iterator1) first1,
+                        BOOST_FWD_REF(Iterator1x) last1,
+                        BOOST_FWD_REF(Iterator2) first2,
+                        BOOST_FWD_REF(BinaryPredicate) pred) {
     return std::mismatch(boost::forward<Iterator1>(first1),
-                         boost::forward<Iterator1>(last1),
+                         boost::forward<Iterator1x>(last1),
                          boost::forward<Iterator2>(first2),
                          boost::forward<BinaryPredicate>(pred));
 }
 
-template <typename Iterator1, typename Iterator2>
-std::pair<Iterator1, Iterator2>
-std_mismatch_dispatch(BOOST_FWD_REF(Iterator1) first1,
-                      BOOST_FWD_REF(Iterator1) last1,
-                      BOOST_FWD_REF(Iterator2) first2,
-                      use_operator_equal) {
+template <typename Iterator1, typename Iterator1x, typename Iterator2>
+std::pair<
+    typename boost::remove_reference<Iterator1>::type,
+    typename boost::remove_reference<Iterator2>::type
+> std_mismatch_dispatch(BOOST_FWD_REF(Iterator1) first1,
+                        BOOST_FWD_REF(Iterator1x) last1,
+                        BOOST_FWD_REF(Iterator2) first2,
+                        use_operator_equal) {
     return std::mismatch(boost::forward<Iterator1>(first1),
-                         boost::forward<Iterator1>(last1),
+                         boost::forward<Iterator1x>(last1),
                          boost::forward<Iterator2>(first2));
 }
 
@@ -92,25 +103,30 @@ std_mismatch_dispatch(BOOST_FWD_REF(Iterator1) first1,
  * @internal
  * Dispatch to the right implementation of `std::find` or `std::find_if`.
  */
-template <typename Iterator, typename Value, typename BinaryPredicate>
-Iterator std_find_if_dispatch(BOOST_FWD_REF(Iterator) first,
-                              BOOST_FWD_REF(Iterator) last,
-                              BOOST_FWD_REF(Value) value,
-                              BOOST_FWD_REF(BinaryPredicate) pred) {
+template <
+    typename Iterator, typename Iteratorx,
+    typename Value, typename BinaryPredicate
+>
+typename boost::remove_reference<Iterator>::type
+std_find_if_dispatch(BOOST_FWD_REF(Iterator) first,
+                     BOOST_FWD_REF(Iteratorx) last,
+                     BOOST_FWD_REF(Value) value,
+                     BOOST_FWD_REF(BinaryPredicate) pred) {
     return std::find_if(boost::forward<Iterator>(first),
-                        boost::forward<Iterator>(last),
+                        boost::forward<Iteratorx>(last),
                         boost::phoenix::bind(
                             boost::forward<BinaryPredicate>(pred),
                                 boost::forward<Value>(value),
                                 boost::phoenix::arg_names::_1));
 }
 
-template <typename Iterator, typename Value>
-Iterator std_find_if_dispatch(BOOST_FWD_REF(Iterator) first,
-                              BOOST_FWD_REF(Iterator) last,
-                              BOOST_FWD_REF(Value) value, use_operator_equal) {
+template <typename Iterator, typename Iteratorx, typename Value>
+typename boost::remove_reference<Iterator>::type
+std_find_if_dispatch(BOOST_FWD_REF(Iterator) first,
+                     BOOST_FWD_REF(Iteratorx) last,
+                     BOOST_FWD_REF(Value) value, use_operator_equal) {
     return std::find(boost::forward<Iterator>(first),
-                     boost::forward<Iterator>(last),
+                     boost::forward<Iteratorx>(last),
                      boost::forward<Value>(value));
 }
 
@@ -214,15 +230,18 @@ bool is_nonempty_cyclic_permutation(Iterator1 first1, Iterator1 last1,
  *
  * If both ranges are empty, the algorithm returns `true`.
  */
-template <typename Iterator1, typename Iterator2>
+template <
+    typename Iterator1, typename Iterator1x,
+    typename Iterator2, typename Iterator2x
+>
 bool is_cyclic_permutation(BOOST_FWD_REF(Iterator1) first1,
-                           BOOST_FWD_REF(Iterator1) last1,
+                           BOOST_FWD_REF(Iterator1x) last1,
                            BOOST_FWD_REF(Iterator2) first2,
-                           BOOST_FWD_REF(Iterator2) last2) {
+                           BOOST_FWD_REF(Iterator2x) last2) {
     return is_cyclic_permutation(boost::forward<Iterator1>(first1),
-                                 boost::forward<Iterator1>(last1),
+                                 boost::forward<Iterator1x>(last1),
                                  boost::forward<Iterator2>(first2),
-                                 boost::forward<Iterator2>(last2),
+                                 boost::forward<Iterator2x>(last2),
                                  use_operator_equal());
 }
 
