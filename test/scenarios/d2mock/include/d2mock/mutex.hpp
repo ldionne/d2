@@ -1,5 +1,6 @@
-/**
- * This file defines the `mutex` class.
+/*!
+ * @file
+ * This file defines the `d2mock::mutex` class.
  */
 
 #ifndef D2MOCK_MUTEX_HPP

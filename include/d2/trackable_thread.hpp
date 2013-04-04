@@ -6,6 +6,7 @@
 #ifndef D2_TRACKABLE_THREAD_HPP
 #define D2_TRACKABLE_THREAD_HPP
 
+#include <d2/core/thread_id.hpp>
 #include <d2/thread_function.hpp>
 #include <d2/thread_lifetime.hpp>
 
@@ -97,6 +98,20 @@ public:
         Thread::detach();
         this->lifetime_.just_detached();
     }
+
+#ifdef D2MOCK_TRACKABLE_SYNC_OBJECT_ACCESS
+protected:
+    /*!
+     * @internal
+     * This is a hack because we need to access the `d2` thread id for unit
+     * testing purposes.
+     *
+     * @todo Implement this.
+     */
+    ThreadId get_d2_id() const {
+        return ThreadId();
+    }
+#endif
 };
 } // end namespace d2
 

@@ -1,5 +1,6 @@
-/**
- * This file implements the `check_scenario` function.
+/*!
+ * @file
+ * This file implements the `d2mock::check_scenario` function.
  */
 
 #define D2MOCK_SOURCE
@@ -17,7 +18,7 @@
 #include <d2/api.hpp>
 #include <d2/core/diagnostic.hpp>
 #include <d2/core/synchronization_skeleton.hpp>
-#include <d2/thread_id.hpp>
+#include <d2/core/thread_id.hpp>
 #include <iostream>
 #include <iterator>
 #include <set>

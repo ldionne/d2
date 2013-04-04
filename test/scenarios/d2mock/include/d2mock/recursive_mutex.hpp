@@ -1,5 +1,6 @@
-/**
- * This file defines the `recursive_mutex` class.
+/*!
+ * @file
+ * This file defines the `d2mock::recursive_mutex` class.
  */
 
 #ifndef D2MOCK_RECURSIVE_MUTEX_HPP

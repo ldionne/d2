@@ -1,5 +1,6 @@
-/**
- * This file defines the `check_scenario` function.
+/*!
+ * @file
+ * This file defines the `d2mock::check_scenario` function.
  */
 
 #ifndef D2MOCK_SCENARIO_HPP
