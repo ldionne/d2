@@ -32,6 +32,7 @@ int main(int argc, char const* argv[]) {
     // and we're obviously not detecting them too. For now, we'll always
     // make the test fail.
 #if 1
+    (void)test_main;
     return EXIT_FAILURE;
 #else
     return d2mock::check_scenario(test_main, argc, argv, {
