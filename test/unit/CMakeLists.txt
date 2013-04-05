@@ -10,7 +10,7 @@ add_custom_target(check_unit
     COMMAND ${CMAKE_CTEST_COMMAND}
     COMMENT "build and then run all the unit tests"
 )
-add_dependencies(check check_unit)
+add_dependencies(check unit)
 function(d2_add_unit_test name sources)
     add_executable(${name} EXCLUDE_FROM_ALL ${sources})
     set_property(TARGET ${name}

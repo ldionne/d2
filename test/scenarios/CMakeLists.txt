@@ -49,7 +49,7 @@ add_custom_target(check_scenarios
     COMMAND ${CMAKE_CTEST_COMMAND}
     COMMENT "build and then run all the scenario tests"
 )
-add_dependencies(check check_scenarios)
+add_dependencies(check scenarios)
 function(d2_add_scenario name sources)
     add_executable(${name} EXCLUDE_FROM_ALL ${sources})
     set_property(TARGET ${name}
@@ -60,6 +60,7 @@ function(d2_add_scenario name sources)
     )
     target_link_libraries(${name} d2mock ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
+    set_property(TEST ${name} PROPERTY TIMEOUT 3)
     add_dependencies(scenarios ${name})
 endfunction()
 
