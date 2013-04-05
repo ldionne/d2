@@ -6,7 +6,9 @@
 set(DYNO_ENABLE_CXX0X ${D2_ENABLE_CXX0X} CACHE INTERNAL "Enable c++0x when building dyno, if the compiler supports it.")
 set(DYNO_ENABLE_LIBCXX ${D2_ENABLE_LIBCXX} CACHE INTERNAL "Enable -stdlib=libc++ when building dyno, if the compiler supports it.")
 set(DYNO_ENABLE_SHARED OFF CACHE INTERNAL "Build dyno as a shared library.")
-add_subdirectory(${d2_SOURCE_DIR}/ext/dyno ${d2_BINARY_DIR}/ext/dyno)
+add_subdirectory(
+    ${d2_SOURCE_DIR}/ext/dyno ${d2_BINARY_DIR}/ext/dyno EXCLUDE_FROM_ALL
+)
 
 # Then, setup lists of additional stuff required by d2
 list(APPEND includes ${d2_SOURCE_DIR}/ext/dyno/include)

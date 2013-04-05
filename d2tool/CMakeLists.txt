@@ -3,7 +3,7 @@
 #=============================================================================
 # Setup lists of additional stuff required by d2tool
 # Note: Until d2 stops leaking its implementation headers to its clients,
-#       we have to add dyno to our include path. This is a TODO.
+#       we have to add dyno to our include path.
 list(APPEND includes ${d2_SOURCE_DIR}/ext/dyno/include)
 list(APPEND includes ${D2_BOOST_INCLUDE})
 

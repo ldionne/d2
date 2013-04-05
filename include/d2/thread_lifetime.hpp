@@ -7,12 +7,13 @@
 #define D2_THREAD_LIFETIME_HPP
 
 #include <d2/api.hpp>
-#include <d2/trackable_sync_object.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <cstddef>
+#include <dyno/thread_id.hpp>
+#include <dyno/uniquely_identifiable.hpp>
 
 
 namespace d2 {
@@ -80,33 +81,36 @@ namespace d2 {
  */
 struct thread_lifetime {
     void about_to_start() {
-        BOOST_ASSERT_MSG(!data_, "thread_lifetime::about_to_start(): "
+        BOOST_ASSERT_MSG(!data_, "d2::thread_lifetime::about_to_start(): "
                                  "called with a non-NULL data_ pointer");
         data_ = boost::make_shared<Data>();
-        data_->parent = this_thread_id();
+        using dyno::unique_id;
+        data_->parent = unique_id(dyno::this_thread::get_id());
     }
 
     void just_started() {
-        BOOST_ASSERT_MSG(data_, "thread_lifetime::just_started(): "
+        BOOST_ASSERT_MSG(data_, "d2::thread_lifetime::just_started(): "
                                     "called with a NULL data_ pointer");
 
-        ThreadId const child = this_thread_id();
+        using dyno::unique_id;
+        std::size_t const child = unique_id(dyno::this_thread::get_id());
         BOOST_ASSERT_MSG(data_->parent != child,
-            "thread_lifetime::just_started(): called in the parent "
-                                             "thread (or it appears so)");
+            "d2::thread_lifetime::just_started(): "
+                "called in the parent thread (or it appears so)");
 
         notify_start(data_->parent, child);
         data_->child = child;
     }
 
     void just_joined() {
-        BOOST_ASSERT_MSG(data_, "thread_lifetime::just_joined(): "
+        BOOST_ASSERT_MSG(data_, "d2::thread_lifetime::just_joined(): "
                                     "called with a NULL data_ pointer");
 
-        ThreadId const parent = this_thread_id();
+        using dyno::unique_id;
+        std::size_t const parent = unique_id(dyno::this_thread::get_id());
         BOOST_ASSERT_MSG(parent != data_->child,
-            "thread_lifetime::just_joined(): called in the child "
-                                            "thread (or it appears so)");
+            "d2::thread_lifetime::just_joined(): "
+                "called in the child thread (or it appears so)");
 
         notify_join(parent, data_->child);
         data_.reset();
@@ -125,16 +129,11 @@ struct thread_lifetime {
     }
 
 private:
-    typedef std::size_t ThreadId;
     union Data {
-        ThreadId parent;
-        ThreadId child;
+        std::size_t parent;
+        std::size_t child;
     };
     boost::shared_ptr<Data> data_;
-
-    static ThreadId this_thread_id() {
-        return trackable_sync_object_detail::this_thread_id();
-    }
 };
 } // end namespace d2
 

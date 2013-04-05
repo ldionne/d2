@@ -11,6 +11,8 @@ find_package(Boost 1.53.0 REQUIRED thread system filesystem)
 set(D2MOCK_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND D2MOCK_INCLUDE_DIRS ${d2_SOURCE_DIR}/include)
 list(APPEND D2MOCK_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/d2mock/include)
+# We have to include dyno until d2 stops leaking its implementation details.
+list(APPEND D2MOCK_INCLUDE_DIRS ${d2_SOURCE_DIR}/ext/dyno/include)
 
 set(_d2mock_libraries ${Boost_FILESYSTEM_LIBRARY})
 list(APPEND _d2mock_libraries ${Boost_SYSTEM_LIBRARY})
@@ -45,9 +47,9 @@ set_property(TARGET d2mock
 #=============================================================================
 # Setup the scenarios
 #=============================================================================
-add_custom_target(build_scenarios COMMENT "build all the scenario tests")
+add_custom_target(scenarios COMMENT "build all the scenario tests")
 add_custom_target(check_scenarios
-    DEPENDS build_scenarios
+    DEPENDS scenarios
     COMMAND ${CMAKE_CTEST_COMMAND}
     COMMENT "build and then run all the scenario tests"
 )
@@ -65,7 +67,7 @@ function(d2_add_scenario name sources)
     )
     target_link_libraries(${name} d2mock ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
-    add_dependencies(build_scenarios ${name})
+    add_dependencies(scenarios ${name})
 endfunction()
 
 file(GLOB all_scenarios RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)

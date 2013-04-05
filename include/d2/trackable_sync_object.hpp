@@ -8,13 +8,14 @@
 
 #include <d2/api.hpp>
 #include <d2/detail/decl.hpp>
-#include <d2/uniquely_identifiable.hpp>
 
 #include <boost/config.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/or.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <cstddef>
+#include <dyno/thread_id.hpp>
+#include <dyno/uniquely_identifiable.hpp>
 
 
 namespace d2 {
@@ -23,13 +24,6 @@ namespace trackable_sync_object_detail {
     struct unique_id_for_all_locks
         : dyno::uniquely_identifiable<unique_id_for_all_locks>
     { };
-
-    /*!
-     * @internal
-     * Return an unsigned integer representing the identifier of the current
-     * thread.
-     */
-    D2_DECL extern std::size_t this_thread_id();
 } // end namespace trackable_sync_object_detail
 
 /*!
@@ -86,7 +80,7 @@ struct non_recursive;
  */
 template <typename Recursive>
 class trackable_sync_object {
-    trackable_sync_object_detail::unique_id_for_all_locks unique_id_;
+    trackable_sync_object_detail::unique_id_for_all_locks lock_id_;
 
     // No need to evaluate the metafunctions with the current usage.
     typedef boost::is_same<Recursive, recursive> is_recursive;
@@ -100,11 +94,12 @@ public:
      * current thread.
      */
     void notify_lock() const BOOST_NOEXCEPT {
-        std::size_t const tid = trackable_sync_object_detail::this_thread_id();
+        using dyno::unique_id;
+        std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
-            notify_recursive_acquire(tid, unique_id_);
+            notify_recursive_acquire(tid, unique_id(lock_id_));
         else
-            notify_acquire(tid, unique_id_);
+            notify_acquire(tid, unique_id(lock_id_));
     }
 
     /*!
@@ -112,11 +107,12 @@ public:
      * current thread.
      */
     void notify_unlock() const BOOST_NOEXCEPT {
-        std::size_t const tid = trackable_sync_object_detail::this_thread_id();
+        using dyno::unique_id;
+        std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
-            notify_recursive_release(tid, unique_id_);
+            notify_recursive_release(tid, unique_id(lock_id_));
         else
-            notify_release(tid, unique_id_);
+            notify_release(tid, unique_id(lock_id_));
     }
 };
 } // end namespace d2

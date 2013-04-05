@@ -22,13 +22,11 @@ typedef d2::trackable_thread<boost::thread> thread_impl_base;
 struct thread::impl : thread_impl_base {
     impl() { }
 
-    explicit impl(boost::function<void()> const& f)
+    explicit impl(boost::function<void()> const& f, std::size_t& d2_tid)
         : thread_impl_base(f)
-    { }
-
-    thread::id get_id() {
-        using d2::unique_id;
-        return unique_id(thread_impl_base::get_d2_id());
+    {
+        d2_tid = d2::trackable_thread_core_access::unique_id(
+                        static_cast<thread_impl_base&>(*this));
     }
 };
 
@@ -68,7 +66,8 @@ D2MOCK_DECL id get_id() const {
 
 D2MOCK_DECL void thread::start() {
     BOOST_ASSERT_MSG(!impl_, "thread::start(): was already started");
-    impl_.reset(new impl(f_));
+    std::size_t tid;
+    impl_.reset(new impl(f_, tid));
 }
 
 D2MOCK_DECL void thread::join() {

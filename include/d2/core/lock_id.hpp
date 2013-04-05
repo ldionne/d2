@@ -45,7 +45,7 @@ public:
      *       and managing unique identifiers for all synchronization objects,
      *       which simplifies our job considerably.
      */
-    explicit LockId(std::size_t)
+    explicit LockId(std::size_t id)
         : id_(id)
     { }
 

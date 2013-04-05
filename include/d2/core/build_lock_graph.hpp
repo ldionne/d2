@@ -178,7 +178,7 @@ struct EventVisitor : boost::static_visitor<void> {
     }
 
     void operator()(core::events::segment_hop const& event) {
-        ThreadId thread(get(core::events::tag::thread(), event));
+        ThreadId thread(thread_of(event));
         if (thread != this_thread)
             D2_THROW(EventThreadException()
                         << ExpectedThread(this_thread)

@@ -14,11 +14,13 @@
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/vector.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/variant.hpp>
 #include <boost/variant.hpp>
-#include <dyno/auto_event.hpp>
+#include <dyno/detail/auto_struct.hpp>
 
 
 namespace d2 {
@@ -28,29 +30,46 @@ namespace tag {
     struct thread { };
     struct lock { };
     struct segment { };
-    struct parent_segment { };
-    struct new_parent_segment { };
-    struct child_segment { };
+    struct parent { };
+    struct new_parent { };
+    struct child { };
 }
+
+#define D2_I_DEFINE_ACCESSORS(z, _, TAG)                                    \
+    template <typename Event>                                               \
+    typename dyno::detail::get_member_type<Event const, tag::TAG>::type     \
+    BOOST_PP_CAT(TAG, _of)(Event const& event) {                            \
+        return dyno::detail::get_member<tag::TAG>(event);                   \
+    }                                                                       \
+                                                                            \
+    template <typename Event>                                               \
+    typename dyno::detail::get_member_type<Event, tag::TAG>::type           \
+    BOOST_PP_CAT(TAG, _of)(Event& event) {                                  \
+        return dyno::detail::get_member<tag::TAG>(event);                   \
+    }                                                                       \
+/**/
+BOOST_PP_SEQ_FOR_EACH(
+    D2_I_DEFINE_ACCESSORS,~,(thread)(lock)(segment)(parent)(new_parent)(child)
+)
+#undef D2_I_DEFINE_ACCESSORS
+
 
 typedef ThreadId thread_id;
 typedef LockId lock_id;
 typedef Segment segment_id;
 
 struct acquire
-    : dyno::auto_event<
-        dyno::members<
-            tag::thread, thread_id,
-            tag::lock, lock_id
-        >
+    : dyno::detail::auto_struct<
+        dyno::detail::member<tag::thread, thread_id>,
+        dyno::detail::member<tag::lock, lock_id>
     >
 {
     // Default constructor required for variant.
     acquire() { }
 
     acquire(thread_id tid, lock_id lid)
-        : auto_event_(dyno::member<tag::thread>(tid),
-                      dyno::member<tag::lock>(lid))
+        : auto_struct_(dyno::detail::make_member<tag::thread>(tid),
+                       dyno::detail::make_member<tag::lock>(lid))
     { }
 
     // This is temporary, for compatibility with the old events.
@@ -69,7 +88,7 @@ private:
     friend class boost::serialization::access;
     template <typename Archive>
     void serialize(Archive& ar, unsigned int const) {
-        ar & boost::serialization::base_object<auto_event_>(*this)
+        ar & boost::serialization::base_object<auto_struct_>(*this)
            & info;
     }
 };
@@ -93,21 +112,19 @@ struct recursive_release : release {
 };
 
 struct start
-    : dyno::auto_event<
-        dyno::members<
-            tag::parent_segment, segment_id,
-            tag::new_parent_segment, segment_id,
-            tag::child_segment, segment_id
-        >
+    : dyno::detail::auto_struct<
+        dyno::detail::member<tag::parent, segment_id>,
+        dyno::detail::member<tag::new_parent, segment_id>,
+        dyno::detail::member<tag::child, segment_id>
     >
 {
     // Default constructor required for variant.
     start() { }
 
-    start(segment_id parent_segment, segment_id new_parent_segment, segment_id child_segment)
-        : auto_event_(dyno::member<tag::parent_segment>(parent_segment),
-                      dyno::member<tag::new_parent_segment>(new_parent_segment),
-                      dyno::member<tag::child_segment>(child_segment))
+    start(segment_id parent, segment_id new_parent, segment_id child)
+        : auto_struct_(dyno::detail::make_member<tag::parent>(parent),
+                       dyno::detail::make_member<tag::new_parent>(new_parent),
+                       dyno::detail::make_member<tag::child>(child))
     { }
 };
 
@@ -118,18 +135,16 @@ struct join : start {
 };
 
 struct segment_hop
-    : dyno::auto_event<
-        dyno::members<
-            tag::thread, thread_id,
-            tag::segment, segment_id
-        >
+    : dyno::detail::auto_struct<
+        dyno::detail::member<tag::thread, thread_id>,
+        dyno::detail::member<tag::segment, segment_id>
     >
 {
     segment_hop() { }
 
     segment_hop(thread_id tid, segment_id sid)
-        : auto_event_(dyno::member<tag::thread>(tid),
-                      dyno::member<tag::segment>(sid))
+        : auto_struct_(dyno::detail::make_member<tag::thread>(tid),
+                       dyno::detail::make_member<tag::segment>(sid))
     { }
 };
 
@@ -160,81 +175,6 @@ struct is_thread_specific
 
 template <> struct is_thread_specific<start> : boost::mpl::false_ { };
 template <> struct is_thread_specific<join> : boost::mpl::false_ { };
-
-template <typename Event>
-typename Event::template get_const_type<tag::thread>::type
-thread_of(Event const& event) {
-    return get(tag::thread(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::thread>::type thread_of(Event& event) {
-    return get(tag::thread(), event);
-}
-
-
-template <typename Event>
-typename Event::template get_const_type<tag::lock>::type
-lock_of(Event const& event) {
-    return get(tag::lock(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::lock>::type lock_of(Event& event) {
-    return get(tag::lock(), event);
-}
-
-
-template <typename Event>
-typename Event::template get_const_type<tag::segment>::type
-segment_of(Event const& event) {
-    return get(tag::segment(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::segment>::type
-segment_of(Event& event) {
-    return get(tag::segment(), event);
-}
-
-
-template <typename Event>
-typename Event::template get_const_type<tag::parent_segment>::type
-parent_of(Event const& event) {
-    return get(tag::parent_segment(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::parent_segment>::type
-parent_of(Event& event) {
-    return get(tag::parent_segment(), event);
-}
-
-
-template <typename Event>
-typename Event::template get_const_type<tag::new_parent_segment>::type
-new_parent_of(Event const& event) {
-    return get(tag::new_parent_segment(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::new_parent_segment>::type
-new_parent_of(Event& event) {
-    return get(tag::new_parent_segment(), event);
-}
-
-
-template <typename Event>
-typename Event::template get_const_type<tag::child_segment>::type
-child_of(Event const& event) {
-    return get(tag::child_segment(), event);
-}
-
-template <typename Event>
-typename Event::template get_type<tag::child_segment>::type
-child_of(Event& event) {
-    return get(tag::child_segment(), event);
-}
 } // end namespace events
 } // end namespace core
 } // end namespace d2

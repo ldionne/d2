@@ -4,9 +4,9 @@
 include(GoogleTest)
 find_package(Boost 1.53 REQUIRED filesystem system graph)
 
-add_custom_target(build_unit COMMENT "build all the unit tests")
+add_custom_target(unit COMMENT "build all the unit tests")
 add_custom_target(check_unit
-    DEPENDS build_unit
+    DEPENDS unit
     COMMAND ${CMAKE_CTEST_COMMAND}
     COMMENT "build and then run all the unit tests"
 )
@@ -16,9 +16,15 @@ function(d2_add_unit_test name sources)
     set_property(TARGET ${name}
         APPEND PROPERTY INCLUDE_DIRECTORIES ${GTEST_INCLUDE_DIRS}
     )
+    # Note: Until d2 stops leaking its implementation headers to its clients,
+    #       we have to add dyno to our include path.
+    set_property(TARGET ${name}
+        APPEND PROPERTY INCLUDE_DIRECTORIES ${d2_SOURCE_DIR}/ext/dyno/include
+    )
+
     target_link_libraries(${name} d2 ${GTEST_BOTH_LIBRARIES} ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
-    add_dependencies(build_unit ${name})
+    add_dependencies(unit ${name})
 endfunction()
 
 # Shortcuts for boost libraries
