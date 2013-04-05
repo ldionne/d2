@@ -53,32 +53,32 @@ inline bool is_disabled() {
 }
 
 //! Forwards to `d2_notify_acquire`.
-void notify_acquire(std::size_t thread, std::size_t lock) {
+inline void notify_acquire(std::size_t thread, std::size_t lock) {
     d2_notify_acquire(thread, lock);
 }
 
 //! Forwards to `d2_notify_recursive_acquire`.
-void notify_recursive_acquire(std::size_t thread, std::size_t lock) {
+inline void notify_recursive_acquire(std::size_t thread, std::size_t lock) {
     d2_notify_recursive_acquire(thread, lock);
 }
 
 //! Forwards to `d2_notify_release`.
-void notify_release(std::size_t thread, std::size_t lock) {
+inline void notify_release(std::size_t thread, std::size_t lock) {
     d2_notify_release(thread, lock);
 }
 
 //! Forwards to `d2_notify_recursive_release`.
-void notify_recursive_release(std::size_t thread, std::size_t lock) {
+inline void notify_recursive_release(std::size_t thread, std::size_t lock) {
     d2_notify_recursive_release(thread, lock);
 }
 
 //! Forwards to `d2_notify_start`.
-void notify_start(std::size_t parent, std::size_t child) {
+inline void notify_start(std::size_t parent, std::size_t child) {
     d2_notify_start(parent, child);
 }
 
 //! Forwards to `d2_notify_join`.
-void notify_join(std::size_t parent, std::size_t child) {
+inline void notify_join(std::size_t parent, std::size_t child) {
     d2_notify_join(parent, child);
 }
 } // end namespace d2
