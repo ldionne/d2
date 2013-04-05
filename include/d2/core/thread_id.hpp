@@ -5,8 +5,6 @@
 #ifndef D2_CORE_THREAD_ID_HPP
 #define D2_CORE_THREAD_ID_HPP
 
-#include <d2/uniquely_identifiable.hpp>
-
 #include <boost/concept/assert.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
@@ -40,14 +38,15 @@ public:
     { }
 
     /**
-     * Create a `ThreadId` representing the `UniquelyIdentifiable` object
-     * `t`. While `t` is not _required_ to represent a thread, it makes no
-     * sense to use `ThreadId` if it does not.
+     * Create a `ThreadId` representing a thread identified by `id`.
+     *
+     * @note Forcing the use of `std::size_t` moves the burden of making
+     *       sure it is possible to obtain thread ids as integral types
+     *       portably to the client of `d2::core`, which is a good thing.
      */
-    template <typename T>
-    explicit ThreadId(T const& t) : id_(unique_id(t)) {
-        BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<T>));
-    }
+    explicit ThreadId(std::size_t id)
+        : id_(id)
+    { }
 
     /**
      * Construct a `ThreadId` refering to the same thread of the analyzed

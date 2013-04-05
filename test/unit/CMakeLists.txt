@@ -42,6 +42,5 @@ d2_add_unit_test(test_thread_lockable_archetypes detail/test_thread_lockable_arc
 d2_add_unit_test(test_tiernan_all_cycles         detail/test_tiernan_all_cycles.cpp ${bgraph})
 d2_add_unit_test(test_timed_lockable             test_timed_lockable.cpp ${bsys})
 d2_add_unit_test(test_trackable_thread           test_trackable_thread.cpp)
-d2_add_unit_test(test_uniquely_identifiable      test_uniquely_identifiable.cpp)
 d2_add_unit_test(test_unordered_difference       detail/test_unordered_difference.cpp)
 d2_add_unit_test(test_vertex_to_edge_path        detail/test_vertex_to_edge_path.cpp)

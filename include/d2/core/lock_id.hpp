@@ -5,8 +5,6 @@
 #ifndef D2_CORE_LOCK_ID_HPP
 #define D2_CORE_LOCK_ID_HPP
 
-#include <d2/uniquely_identifiable.hpp>
-
 #include <boost/concept/assert.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
@@ -40,14 +38,16 @@ public:
     { }
 
     /**
-     * Create a `LockId` representing the `UniquelyIdentifiable` object `t`.
-     * While `t` is not _required_ to represent a synchronization object, it
-     * makes no sense to use `LockId` if it does not.
+     * Create a `LockId` representing a synchronization object identified by
+     * `id`.
+     *
+     * @note Forcing the use of `std::size_t` moves the burden of obtaining
+     *       and managing unique identifiers for all synchronization objects,
+     *       which simplifies our job considerably.
      */
-    template <typename T>
-    explicit LockId(T const& t) : id_(unique_id(t)) {
-        BOOST_CONCEPT_ASSERT((UniquelyIdentifiable<T>));
-    }
+    explicit LockId(std::size_t)
+        : id_(id)
+    { }
 
     /**
      * Construct a `LockId` refering to the same synchronization object

@@ -47,13 +47,7 @@ namespace d2 {
 template <typename BasicLockable, typename Recursive = non_recursive>
 class basic_lockable
     : public BasicLockable,
-// This is a temporary hack because we need to have access to the
-// `trackable_sync_object` for unit testing.
-#ifdef D2MOCK_TRACKABLE_SYNC_OBJECT_ACCESS
-      public trackable_sync_object<Recursive>
-#else
       protected trackable_sync_object<Recursive>
-#endif
 {
 public:
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)

@@ -13,7 +13,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/utility/swap.hpp>
 #include <d2/trackable_thread.hpp>
-#include <d2/uniquely_identifiable.hpp>
+#include <dyno/uniquely_identifiable.hpp>
 
 
 namespace d2mock {
