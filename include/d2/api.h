@@ -1,5 +1,6 @@
-/**
- * This file defines an ANSI-C API to interact with _d2_.
+/*!
+ * @file
+ * This file defines a low level ANSI-C API to interact with the library.
  */
 
 #ifndef D2_API_H
