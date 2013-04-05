@@ -80,14 +80,14 @@ public:
  *       applies for `d2::basic_lockable_mixin`.
  */
 template <typename Derived, typename Recursive = non_recursive>
-class lockable_mixin : public trackable_sync_object<Recursive> {
+class lockable_mixin : private trackable_sync_object<Recursive> {
 public:
     D2_I_LOCKABLE_MIXIN_CODE(Derived)
 };
 
 //! Shortcut for `d2::lockable_mixin<Derived, d2::recursive>`.
 template <typename Derived>
-class recursive_lockable_mixin : public trackable_sync_object<recursive> {
+class recursive_lockable_mixin : private trackable_sync_object<recursive> {
 public:
     D2_I_LOCKABLE_MIXIN_CODE(Derived)
 };

@@ -14,11 +14,14 @@
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/algorithm/find_if.hpp>
 #include <boost/range/algorithm/transform.hpp>
+#include <cstddef>
 #include <cstdlib>
 #include <d2/api.hpp>
 #include <d2/core/diagnostic.hpp>
+#include <d2/core/lock_id.hpp>
 #include <d2/core/synchronization_skeleton.hpp>
 #include <d2/core/thread_id.hpp>
+#include <d2/detail/ut_access.hpp>
 #include <iostream>
 #include <iterator>
 #include <set>
@@ -33,13 +36,18 @@ namespace {
 //! Create a `d2::core::deadlocked_thread` from a `deadlocked_thread`.
 d2::core::deadlocked_thread
 to_d2_deadlocked_thread(deadlocked_thread const& thread) {
+    std::vector<d2::LockId> lock_ids;
+    std::vector<std::size_t>::const_iterator lock, last = thread.locks.end();
+    for (lock = thread.locks.begin(); lock != last; ++lock)
+        lock_ids.push_back(d2::LockId(*lock));
+
     return d2::core::deadlocked_thread(
                 // We must NOT construct the ThreadId before now, because
                 // we must be sure the thread has been started (e.g. after
                 // the test) for it to have a thread identifier.
-                d2::ThreadId(thread.thread),
-                thread.locks.begin(), thread.locks.end() - 1,
-                thread.locks.back());
+                d2::ThreadId(d2::detail::ut_access::d2_unique_id(thread.thread)),
+                lock_ids.begin(), lock_ids.end() - 1,
+                lock_ids.back());
 }
 
 //! Create a `d2::core::potential_deadlock` from a `potential_deadlock`.

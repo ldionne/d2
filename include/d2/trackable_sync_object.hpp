@@ -8,6 +8,7 @@
 
 #include <d2/api.hpp>
 #include <d2/detail/decl.hpp>
+#include <d2/detail/ut_access.hpp>
 
 #include <boost/config.hpp>
 #include <boost/mpl/assert.hpp>
@@ -87,6 +88,12 @@ class trackable_sync_object {
     typedef boost::is_same<Recursive, non_recursive> is_non_recursive;
 
     BOOST_MPL_ASSERT((boost::mpl::or_<is_recursive, is_non_recursive>));
+
+    friend class detail::ut_access;
+    std::size_t d2_unique_id() const {
+        using dyno::unique_id;
+        return unique_id(lock_id_);
+    }
 
 public:
     /*!

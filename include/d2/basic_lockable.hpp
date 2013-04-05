@@ -7,6 +7,7 @@
 #define D2_BASIC_LOCKABLE_HPP
 
 #include <d2/detail/inherit_constructors.hpp>
+#include <d2/detail/ut_access.hpp>
 #include <d2/trackable_sync_object.hpp>
 
 #include <boost/config.hpp>
@@ -49,6 +50,8 @@ class basic_lockable
     : public BasicLockable,
       protected trackable_sync_object<Recursive>
 {
+    friend class detail::ut_access;
+
 public:
     D2_INHERIT_CONSTRUCTORS(basic_lockable, BasicLockable)
 
@@ -88,6 +91,7 @@ public:
  * The class must also derive from `d2::trackable_sync_object`.
  */
 #define D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)                             \
+    friend class ::d2::detail::ut_access;                                   \
     void lock() {                                                           \
         static_cast<Derived*>(this)->lock_impl();                           \
         this->notify_lock();                                                \
@@ -146,7 +150,9 @@ public:
 
 //! Shortcut for `d2::basic_lockable_mixin<Derived, d2::recursive>`.
 template <typename Derived>
-class recursive_basic_lockable_mixin : public trackable_sync_object<recursive>{
+class recursive_basic_lockable_mixin
+    : private trackable_sync_object<recursive>
+{
 public:
     D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)
 };

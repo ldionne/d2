@@ -10,9 +10,8 @@
 #include <d2mock/thread.hpp>
 
 #include <boost/function.hpp>
-#include <boost/move/utility.hpp>
-#include <d2/core/diagnostic.hpp>
-#include <d2/core/lock_id.hpp>
+#include <cstddef>
+#include <d2/detail/ut_access.hpp>
 #include <vector>
 
 
@@ -20,18 +19,20 @@ namespace d2mock {
 namespace check_scenario_detail {
 struct deadlocked_thread {
     template <typename Lock1, typename Lock2, typename ...Locks>
-    deadlocked_thread(d2mock::thread& thread, BOOST_FWD_REF(Lock1) lock1,
-                      BOOST_FWD_REF(Lock2) lock2, BOOST_FWD_REF(Locks) ...locks)
+    deadlocked_thread(d2mock::thread& thread,
+                        Lock1 const& lock1,
+                        Lock2 const& lock2,
+                        Locks const& ...locks)
         : thread(thread),
           locks{
-                d2::LockId(boost::forward<Lock1>(lock1)),
-                d2::LockId(boost::forward<Lock2>(lock2)),
-                d2::LockId(boost::forward<Locks>(locks))...
+                d2::detail::ut_access::d2_unique_id(lock1),
+                d2::detail::ut_access::d2_unique_id(lock2),
+                d2::detail::ut_access::d2_unique_id(locks)...
             }
     { }
 
     d2mock::thread& thread;
-    std::vector<d2::LockId> locks;
+    std::vector<std::size_t> locks;
 };
 
 typedef std::vector<deadlocked_thread> potential_deadlock;

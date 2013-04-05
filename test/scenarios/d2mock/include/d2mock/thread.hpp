@@ -11,15 +11,14 @@
 #include <boost/function.hpp>
 #include <boost/move/move.hpp>
 #include <boost/smart_ptr/scoped_ptr.hpp>
+#include <boost/thread/thread.hpp>
 #include <cstddef>
+#include <d2/detail/ut_access.hpp>
 
 
 namespace d2mock {
 struct thread {
-    // We don't use d2::ThreadId directly to avoid leaking d2 as a dependency
-    // to our clients, but there is a bijection between std::size_t and
-    // d2::ThreadId anyway, so there is no loss of information.
-    typedef std::size_t id;
+    typedef boost::thread::id id;
 
     D2MOCK_DECL thread();
     D2MOCK_DECL thread(BOOST_RV_REF(thread) other);
@@ -40,6 +39,9 @@ struct thread {
     }
 
 private:
+    friend class d2::detail::ut_access;
+    D2MOCK_DECL std::size_t d2_unique_id() const;
+
     BOOST_MOVABLE_BUT_NOT_COPYABLE(thread)
 
     struct impl;
