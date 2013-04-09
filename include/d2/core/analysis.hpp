@@ -11,7 +11,6 @@
 #include <d2/detail/vertex_to_edge_path.hpp>
 
 #include <boost/assert.hpp>
-#include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/move/utility.hpp>
@@ -69,13 +68,18 @@ public:
      */
     template <typename EdgePath>
     void cycle(EdgePath const& edge_path, LockGraph const& graph) const {
+        EdgeLabelMap labels = get(boost::edge_bundle, graph);
+
         // These are the conditions for a cycle to be a valid
         // potential deadlock:
-
         // For any given pair of edges (e1, e2)
-        EdgeLabelMap labels = get(boost::edge_bundle, graph);
-        BOOST_FOREACH(LockGraphEdgeDescriptor e1, edge_path) {
-            BOOST_FOREACH(LockGraphEdgeDescriptor e2, edge_path) {
+        typedef typename EdgePath::const_iterator EdgeIterator;
+        EdgeIterator last = edge_path.end();
+        for (EdgeIterator ei1 = edge_path.begin(); ei1 != last; ++ei1) {
+            LockGraphEdgeDescriptor e1 = *ei1;
+            for (EdgeIterator ei2 = edge_path.begin(); ei2 != last; ++ei2) {
+                LockGraphEdgeDescriptor e2 = *ei2;
+
                 if (e1 == e2)
                   continue;
 
