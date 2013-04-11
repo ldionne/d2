@@ -1,64 +1,32 @@
 diff -ruN pristine_boost_1_53_0/Jamroot boost_1_53_0/Jamroot
---- pristine_boost_1_53_0/Jamroot	2012-12-11 09:42:26.000000000 -0500
-+++ boost_1_53_0/Jamroot	2013-04-10 22:34:00.000000000 -0400
-@@ -43,8 +43,8 @@
- #                           of the libraries. Note, that which variants get
- #                           built depends on what each library supports.
- #
--#                               minimal (default) - Builds a minimal set of 
--#                               variants. On Windows, these are static 
-+#                               minimal (default) - Builds a minimal set of
-+#                               variants. On Windows, these are static
- #                               multithreaded libraries in debug and release
- #                               modes, using shared runtime. On Linux, these
- #                               are static and shared multithreaded libraries
-@@ -91,8 +91,8 @@
- #                           libraries.  The default is to not add anything.
- #
- #   --python-buildid=ID     Adds the specified ID to the name of built
--#                           libraries that depend on Python.  The default 
--#                           is to not add anything. This ID is added in 
-+#                           libraries that depend on Python.  The default
-+#                           is to not add anything. This ID is added in
- #                           addition to --buildid.
- #
- #
-@@ -114,10 +114,10 @@
- #   link=static|shared      Whether to build static or shared libraries
- #
- #   threading=single|multi  Whether to build single or multithreaded binaries
--# 
--#   runtime-link=static|shared      
-+#
-+#   runtime-link=static|shared
- #                           Whether to link to static or shared C and C++ runtime.
--#   
-+#
- 
- # TODO:
- #  - handle boost version
-@@ -137,8 +137,29 @@
- 
+--- pristine_boost_1_53_0/Jamroot   2012-12-11 09:42:26.000000000 -0500
++++ boost_1_53_0/Jamroot    2013-04-10 23:47:30.000000000 -0400
+@@ -137,8 +137,33 @@
+
  boostcpp.set-version $(BOOST_VERSION) ;
- 
+
 +##############################################################################
 +# Configuration to build boost with support for d2.
 +
 +constant D2_INCLUDE_DIR : /usr/local/include ;
++constant D2_LIB : /usr/local/lib/libd2.dylib ;
++
++constant DYNO_INCLUDE_DIR : /usr/local/include ;
++constant DYNO_LIB : /usr/local/lib/libdyno.dylib ;
 +
 +lib d2
 +    # no sources (already built)
 +    :
 +
 +    # requirements
-+    : <file>d2      # this is libd2.dylib
++    : <file>$(D2_LIB) <file>$(DYNO_LIB)
 +
 +    # no default build
 +    :
 +
 +    # usage requirements
-+    : <include>$(D2_INCLUDE_DIR)
-+      <link>shared:<define>D2_DYN_LINK=1
++    : <include>$(D2_INCLUDE_DIR) <include>$(DYNO_INCLUDE_DIR)
++      <link>shared:<define>D2_DYN_LINK=1 <define>DYNO_DYN_LINK=1
 +    ;
 +##############################################################################
 +
@@ -68,38 +36,20 @@ diff -ruN pristine_boost_1_53_0/Jamroot boost_1_53_0/Jamroot
        # Disable auto-linking for all targets here, primarily because it caused
        # troubles with V2.
        <define>BOOST_ALL_NO_LIB=1
-@@ -165,7 +186,7 @@
- {
-     return [ boostcpp.tag $(name) : $(type) : $(property-set) ] ;
- }
--   
-+
- rule handle-static-runtime ( properties * )
- {
-     # Using static runtime with shared libraries is impossible on Linux,
-@@ -254,7 +275,7 @@
-     # The .SUNWCCh files are present in tr1 include directory and have to be installed,
-     # see http://lists.boost.org/Archives/boost/2007/05/121430.php
-     [ path.glob-tree $(BOOST_ROOT)/boost : *.hpp *.ipp *.h *.inc *.SUNWCCh : CVS .svn ]
--    [ path.glob-tree $(BOOST_ROOT)/boost/compatibility/cpp_c_headers : c* : CVS .svn ] 
-+    [ path.glob-tree $(BOOST_ROOT)/boost/compatibility/cpp_c_headers : c* : CVS .svn ]
-     [ path.glob boost/tr1/tr1 : * : bcc32 sun CVS .svn ]
-     ;
- 
 diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boost/thread/pthread/mutex.hpp
---- pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp	2012-12-02 04:22:33.000000000 -0500
-+++ boost_1_53_0/boost/thread/pthread/mutex.hpp	2013-04-10 22:52:55.000000000 -0400
+--- pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp    2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/pthread/mutex.hpp 2013-04-10 23:46:50.000000000 -0400
 @@ -6,6 +6,8 @@
  // accompanying file LICENSE_1_0.txt or copy at
  // http://www.boost.org/LICENSE_1_0.txt)
- 
+
 +#include <d2/lockable.hpp>
 +#include <d2/timed_lockable.hpp>
  #include <boost/thread/detail/config.hpp>
  #include <pthread.h>
  #include <boost/throw_exception.hpp>
 @@ -35,10 +37,11 @@
- 
+
  namespace boost
  {
 -    class mutex
@@ -110,11 +60,11 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 +        friend class d2::lockable_mixin<mutex>;
      public:
          BOOST_THREAD_NO_COPYABLE(mutex)
- 
+
 @@ -59,7 +62,8 @@
              } while (ret == EINTR);
          }
- 
+
 -        void lock()
 +    private:
 +        void lock_impl()
@@ -124,7 +74,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -72,7 +76,7 @@
              }
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
@@ -133,7 +83,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -85,7 +89,7 @@
              }
          }
- 
+
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -142,15 +92,15 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -100,6 +104,7 @@
              return !res;
          }
- 
+
 +    public:
  #define BOOST_THREAD_DEFINES_MUTEX_NATIVE_HANDLE
          typedef pthread_mutex_t* native_handle_type;
          native_handle_type native_handle()
 @@ -115,9 +120,10 @@
- 
+
      typedef mutex try_mutex;
- 
+
 -    class timed_mutex
 +    class timed_mutex : public d2::timed_lockable_mixin<timed_mutex>
      {
@@ -174,7 +124,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -175,7 +183,7 @@
              }
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
@@ -183,7 +133,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -188,7 +196,7 @@
              }
          }
- 
+
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -192,7 +142,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -203,18 +211,14 @@
            return !res;
          }
- 
+
 -
 -    private:
          bool do_try_lock_until(struct timespec const &timeout)
@@ -212,7 +162,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -224,14 +228,14 @@
              is_locked=true;
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
@@ -220,7 +170,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
              is_locked=false;
              BOOST_VERIFY(!pthread_cond_signal(&cond));
          }
- 
+
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -229,7 +179,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
 @@ -242,7 +246,6 @@
              return true;
          }
- 
+
 -    private:
          bool do_try_lock_until(struct timespec const &timeout)
          {
@@ -240,7 +190,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
          }
 -    public:
  #endif
- 
+
 +public:
  #if defined BOOST_THREAD_USES_DATETIME
          bool timed_lock(system_time const & abs_time)
@@ -288,22 +238,22 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boos
          }
 +    public:
  #endif
- 
+
  #define BOOST_THREAD_DEFINES_TIMED_MUTEX_NATIVE_HANDLE
 diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp
---- pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp	2012-12-02 04:22:33.000000000 -0500
-+++ boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp	2013-04-10 22:52:23.000000000 -0400
+--- pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp  2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp   2013-04-10 23:46:50.000000000 -0400
 @@ -6,6 +6,8 @@
  // accompanying file LICENSE_1_0.txt or copy at
  // http://www.boost.org/LICENSE_1_0.txt)
- 
+
 +#include <d2/lockable.hpp>
 +#include <d2/timed_lockable.hpp>
  #include <pthread.h>
  #include <boost/throw_exception.hpp>
  #include <boost/thread/exceptions.hpp>
 @@ -41,9 +43,10 @@
- 
+
  namespace boost
  {
 -    class recursive_mutex
@@ -316,7 +266,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          pthread_cond_t cond;
 @@ -102,22 +105,24 @@
          }
- 
+
  #ifdef BOOST_HAS_PTHREAD_MUTEXATTR_SETTYPE
 -        void lock()
 +    private:
@@ -324,13 +274,13 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          {
              BOOST_VERIFY(!pthread_mutex_lock(&m));
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
              BOOST_VERIFY(!pthread_mutex_unlock(&m));
          }
- 
+
 -        bool try_lock() BOOST_NOEXCEPT
 +        bool try_lock_impl() BOOST_NOEXCEPT
          {
@@ -344,7 +294,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          native_handle_type native_handle()
 @@ -126,7 +131,8 @@
          }
- 
+
  #else
 -        void lock()
 +    private:
@@ -355,7 +305,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -144,7 +150,7 @@
              owner=pthread_self();
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
@@ -364,7 +314,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -154,7 +160,7 @@
              BOOST_VERIFY(!pthread_cond_signal(&cond));
          }
- 
+
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -375,13 +325,13 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
              return true;
          }
 +    public:
- 
+
  #endif
- 
+
 @@ -177,9 +184,10 @@
- 
+
      typedef recursive_mutex recursive_try_mutex;
- 
+
 -    class recursive_timed_mutex
 +    class recursive_timed_mutex : public d2::recursive_timed_lockable<recursive_timed_mutex>
      {
@@ -392,7 +342,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          pthread_cond_t cond;
 @@ -237,6 +245,7 @@
          }
- 
+
  #if defined BOOST_THREAD_USES_DATETIME
 +    public:
          template<typename TimeDuration>
@@ -401,7 +351,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -244,35 +253,33 @@
          }
  #endif
- 
+
 +    private:
  #ifdef BOOST_USE_PTHREAD_RECURSIVE_TIMEDLOCK
 -        void lock()
@@ -409,13 +359,13 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          {
              BOOST_VERIFY(!pthread_mutex_lock(&m));
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
              BOOST_VERIFY(!pthread_mutex_unlock(&m));
          }
- 
+
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -443,7 +393,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -290,7 +297,7 @@
              owner=pthread_self();
          }
- 
+
 -        void unlock()
 +        void unlock_impl()
          {
@@ -452,7 +402,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -300,7 +307,7 @@
              BOOST_VERIFY(!pthread_cond_signal(&cond));
          }
- 
+
 -        bool try_lock() BOOST_NOEXCEPT
 +        bool try_lock_impl() BOOST_NOEXCEPT
          {
@@ -461,7 +411,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 @@ -313,7 +320,6 @@
              return true;
          }
- 
+
 -    private:
          bool do_try_lock_until(struct timespec const &timeout)
          {
@@ -474,7 +424,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 -
  #endif
 +    public:
- 
+
  #if defined BOOST_THREAD_USES_DATETIME
          bool timed_lock(system_time const & abs_time)
 @@ -348,33 +353,35 @@
@@ -518,15 +468,15 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
          }
 +    public:
  #endif
- 
+
  #define BOOST_THREAD_DEFINES_RECURSIVE_TIMED_MUTEX_NATIVE_HANDLE
 diff -ruN pristine_boost_1_53_0/boost/thread/win32/mutex.hpp boost_1_53_0/boost/thread/win32/mutex.hpp
---- pristine_boost_1_53_0/boost/thread/win32/mutex.hpp	2012-12-02 04:22:33.000000000 -0500
-+++ boost_1_53_0/boost/thread/win32/mutex.hpp	2013-04-10 22:34:00.000000000 -0400
+--- pristine_boost_1_53_0/boost/thread/win32/mutex.hpp  2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/win32/mutex.hpp   2013-04-10 23:46:50.000000000 -0400
 @@ -6,6 +6,8 @@
  // accompanying file LICENSE_1_0.txt or copy at
  // http://www.boost.org/LICENSE_1_0.txt)
- 
+
 +#include <d2/lockable.hpp>
 +#include <d2/timed_lockable.hpp>
  #include <boost/thread/win32/basic_timed_mutex.hpp>
@@ -534,7 +484,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/win32/mutex.hpp boost_1_53_0/boost/
  #if defined BOOST_THREAD_PROVIDES_NESTED_LOCKS
 @@ -23,7 +25,7 @@
      }
- 
+
      class mutex:
 -        public ::boost::detail::underlying_mutex
 +        public d2::lockable< ::boost::detail::underlying_mutex>
@@ -543,7 +493,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/win32/mutex.hpp boost_1_53_0/boost/
          BOOST_THREAD_NO_COPYABLE(mutex)
 @@ -45,7 +47,7 @@
      typedef mutex try_mutex;
- 
+
      class timed_mutex:
 -        public ::boost::detail::basic_timed_mutex
 +        public d2::timed_lockable< ::boost::detail::basic_timed_mutex>
