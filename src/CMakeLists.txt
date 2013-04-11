@@ -56,5 +56,5 @@ install(TARGETS d2
 install(DIRECTORY ${d2_SOURCE_DIR}/include/
     DESTINATION include
     COMPONENT d2
-    FILES_MATCHING PATTERN *.hpp
+    FILES_MATCHING PATTERN *.h*
 )
