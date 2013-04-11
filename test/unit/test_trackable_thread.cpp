@@ -6,7 +6,6 @@
 #include <d2/trackable_thread.hpp>
 
 #include <boost/move/move.hpp>
-#include <gtest/gtest.h>
 
 
 namespace {
