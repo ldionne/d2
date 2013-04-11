@@ -151,6 +151,65 @@ public:
         this->lifetime_.just_detached();
     }
 };
+
+/*!
+ * Mixin augmenting its derived class with `d2` tractability.
+ *
+ * By implementing `join_impl()` and `detach_impl()` methods, the derived
+ * class automatically gets augmented with `join()` and `detach()` methods
+ * notifying `d2` after forwarding to the `*_impl()` implementation.
+ *
+ * When a new thread is created, the function executed in the new thread must
+ * also be wrapped by calling `trackable_thread_mixin::get_thread_function()`.
+ *
+ * Intended usage of this class goes as follow:
+ * @code
+ *
+ *  class my_thread : public d2::trackable_thread_mixin<my_thread> {
+ *      friend class d2::trackable_thread_mixin<my_thread>;
+ *
+ *      void join_impl() {
+ *          // ...
+ *      }
+ *
+ *      void detach_impl() {
+ *          // ...
+ *      }
+ *
+ *  public:
+ *      template <typename Function, typename ...Args>
+ *      explicit my_thread(Function&& f, Args&& ...args) {
+ *          typedef d2::thread_function<Function> Function_;
+ *          Function_ f_ = this->get_thread_function(
+ *                                              boost::forward<Function>(f));
+ *          // start the thread with Function_ and f_ normally
+ *      }
+ *  };
+ *
+ * @endcode
+ */
+template <typename Derived>
+class trackable_thread_mixin {
+    thread_lifetime lifetime_;
+
+protected:
+    template <typename Function>
+    thread_function<Function> get_thread_function(BOOST_FWD_REF(Function) f) {
+        lifetime_.about_to_start();
+        return make_thread_function(lifetime_, boost::forward<Function>(f));
+    }
+
+public:
+    void join() {
+        static_cast<Derived*>(this)->join_impl();
+        lifetime_.just_joined();
+    }
+
+    void detach() {
+        static_cast<Derived*>(this)->detach_impl();
+        lifetime_.just_detached();
+    }
+};
 } // end namespace d2
 
 #endif // !D2_TRACKABLE_THREAD_HPP
