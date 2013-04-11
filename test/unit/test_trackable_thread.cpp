@@ -14,19 +14,23 @@ namespace {
  * @internal
  * Dummy class with a standard thread interface for unit testing purpose.
  */
-struct thread {
+struct untracked_thread {
     class id { };
     typedef void native_handle_type;
 
-    thread() BOOST_NOEXCEPT { }
-    template <typename F> explicit thread(BOOST_FWD_REF(F) f, ...) { }
-    ~thread() { }
+    untracked_thread() BOOST_NOEXCEPT { }
+    template <typename F>
+    explicit untracked_thread(BOOST_FWD_REF(F), ...) { }
+    ~untracked_thread() { }
 
-    thread(BOOST_RV_REF(thread) t) BOOST_NOEXCEPT { }
+    untracked_thread(BOOST_RV_REF(untracked_thread)) BOOST_NOEXCEPT { }
 
-    thread& operator=(BOOST_RV_REF(thread) t) BOOST_NOEXCEPT { return *this; }
+    untracked_thread&
+    operator=(BOOST_RV_REF(untracked_thread)) BOOST_NOEXCEPT { return *this; }
 
-    void swap(thread& t) BOOST_NOEXCEPT { }
+    void swap(untracked_thread&) BOOST_NOEXCEPT { }
+    friend void
+    swap(untracked_thread& self, untracked_thread& other) BOOST_NOEXCEPT { }
 
     bool joinable() const BOOST_NOEXCEPT { return false; }
     void join() { }
@@ -37,10 +41,8 @@ struct thread {
     static unsigned hardware_concurrency() BOOST_NOEXCEPT { return 0u; }
 
 private:
-    BOOST_MOVABLE_BUT_NOT_COPYABLE(thread)
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(untracked_thread)
 };
 
-TEST(trackable_thread, pending) {
-    FAIL();
-}
+template class d2::trackable_thread<untracked_thread>;
 } // end anonymous namespace
