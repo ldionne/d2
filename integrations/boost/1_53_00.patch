@@ -1,27 +1,63 @@
-Index: Jamroot
-===================================================================
-diff --git a/trunk/Jamroot b/trunk/Jamroot
---- a/trunk/Jamroot (révision 82714)
-+++ b/trunk/Jamroot (copie de travail)
-@@ -135,8 +135,27 @@
-
+diff -ruN pristine_boost_1_53_0/Jamroot boost_1_53_0/Jamroot
+--- pristine_boost_1_53_0/Jamroot	2012-12-11 09:42:26.000000000 -0500
++++ boost_1_53_0/Jamroot	2013-04-10 22:34:00.000000000 -0400
+@@ -43,8 +43,8 @@
+ #                           of the libraries. Note, that which variants get
+ #                           built depends on what each library supports.
+ #
+-#                               minimal (default) - Builds a minimal set of 
+-#                               variants. On Windows, these are static 
++#                               minimal (default) - Builds a minimal set of
++#                               variants. On Windows, these are static
+ #                               multithreaded libraries in debug and release
+ #                               modes, using shared runtime. On Linux, these
+ #                               are static and shared multithreaded libraries
+@@ -91,8 +91,8 @@
+ #                           libraries.  The default is to not add anything.
+ #
+ #   --python-buildid=ID     Adds the specified ID to the name of built
+-#                           libraries that depend on Python.  The default 
+-#                           is to not add anything. This ID is added in 
++#                           libraries that depend on Python.  The default
++#                           is to not add anything. This ID is added in
+ #                           addition to --buildid.
+ #
+ #
+@@ -114,10 +114,10 @@
+ #   link=static|shared      Whether to build static or shared libraries
+ #
+ #   threading=single|multi  Whether to build single or multithreaded binaries
+-# 
+-#   runtime-link=static|shared      
++#
++#   runtime-link=static|shared
+ #                           Whether to link to static or shared C and C++ runtime.
+-#   
++#
+ 
+ # TODO:
+ #  - handle boost version
+@@ -137,8 +137,29 @@
+ 
  boostcpp.set-version $(BOOST_VERSION) ;
-
+ 
 +##############################################################################
-+# Configuration file to build boost with support for d2.
++# Configuration to build boost with support for d2.
++
++constant D2_INCLUDE_DIR : /usr/local/include ;
 +
 +lib d2
 +    # no sources (already built)
 +    :
 +
 +    # requirements
-+    : <file>/Users/louisdionne/Documents/Ordi/d2/build/src/libd2.dylib
++    : <file>d2      # this is libd2.dylib
 +
 +    # no default build
 +    :
 +
 +    # usage requirements
-+    : <include>/Users/louisdionne/Documents/Ordi/d2/include
++    : <include>$(D2_INCLUDE_DIR)
 +      <link>shared:<define>D2_DYN_LINK=1
 +    ;
 +##############################################################################
@@ -32,22 +68,38 @@ diff --git a/trunk/Jamroot b/trunk/Jamroot
        # Disable auto-linking for all targets here, primarily because it caused
        # troubles with V2.
        <define>BOOST_ALL_NO_LIB=1
-Index: boost/thread/pthread/mutex.hpp
-===================================================================
-diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/mutex.hpp
---- a/trunk/boost/thread/pthread/mutex.hpp  (révision 82714)
-+++ b/trunk/boost/thread/pthread/mutex.hpp  (copie de travail)
+@@ -165,7 +186,7 @@
+ {
+     return [ boostcpp.tag $(name) : $(type) : $(property-set) ] ;
+ }
+-   
++
+ rule handle-static-runtime ( properties * )
+ {
+     # Using static runtime with shared libraries is impossible on Linux,
+@@ -254,7 +275,7 @@
+     # The .SUNWCCh files are present in tr1 include directory and have to be installed,
+     # see http://lists.boost.org/Archives/boost/2007/05/121430.php
+     [ path.glob-tree $(BOOST_ROOT)/boost : *.hpp *.ipp *.h *.inc *.SUNWCCh : CVS .svn ]
+-    [ path.glob-tree $(BOOST_ROOT)/boost/compatibility/cpp_c_headers : c* : CVS .svn ] 
++    [ path.glob-tree $(BOOST_ROOT)/boost/compatibility/cpp_c_headers : c* : CVS .svn ]
+     [ path.glob boost/tr1/tr1 : * : bcc32 sun CVS .svn ]
+     ;
+ 
+diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0/boost/thread/pthread/mutex.hpp
+--- pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp	2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/pthread/mutex.hpp	2013-04-10 22:52:55.000000000 -0400
 @@ -6,6 +6,8 @@
  // accompanying file LICENSE_1_0.txt or copy at
  // http://www.boost.org/LICENSE_1_0.txt)
-
+ 
 +#include <d2/lockable.hpp>
 +#include <d2/timed_lockable.hpp>
  #include <boost/thread/detail/config.hpp>
  #include <pthread.h>
  #include <boost/throw_exception.hpp>
 @@ -35,10 +37,11 @@
-
+ 
  namespace boost
  {
 -    class mutex
@@ -58,11 +110,11 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 +        friend class d2::lockable_mixin<mutex>;
      public:
          BOOST_THREAD_NO_COPYABLE(mutex)
-
+ 
 @@ -59,7 +62,8 @@
              } while (ret == EINTR);
          }
-
+ 
 -        void lock()
 +    private:
 +        void lock_impl()
@@ -72,7 +124,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -72,7 +76,7 @@
              }
          }
-
+ 
 -        void unlock()
 +        void unlock_impl()
          {
@@ -81,7 +133,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -85,7 +89,7 @@
              }
          }
-
+ 
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -90,15 +142,15 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -100,6 +104,7 @@
              return !res;
          }
-
+ 
 +    public:
  #define BOOST_THREAD_DEFINES_MUTEX_NATIVE_HANDLE
          typedef pthread_mutex_t* native_handle_type;
          native_handle_type native_handle()
 @@ -115,9 +120,10 @@
-
+ 
      typedef mutex try_mutex;
-
+ 
 -    class timed_mutex
 +    class timed_mutex : public d2::timed_lockable_mixin<timed_mutex>
      {
@@ -122,7 +174,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -175,7 +183,7 @@
              }
          }
-
+ 
 -        void unlock()
 +        void unlock_impl()
          {
@@ -131,7 +183,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -188,7 +196,7 @@
              }
          }
-
+ 
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -140,7 +192,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -203,18 +211,14 @@
            return !res;
          }
-
+ 
 -
 -    private:
          bool do_try_lock_until(struct timespec const &timeout)
@@ -160,7 +212,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -224,14 +228,14 @@
              is_locked=true;
          }
-
+ 
 -        void unlock()
 +        void unlock_impl()
          {
@@ -168,7 +220,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
              is_locked=false;
              BOOST_VERIFY(!pthread_cond_signal(&cond));
          }
-
+ 
 -        bool try_lock()
 +        bool try_lock_impl()
          {
@@ -177,7 +229,7 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 @@ -242,7 +246,6 @@
              return true;
          }
-
+ 
 -    private:
          bool do_try_lock_until(struct timespec const &timeout)
          {
@@ -188,12 +240,12 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
          }
 -    public:
  #endif
-
+ 
 +public:
  #if defined BOOST_THREAD_USES_DATETIME
          bool timed_lock(system_time const & abs_time)
          {
-@@ -268,14 +271,16 @@
+@@ -268,34 +271,37 @@
              return do_try_lock_until(ts);
          }
  #endif
@@ -204,7 +256,8 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
 -        bool try_lock_for(const chrono::duration<Rep, Period>& rel_time)
 +        bool try_lock_for_impl(const chrono::duration<Rep, Period>& rel_time)
          {
-           return try_lock_until(chrono::steady_clock::now() + rel_time);
+-          return try_lock_until(chrono::steady_clock::now() + rel_time);
++          return try_lock_until_impl(chrono::steady_clock::now() + rel_time);
          }
          template <class Clock, class Duration>
 -        bool try_lock_until(const chrono::time_point<Clock, Duration>& t)
@@ -212,8 +265,9 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
          {
            using namespace chrono;
            system_clock::time_point     s_now = system_clock::now();
-@@ -283,19 +288,20 @@
-           return try_lock_until(s_now + ceil<nanoseconds>(t - c_now));
+           typename Clock::time_point  c_now = Clock::now();
+-          return try_lock_until(s_now + ceil<nanoseconds>(t - c_now));
++          return try_lock_until_impl(s_now + ceil<nanoseconds>(t - c_now));
          }
          template <class Duration>
 -        bool try_lock_until(const chrono::time_point<chrono::system_clock, Duration>& t)
@@ -221,7 +275,8 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
          {
            using namespace chrono;
            typedef time_point<system_clock, nanoseconds> nano_sys_tmpt;
-           return try_lock_until(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
+-          return try_lock_until(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
++          return try_lock_until_impl(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
          }
 -        bool try_lock_until(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
 +        bool try_lock_until_impl(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
@@ -233,17 +288,245 @@ diff --git a/trunk/boost/thread/pthread/mutex.hpp b/trunk/boost/thread/pthread/m
          }
 +    public:
  #endif
-
+ 
  #define BOOST_THREAD_DEFINES_TIMED_MUTEX_NATIVE_HANDLE
-Index: boost/thread/win32/mutex.hpp
-===================================================================
-diff --git a/trunk/boost/thread/win32/mutex.hpp b/trunk/boost/thread/win32/mutex.hpp
---- a/trunk/boost/thread/win32/mutex.hpp    (révision 82714)
-+++ b/trunk/boost/thread/win32/mutex.hpp    (copie de travail)
+diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp
+--- pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp	2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp	2013-04-10 22:52:23.000000000 -0400
 @@ -6,6 +6,8 @@
  // accompanying file LICENSE_1_0.txt or copy at
  // http://www.boost.org/LICENSE_1_0.txt)
-
+ 
++#include <d2/lockable.hpp>
++#include <d2/timed_lockable.hpp>
+ #include <pthread.h>
+ #include <boost/throw_exception.hpp>
+ #include <boost/thread/exceptions.hpp>
+@@ -41,9 +43,10 @@
+ 
+ namespace boost
+ {
+-    class recursive_mutex
++    class recursive_mutex : public d2::recursive_lockable_mixin<recursive_mutex>
+     {
+     private:
++        friend class d2::recursive_lockable_mixin<recursive_mutex>;
+         pthread_mutex_t m;
+ #ifndef BOOST_HAS_PTHREAD_MUTEXATTR_SETTYPE
+         pthread_cond_t cond;
+@@ -102,22 +105,24 @@
+         }
+ 
+ #ifdef BOOST_HAS_PTHREAD_MUTEXATTR_SETTYPE
+-        void lock()
++    private:
++        void lock_impl()
+         {
+             BOOST_VERIFY(!pthread_mutex_lock(&m));
+         }
+ 
+-        void unlock()
++        void unlock_impl()
+         {
+             BOOST_VERIFY(!pthread_mutex_unlock(&m));
+         }
+ 
+-        bool try_lock() BOOST_NOEXCEPT
++        bool try_lock_impl() BOOST_NOEXCEPT
+         {
+             int const res=pthread_mutex_trylock(&m);
+             BOOST_ASSERT(!res || res==EBUSY);
+             return !res;
+         }
++    public:
+ #define BOOST_THREAD_DEFINES_RECURSIVE_MUTEX_NATIVE_HANDLE
+         typedef pthread_mutex_t* native_handle_type;
+         native_handle_type native_handle()
+@@ -126,7 +131,8 @@
+         }
+ 
+ #else
+-        void lock()
++    private:
++        void lock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(is_locked && pthread_equal(owner,pthread_self()))
+@@ -144,7 +150,7 @@
+             owner=pthread_self();
+         }
+ 
+-        void unlock()
++        void unlock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(!--count)
+@@ -154,7 +160,7 @@
+             BOOST_VERIFY(!pthread_cond_signal(&cond));
+         }
+ 
+-        bool try_lock()
++        bool try_lock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(is_locked && !pthread_equal(owner,pthread_self()))
+@@ -166,6 +172,7 @@
+             owner=pthread_self();
+             return true;
+         }
++    public:
+ 
+ #endif
+ 
+@@ -177,9 +184,10 @@
+ 
+     typedef recursive_mutex recursive_try_mutex;
+ 
+-    class recursive_timed_mutex
++    class recursive_timed_mutex : public d2::recursive_timed_lockable<recursive_timed_mutex>
+     {
+     private:
++        friend class d2::recursive_timed_lockable<recursive_timed_mutex>;
+         pthread_mutex_t m;
+ #ifndef BOOST_USE_PTHREAD_RECURSIVE_TIMEDLOCK
+         pthread_cond_t cond;
+@@ -237,6 +245,7 @@
+         }
+ 
+ #if defined BOOST_THREAD_USES_DATETIME
++    public:
+         template<typename TimeDuration>
+         bool timed_lock(TimeDuration const & relative_time)
+         {
+@@ -244,35 +253,33 @@
+         }
+ #endif
+ 
++    private:
+ #ifdef BOOST_USE_PTHREAD_RECURSIVE_TIMEDLOCK
+-        void lock()
++        void lock_impl()
+         {
+             BOOST_VERIFY(!pthread_mutex_lock(&m));
+         }
+ 
+-        void unlock()
++        void unlock_impl()
+         {
+             BOOST_VERIFY(!pthread_mutex_unlock(&m));
+         }
+ 
+-        bool try_lock()
++        bool try_lock_impl()
+         {
+             int const res=pthread_mutex_trylock(&m);
+             BOOST_ASSERT(!res || res==EBUSY);
+             return !res;
+         }
+-    private:
++
+         bool do_try_lock_until(struct timespec const &timeout)
+         {
+             int const res=pthread_mutex_timedlock(&m,&timeout);
+             BOOST_ASSERT(!res || res==ETIMEDOUT);
+             return !res;
+         }
+-
+-    public:
+-
+ #else
+-        void lock()
++        void lock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(is_locked && pthread_equal(owner,pthread_self()))
+@@ -290,7 +297,7 @@
+             owner=pthread_self();
+         }
+ 
+-        void unlock()
++        void unlock_impl()
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(!--count)
+@@ -300,7 +307,7 @@
+             BOOST_VERIFY(!pthread_cond_signal(&cond));
+         }
+ 
+-        bool try_lock() BOOST_NOEXCEPT
++        bool try_lock_impl() BOOST_NOEXCEPT
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+             if(is_locked && !pthread_equal(owner,pthread_self()))
+@@ -313,7 +320,6 @@
+             return true;
+         }
+ 
+-    private:
+         bool do_try_lock_until(struct timespec const &timeout)
+         {
+             boost::pthread::pthread_mutex_scoped_lock const local_lock(&m);
+@@ -336,9 +342,8 @@
+             owner=pthread_self();
+             return true;
+         }
+-    public:
+-
+ #endif
++    public:
+ 
+ #if defined BOOST_THREAD_USES_DATETIME
+         bool timed_lock(system_time const & abs_time)
+@@ -348,33 +353,35 @@
+         }
+ #endif
+ #ifdef BOOST_THREAD_USES_CHRONO
++    private:
+         template <class Rep, class Period>
+-        bool try_lock_for(const chrono::duration<Rep, Period>& rel_time)
++        bool try_lock_for_impl(const chrono::duration<Rep, Period>& rel_time)
+         {
+-          return try_lock_until(chrono::steady_clock::now() + rel_time);
++          return try_lock_until_impl(chrono::steady_clock::now() + rel_time);
+         }
+         template <class Clock, class Duration>
+-        bool try_lock_until(const chrono::time_point<Clock, Duration>& t)
++        bool try_lock_until_impl(const chrono::time_point<Clock, Duration>& t)
+         {
+           using namespace chrono;
+           system_clock::time_point     s_now = system_clock::now();
+           typename Clock::time_point  c_now = Clock::now();
+-          return try_lock_until(s_now + ceil<nanoseconds>(t - c_now));
++          return try_lock_until_impl(s_now + ceil<nanoseconds>(t - c_now));
+         }
+         template <class Duration>
+-        bool try_lock_until(const chrono::time_point<chrono::system_clock, Duration>& t)
++        bool try_lock_until_impl(const chrono::time_point<chrono::system_clock, Duration>& t)
+         {
+           using namespace chrono;
+           typedef time_point<system_clock, nanoseconds> nano_sys_tmpt;
+-          return try_lock_until(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
++          return try_lock_until_impl(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
+         }
+-        bool try_lock_until(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
++        bool try_lock_until_impl(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
+         {
+           //using namespace chrono;
+           chrono::nanoseconds d = tp.time_since_epoch();
+           timespec ts = boost::detail::to_timespec(d);
+           return do_try_lock_until(ts);
+         }
++    public:
+ #endif
+ 
+ #define BOOST_THREAD_DEFINES_RECURSIVE_TIMED_MUTEX_NATIVE_HANDLE
+diff -ruN pristine_boost_1_53_0/boost/thread/win32/mutex.hpp boost_1_53_0/boost/thread/win32/mutex.hpp
+--- pristine_boost_1_53_0/boost/thread/win32/mutex.hpp	2012-12-02 04:22:33.000000000 -0500
++++ boost_1_53_0/boost/thread/win32/mutex.hpp	2013-04-10 22:34:00.000000000 -0400
+@@ -6,6 +6,8 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
 +#include <d2/lockable.hpp>
 +#include <d2/timed_lockable.hpp>
  #include <boost/thread/win32/basic_timed_mutex.hpp>
@@ -251,7 +534,7 @@ diff --git a/trunk/boost/thread/win32/mutex.hpp b/trunk/boost/thread/win32/mutex
  #if defined BOOST_THREAD_PROVIDES_NESTED_LOCKS
 @@ -23,7 +25,7 @@
      }
-
+ 
      class mutex:
 -        public ::boost::detail::underlying_mutex
 +        public d2::lockable< ::boost::detail::underlying_mutex>
@@ -260,7 +543,7 @@ diff --git a/trunk/boost/thread/win32/mutex.hpp b/trunk/boost/thread/win32/mutex
          BOOST_THREAD_NO_COPYABLE(mutex)
 @@ -45,7 +47,7 @@
      typedef mutex try_mutex;
-
+ 
      class timed_mutex:
 -        public ::boost::detail::basic_timed_mutex
 +        public d2::timed_lockable< ::boost::detail::basic_timed_mutex>
