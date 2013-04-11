@@ -64,28 +64,28 @@ D2MOCK_DECL thread& thread::operator=(BOOST_RV_REF(thread) other) {
 
 
 D2MOCK_DECL bool thread::joinable() {
-    BOOST_ASSERT_MSG(impl_, "thread::joinable(): was not started");
+    BOOST_ASSERT_MSG(impl_, "was not started");
     return impl_->joinable();
 }
 
 D2MOCK_DECL thread::id thread::get_id() const {
-    BOOST_ASSERT_MSG(impl_, "thread::get_id(): was not started");
+    BOOST_ASSERT_MSG(impl_, "was not started");
     return impl_->get_id();
 }
 
 
 D2MOCK_DECL void thread::start() {
-    BOOST_ASSERT_MSG(!impl_, "thread::start(): was already started");
+    BOOST_ASSERT_MSG(!impl_, "was already started");
     impl_.reset(new impl(f_));
 }
 
 D2MOCK_DECL void thread::join() {
-    BOOST_ASSERT_MSG(impl_, "thread::join(): was not started");
+    BOOST_ASSERT_MSG(impl_, "was not started");
     impl_->join();
 }
 
 D2MOCK_DECL void thread::detach() {
-    BOOST_ASSERT_MSG(impl_, "thread::detach(): was not started");
+    BOOST_ASSERT_MSG(impl_, "was not started");
     impl_->detach();
 }
 
@@ -95,8 +95,7 @@ D2MOCK_DECL void thread::swap(thread& other) {
 }
 
 D2MOCK_DECL std::size_t thread::d2_unique_id() const {
-    BOOST_ASSERT_MSG(impl_ && impl_->d2_tid,
-        "thread::d2_unique_id(): was not started");
+    BOOST_ASSERT_MSG(impl_ && impl_->d2_tid, "was not started");
     return *impl_->d2_tid;
 }
 } // end namespace d2mock

@@ -81,36 +81,31 @@ namespace d2 {
  */
 struct thread_lifetime {
     void about_to_start() {
-        BOOST_ASSERT_MSG(!data_, "d2::thread_lifetime::about_to_start(): "
-                                 "called with a non-NULL data_ pointer");
+        BOOST_ASSERT_MSG(!data_, "called with a non-NULL data_ pointer");
         data_ = boost::make_shared<Data>();
         using dyno::unique_id;
         data_->parent = unique_id(dyno::this_thread::get_id());
     }
 
     void just_started() {
-        BOOST_ASSERT_MSG(data_, "d2::thread_lifetime::just_started(): "
-                                    "called with a NULL data_ pointer");
+        BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
 
         using dyno::unique_id;
         std::size_t const child = unique_id(dyno::this_thread::get_id());
         BOOST_ASSERT_MSG(data_->parent != child,
-            "d2::thread_lifetime::just_started(): "
-                "called in the parent thread (or it appears so)");
+            "called in the parent thread (or it appears so)");
 
         notify_start(data_->parent, child);
         data_->child = child;
     }
 
     void just_joined() {
-        BOOST_ASSERT_MSG(data_, "d2::thread_lifetime::just_joined(): "
-                                    "called with a NULL data_ pointer");
+        BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
 
         using dyno::unique_id;
         std::size_t const parent = unique_id(dyno::this_thread::get_id());
         BOOST_ASSERT_MSG(parent != data_->child,
-            "d2::thread_lifetime::just_joined(): "
-                "called in the child thread (or it appears so)");
+            "called in the child thread (or it appears so)");
 
         notify_join(parent, data_->child);
         data_.reset();
@@ -123,8 +118,7 @@ struct thread_lifetime {
      *           support this.
      */
     void just_detached() {
-        BOOST_ASSERT_MSG(data_, "thread_lifetime::just_detached(): "
-                                    "called with a NULL data_ pointer");
+        BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
         data_.reset();
     }
 
