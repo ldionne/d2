@@ -7,3 +7,6 @@
 [submodule "ext/gtest"]
 	path = ext/gtest
 	url = https://github.com/ldionne/gtest.git
+[submodule "ext/dbg-d2"]
+	path = ext/dbg-d2
+	url = https://github.com/ldionne/dbg-d2.git

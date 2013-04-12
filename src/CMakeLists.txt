@@ -10,9 +10,18 @@ add_subdirectory(
     ${d2_SOURCE_DIR}/ext/dyno ${d2_BINARY_DIR}/ext/dyno EXCLUDE_FROM_ALL
 )
 
+# Second, setup dbg-d2
+set(DBG_ENABLE_CXX0X ${D2_ENABLE_CXX0X} CACHE INTERNAL "Enable c++0x when building dbg, if the compiler supports it.")
+set(DBG_ENABLE_LIBCXX ${D2_ENABLE_LIBCXX} CACHE INTERNAL "Enable -stdlib=libc++ when building dbg, if the compiler supports it.")
+set(DBG_ENABLE_SHARED OFF CACHE INTERNAL "Build dbg as a shared library.")
+add_subdirectory(
+    ${d2_SOURCE_DIR}/ext/dbg-d2 ${d2_BINARY_DIR}/ext/dbg-d2 EXCLUDE_FROM_ALL
+)
+
 # Then, setup lists of additional stuff required by d2
 list(APPEND includes ${d2_SOURCE_DIR}/ext/dyno/include)
 list(APPEND includes ${d2_SOURCE_DIR}/ext/backward-cpp)
+list(APPEND includes ${d2_SOURCE_DIR}/ext/dbg-d2/include)
 list(APPEND includes ${D2_BOOST_INCLUDE})
 
 list(APPEND libraries ${D2_BOOST_FILESYSTEM_LIB})
@@ -20,6 +29,7 @@ list(APPEND libraries ${D2_BOOST_GRAPH_LIB})
 list(APPEND libraries ${D2_BOOST_SERIALIZATION_LIB})
 list(APPEND libraries ${D2_BOOST_SYSTEM_LIB})
 list(APPEND libraries dyno)
+list(APPEND libraries dbg)
 
 list(APPEND definitions BOOST_SPIRIT_USE_PHOENIX_V3)
 list(APPEND definitions BOOST_UNORDERED_USE_MOVE)
