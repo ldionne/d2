@@ -56,12 +56,28 @@ potential_deadlock::is_equivalent_to(potential_deadlock const& other) const {
 
 namespace {
 std::string explain_thread(deadlocked_thread const& thread) {
-    std::string ret;
-    karma::generate(std::back_inserter(ret),
-        "thread " << karma::stream << " holds " << (karma::stream % ", ")
-                                   << " and waits for " << karma::stream,
-        thread.tid, thread.holding, thread.waiting_for);
-    return ret;
+    typedef deadlocked_thread::lock_sequence::size_type size_type;
+    std::stringstream ss;
+
+    ss << "in thread #" << thread.tid << " started at "
+                                            << "[no location information]:\n";
+
+    for (size_type i = 0; i < thread.holding.size(); ++i) {
+
+        ss << "holds object #" << thread.holding.at(i) << " acquired at";
+        if (thread.holding_info.at(i))
+            ss << "\n" << *thread.holding_info.at(i) << "\n\n";
+        else
+            ss << " [no location information]\n";
+    }
+
+    ss << "tries to acquire object #" << thread.waiting_for << " at";
+    if (thread.waiting_for_info)
+        ss << "\n" << *thread.waiting_for_info << "\n\n";
+    else
+        ss << " [no location information]\n";
+
+    return ss.str();
 }
 } // end anonymous namespace
 

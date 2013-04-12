@@ -10,10 +10,12 @@
 #include <d2/core/lock_id.hpp>
 #include <d2/core/thread_id.hpp>
 #include <d2/detail/decl.hpp>
+#include <d2/detail/lock_debug_info.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <iosfwd>
 #include <vector>
@@ -31,11 +33,12 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     deadlocked_thread(ThreadId tid, BOOST_FWD_REF(Container) locks,
                                     LockId waiting_for)
         : tid(tid), holding(boost::forward<Container>(locks)),
-          waiting_for(waiting_for)
+          holding_info(holding.size()), waiting_for(waiting_for)
     {
         BOOST_ASSERT_MSG(holding.size() >= 1,
             "a thread can't be deadlocked if it is not holding at least one "
             "lock while waiting for another one");
+        invariants();
     }
 
     /*!
@@ -48,11 +51,12 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
                       BOOST_FWD_REF(Iterator) last, LockId waiting_for)
         : tid(tid), holding(boost::forward<Iterator>(first),
                             boost::forward<Iterator>(last)),
-          waiting_for(waiting_for)
+          holding_info(holding.size()), waiting_for(waiting_for)
     {
         BOOST_ASSERT_MSG(holding.size() >= 1,
             "a thread can't be deadlocked if it is not holding at least one "
             "lock while waiting for another one");
+        invariants();
     }
 
     //! Thread identifier of the deadlocked thread.
@@ -62,13 +66,25 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     typedef std::vector<LockId> lock_sequence;
 
     /*!
+     * Type of the sequence containing the information of the locks held by
+     * the thread.
+     */
+    typedef std::vector<
+                boost::optional<detail::LockDebugInfo>
+            > lock_info_sequence;
+
+    /*!
      * Collection of locks held by that thread at the moment of the deadlock.
      * The locks are sorted in their order of acquisition.
      */
     lock_sequence holding;
 
+    lock_info_sequence holding_info;
+
     //! Identifier of the lock the thread is waiting after.
     LockId waiting_for;
+
+    boost::optional<detail::LockDebugInfo> waiting_for_info;
 
     /*!
      * Return whether two `deadlocked_thread`s represent the same thread
@@ -77,6 +93,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
      */
     friend bool
     operator==(deadlocked_thread const& a, deadlocked_thread const& b) {
+        a.invariants(); b.invariants();
         return a.tid == b.tid &&
                a.waiting_for == b.waiting_for &&
                a.holding == b.holding;
@@ -94,6 +111,7 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
      */
     friend bool
     operator<(deadlocked_thread const& a, deadlocked_thread const& b) {
+        a.invariants(); b.invariants();
         if (a.tid < b.tid)
             return true;
         else if (a.tid == b.tid)
@@ -106,6 +124,13 @@ struct deadlocked_thread : boost::partially_ordered<deadlocked_thread> {
     //! Print a human readable representation of a `deadlocked_thread`.
     D2_DECL friend
     std::ostream& operator<<(std::ostream&, deadlocked_thread const&);
+
+private:
+    void invariants() const {
+        BOOST_ASSERT_MSG(holding_info.size() == holding.size(),
+            "the number of held locks must always be the same as the number "
+            "of held lock infos, even if they are not defined");
+    }
 };
 
 /*!

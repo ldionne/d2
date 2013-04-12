@@ -57,6 +57,8 @@ struct GiveSynchronizationSemantics {
             core::deadlocked_thread thread(
                 thread_of(edge_label), boost::move(were_held), when_waited_for
             );
+            thread.holding_info[0] = edge_label.l1_info;
+            thread.waiting_for_info = edge_label.l2_info;
             threads.push_back(boost::move(thread));
         }
 
