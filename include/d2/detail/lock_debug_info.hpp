@@ -5,11 +5,13 @@
 #ifndef D2_DETAIL_LOCK_DEBUG_INFO_HPP
 #define D2_DETAIL_LOCK_DEBUG_INFO_HPP
 
+#include <algorithm>
 #include <boost/operators.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <cstddef>
-#include <iosfwd>
+#include <iterator>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -40,8 +42,12 @@ struct StackFrame : boost::equality_comparable<StackFrame> {
         return a.ip == b.ip && a.function == b.function && a.module == b.module;
     }
 
-    friend std::istream& operator>>(std::istream&, StackFrame&);
-    friend std::ostream& operator<<(std::ostream&, StackFrame const&);
+    friend std::ostream& operator<<(std::ostream& os, StackFrame const& self) {
+        os << self.module << "\t\t\t"
+           << (void*)self.ip << "\t\t\t"
+           << self.function;
+        return os;
+    }
 };
 
 struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
@@ -59,10 +65,13 @@ struct LockDebugInfo : boost::equality_comparable<LockDebugInfo> {
         return a.call_stack == b.call_stack;
     }
 
-    friend std::istream& operator>>(std::istream&, LockDebugInfo&);
-    friend std::ostream& operator<<(std::ostream&, LockDebugInfo const&);
+    friend std::ostream&
+    operator<<(std::ostream& os, LockDebugInfo const& self) {
+        std::copy(self.call_stack.begin(), self.call_stack.end(),
+            std::ostream_iterator<StackFrame>(os, "\n"));
+        return os;
+    }
 };
-
 } // end namespace detail
 } // end namespace d2
 
