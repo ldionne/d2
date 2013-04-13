@@ -55,10 +55,16 @@ struct thread_mixin : thread_base, d2::trackable_thread_mixin<thread_mixin> {
     }
     ~thread_mixin() { }
 
-    thread_mixin(BOOST_RV_REF(thread_mixin)) BOOST_NOEXCEPT { }
+    thread_mixin(BOOST_RV_REF(thread_mixin) other) BOOST_NOEXCEPT
+        : trackable_thread_mixin_(
+                    boost::move(static_cast<trackable_thread_mixin_&>(other)))
+    { }
 
-    thread_mixin&
-    operator=(BOOST_RV_REF(thread_mixin)) BOOST_NOEXCEPT { return *this; }
+    thread_mixin& operator=(BOOST_RV_REF(thread_mixin) other) BOOST_NOEXCEPT {
+        trackable_thread_mixin_::operator=(
+                   boost::move(static_cast<trackable_thread_mixin_&>(other)));
+        return *this;
+    }
 
     void swap(thread_mixin&) BOOST_NOEXCEPT { }
     friend void swap(thread_mixin&, thread_mixin&) BOOST_NOEXCEPT { }

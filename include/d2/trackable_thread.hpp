@@ -184,6 +184,16 @@ public:
  *                                              boost::forward<Function>(f));
  *          // start the thread with Function_ and f_ normally
  *      }
+ *
+ *      my_thread(my_thread&& other)
+ *          : trackable_thread_mixin_(
+ *              boost::move(static_cast<trackable_thread_mixin_&>(other)))
+ *      { }
+ *
+ *      my_thread& operator=(my_thread&& other) {
+ *          trackable_thread_mixin_::operator=(boost::move(other));
+ *          // ...
+ *      }
  *  };
  *
  * @endcode
@@ -198,6 +208,8 @@ protected:
         lifetime_.about_to_start();
         return make_thread_function(lifetime_, boost::forward<Function>(f));
     }
+
+    typedef trackable_thread_mixin trackable_thread_mixin_;
 
 public:
     void join() {
