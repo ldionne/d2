@@ -42,9 +42,7 @@ struct as_cycle_visitor {
     }
 
 private:
-    // mutable because we don't care whether the functor's operator() is
-    // const or not and we want our `cycle` method to be const.
-    F mutable f_;
+    F f_;
 };
 
 //! Return a `as_cycle_visitor` visitor with a deduced functor type.

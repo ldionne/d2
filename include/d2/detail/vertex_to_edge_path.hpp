@@ -26,13 +26,13 @@ class algorithm {
                 EdgePathMaker, EdgeDescriptor
             >::type EdgePath;
 
-    EdgePath edges_;
+    EdgePath mutable edges_;
     Graph const& graph_;
-    F& f_;
+    F const& f_;
 
 public:
     template <typename VertexPathSize>
-    algorithm(Graph const& graph, F& f, VertexPathSize vpath_size)
+    algorithm(Graph const& graph, F const& f, VertexPathSize vpath_size)
         : graph_(graph), f_(f)
     {
         // we need n-1 edges to chain n vertices
@@ -40,7 +40,7 @@ public:
     }
 
     template <typename Iterator>
-    void operator()(Iterator first, Iterator last) {
+    void operator()(Iterator first, Iterator last) const {
         VertexDescriptor u = *first++;
         if (first == last) {
             // Make sure the wrapped functor does not modify the path.
@@ -105,9 +105,7 @@ template <
     typename EdgePathMaker = vertex_to_edge_path_detail::make_vector
 >
 class vertex_to_edge_path {
-    // Mutable is to avoid being affected by the constness of
-    // the functor's operator().
-    F mutable f_;
+    F f_;
 
 public:
     explicit vertex_to_edge_path(F const& f)

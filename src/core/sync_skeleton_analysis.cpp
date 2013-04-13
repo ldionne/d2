@@ -35,7 +35,7 @@ struct GiveSynchronizationSemantics {
     { }
 
     template <typename EdgePath, typename LockGraph>
-    void operator()(EdgePath const& cycle, LockGraph const& graph) {
+    void operator()(EdgePath const& cycle, LockGraph const& graph) const {
         typedef typename boost::graph_traits<
                             LockGraph
                         >::edge_descriptor EdgeDescriptor;

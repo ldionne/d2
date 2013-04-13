@@ -49,7 +49,7 @@ class CycleVisitor {
             >::const_type EdgeLabelMap;
 
     SegmentationGraph const& sg_;
-    Function mutable f_;
+    Function f_;
 
 public:
     CycleVisitor(SegmentationGraph const& sg, Function const& f)
@@ -125,7 +125,7 @@ struct cycle_visitor_as_functor {
     }
 
 private:
-    Visitor mutable visitor_;
+    Visitor visitor_;
 };
 
 /*!
@@ -156,7 +156,7 @@ struct vertex_to_edge_cycle {
     }
 
 private:
-    Visitor mutable visitor_;
+    Visitor visitor_;
 };
 
 /*!
