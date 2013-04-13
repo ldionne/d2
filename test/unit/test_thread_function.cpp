@@ -21,12 +21,6 @@ struct instantiate_thread_function {
         f(i);
         f(i, i);
         f(i, i, i);
-
-        ThreadFunction const fc(lifetime);
-        fc();
-        fc(i);
-        fc(i, i);
-        fc(i, i, i);
     }
 };
 
