@@ -41,10 +41,12 @@ struct wrapped_thread : thread_base {
 private:
     BOOST_MOVABLE_BUT_NOT_COPYABLE(wrapped_thread)
 };
+} // end anonymous namespace
 
 template class d2::trackable_thread<wrapped_thread>;
-typedef d2::trackable_thread<wrapped_thread> wrapped_trackable_thread;
 
+namespace {
+typedef d2::trackable_thread<wrapped_thread> wrapped_trackable_thread;
 
 struct thread_mixin : thread_base, d2::trackable_thread_mixin<thread_mixin> {
     thread_mixin() BOOST_NOEXCEPT { }
