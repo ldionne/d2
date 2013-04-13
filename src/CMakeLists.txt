@@ -22,6 +22,7 @@ add_subdirectory(
 list(APPEND includes ${d2_SOURCE_DIR}/ext/dyno/include)
 list(APPEND includes ${d2_SOURCE_DIR}/ext/backward-cpp)
 list(APPEND includes ${d2_SOURCE_DIR}/ext/dbg-d2/include)
+list(APPEND includes ${d2_SOURCE_DIR}/ext/hawick_circuits)
 list(APPEND includes ${D2_BOOST_INCLUDE})
 
 list(APPEND libraries ${D2_BOOST_FILESYSTEM_LIB})
