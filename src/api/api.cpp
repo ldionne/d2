@@ -4,171 +4,67 @@
 
 #define D2_SOURCE
 #include <d2/api.h>
-#include <d2/core/events.hpp>
-#include <d2/core/filesystem_dispatcher.hpp>
-#include <d2/core/lock_id.hpp>
-#include <d2/core/thread_id.hpp>
-#include <d2/detail/atomic.hpp>
-#include <d2/detail/config.hpp>
-#include <d2/detail/mutex.hpp>
+#include <d2/core/framework.hpp>
+#include <d2/detail/decl.hpp>
 
 #include <stddef.h>
 
 
-namespace d2 { namespace api_detail {
-    static core::FilesystemDispatcher dispatcher;
-    static detail::atomic<bool> event_logging_enabled(false);
-}}
-
-D2_API extern void d2_disable_event_logging(void) {
-    d2::api_detail::event_logging_enabled = false;
+namespace d2 {
+    namespace {
+        core::framework& get_framework() {
+            static core::framework FRAMEWORK;
+            return FRAMEWORK;
+        }
+    }
 }
 
-D2_API extern void d2_enable_event_logging(void) {
-    d2::api_detail::event_logging_enabled = true;
+D2_DECL extern void d2_disable_event_logging(void) {
+    d2::get_framework().disable();
 }
 
-D2_API extern int d2_is_enabled(void) {
-    return d2::api_detail::event_logging_enabled ? 1 : 0;
+D2_DECL extern void d2_enable_event_logging(void) {
+    d2::get_framework().enable();
 }
 
-D2_API extern int d2_is_disabled(void) {
+D2_DECL extern int d2_is_enabled(void) {
+    return d2::get_framework().is_enabled() ? 1 : 0;
+}
+
+D2_DECL extern int d2_is_disabled(void) {
     return d2_is_enabled() ? 0 : 1;
 }
 
-D2_API extern int d2_set_log_repository(char const* path) {
-    // Note: 0 for success and anything else but 0 for failure.
-    return d2::api_detail::dispatcher.set_repository_noexcept(path) ? 0 : 1;
+D2_DECL extern int d2_set_log_repository(char const* path) {
+    return d2::get_framework().set_repository(path);
 }
 
-D2_API extern void d2_unset_log_repository(void) {
-    d2::api_detail::dispatcher.unset_repository();
+D2_DECL extern void d2_unset_log_repository(void) {
+    d2::get_framework().unset_repository();
 }
 
-D2_API extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled()) {
-        core::events::acquire event((ThreadId(thread_id)), LockId(lock_id));
-                        // ignore current frame
-        event.info.init_call_stack(1);
-        dispatcher.dispatch(event);
-    }
+D2_DECL extern void d2_notify_acquire(size_t thread_id, size_t lock_id) {
+    d2::get_framework().notify_acquire(thread_id, lock_id);
 }
 
-D2_API extern void d2_notify_recursive_acquire(size_t thread_id,
+D2_DECL extern void d2_notify_recursive_acquire(size_t thread_id,
                                                size_t lock_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled()) {
-        core::events::recursive_acquire event((ThreadId(thread_id)), LockId(lock_id));
-                        // ignore current frame
-        event.info.init_call_stack(1);
-        dispatcher.dispatch(event);
-    }
+    d2::get_framework().notify_recursive_acquire(thread_id, lock_id);
 }
 
-D2_API extern void d2_notify_release(size_t thread_id, size_t lock_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled())
-        dispatcher.dispatch(
-            core::events::release(ThreadId(thread_id), LockId(lock_id)));
+D2_DECL extern void d2_notify_release(size_t thread_id, size_t lock_id) {
+    d2::get_framework().notify_release(thread_id, lock_id);
 }
 
-D2_API extern void d2_notify_recursive_release(size_t thread_id,
+D2_DECL extern void d2_notify_recursive_release(size_t thread_id,
                                                size_t lock_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled())
-        dispatcher.dispatch(
-            core::events::recursive_release(ThreadId(thread_id), LockId(lock_id)));
+    d2::get_framework().notify_recursive_release(thread_id, lock_id);
 }
 
-namespace d2 { namespace api_detail {
-    static detail::atomic<std::size_t> lock_id_counter(0);
-}}
-
-D2_API extern size_t d2_get_lock_id(void) {
-    return d2::api_detail::lock_id_counter++;
+D2_DECL extern void d2_notify_start(size_t parent_id, size_t child_id) {
+    d2::get_framework().notify_start(parent_id, child_id);
 }
 
-namespace d2 { namespace api_detail {
-    // default initialized to the initial segment value
-    static Segment current_segment;
-    static detail::mutex segment_mutex;
-    static boost::unordered_map<ThreadId, Segment> segment_of;
-
-    template <typename Value, typename Container>
-    bool contains(Value const& v, Container const& c) {
-        return c.find(v) != c.end();
-    }
-}}
-
-D2_API extern void d2_notify_start(size_t parent_id, size_t child_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled()) {
-        ThreadId parent(parent_id), child(child_id);
-        Segment parent_segment, child_segment, new_parent_segment;
-        {
-            detail::scoped_lock<detail::mutex> lock(segment_mutex);
-            BOOST_ASSERT_MSG(parent != child, "thread starting itself");
-            BOOST_ASSERT_MSG(segment_of.empty() || contains(parent,segment_of),
-        "starting a thread from another thread that has not been created yet");
-            // segment_of[parent] will be the initial segment value on the
-            // very first call, which is the same as current_segment. so this
-            // means two things:
-            //  - parent_segment will be the initial segment value on the very
-            //    first call, and the segment of `parent` on subsequent calls,
-            //    which is fine.
-            //  - we must PREincrement the current_segment so it is distinct
-            //    from the initial value.
-            Segment& segment_of_parent = segment_of[parent];
-            parent_segment = segment_of_parent;
-            new_parent_segment = ++current_segment;
-            child_segment = ++current_segment;
-            segment_of[child] = child_segment;
-            segment_of_parent = new_parent_segment;
-        }
-
-        dispatcher.dispatch(
-            core::events::start(parent_segment, new_parent_segment, child_segment));
-
-        dispatcher.dispatch(
-            core::events::segment_hop(parent, new_parent_segment));
-
-        dispatcher.dispatch(
-            core::events::segment_hop(child, child_segment));
-    }
-}
-
-D2_API extern void d2_notify_join(size_t parent_id, size_t child_id) {
-    using namespace d2;
-    using namespace d2::api_detail;
-    if (d2_is_enabled()) {
-        ThreadId parent(parent_id), child(child_id);
-        Segment parent_segment, child_segment, new_parent_segment;
-        {
-            detail::scoped_lock<detail::mutex> lock(segment_mutex);
-            BOOST_ASSERT_MSG(parent != child, "thread joining itself");
-            BOOST_ASSERT_MSG(contains(parent, segment_of),
-        "joining a thread into another thread that has not been created yet");
-            BOOST_ASSERT_MSG(contains(child, segment_of),
-                            "joining a thread that has not been created yet");
-            Segment& segment_of_parent = segment_of[parent];
-            parent_segment = segment_of_parent;
-            child_segment = segment_of[child];
-            new_parent_segment = ++current_segment;
-            segment_of_parent = new_parent_segment;
-            segment_of.erase(child);
-        }
-
-        dispatcher.dispatch(
-            core::events::join(parent_segment, new_parent_segment, child_segment));
-
-        dispatcher.dispatch(core::events::segment_hop(parent, new_parent_segment));
-        // We could possibly generate informative events like end-of-thread
-        // in the child thread, but that's not strictly necessary right now.
-    }
+D2_DECL extern void d2_notify_join(size_t parent_id, size_t child_id) {
+    d2::get_framework().notify_join(parent_id, child_id);
 }
