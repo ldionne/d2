@@ -18,14 +18,26 @@
 #include <boost/thread/lock_guard.hpp>
 #include <boost/unordered_map.hpp>
 #include <cstddef>
+#include <cstdlib>
 
 
 namespace d2 {
 namespace core {
 struct framework {
-    framework()
-        : event_logging_enabled_(false)
-    { }
+    framework() : event_logging_enabled_(false) {
+        char const* repo = std::getenv("D2_REPOSITORY");
+        if (repo) {
+            enable();
+            set_repository(repo);
+        }
+    }
+
+    ~framework() {
+        if (is_enabled()) {
+            disable();
+            unset_repository();
+        }
+    }
 
     void enable() { event_logging_enabled_ = true; }
     void disable() { event_logging_enabled_ = false; }
