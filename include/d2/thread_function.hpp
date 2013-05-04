@@ -9,8 +9,9 @@
 #include <d2/thread_lifetime.hpp>
 
 #include <boost/config.hpp>
-#include <boost/fusion/functional/adapter/unfused.hpp>
 #include <boost/fusion/functional/generation/make_fused.hpp>
+#include <boost/fusion/include/vector.hpp>
+#include <boost/move/move.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/type_traits/decay.hpp>
 #include <boost/utility/result_of.hpp>
@@ -20,106 +21,130 @@ namespace d2 {
 #if defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) &&                           \
     !defined(DYNO_DOXYGEN_INVOKED)
 
-namespace thread_function_detail {
-namespace fsn = boost::fusion;
-
 template <typename Function_>
-class thread_function_impl {
+class thread_function {
     typedef typename boost::decay<Function_>::type Function;
+
+    // This handles pointers to functions correctly.
+    template <typename F, typename Args>
+    struct my_result_of
+        : boost::result_of<
+            typename boost::fusion::result_of::make_fused<Function>::type(Args)
+        >
+    { };
 
     Function function_;
     thread_lifetime mutable lifetime_;
 
-public:
-    explicit thread_function_impl(thread_lifetime const& lifetime)
-        : lifetime_(lifetime)
-    { }
-
-    thread_function_impl(thread_lifetime const& lifetime, Function const& f)
-        : function_(f), lifetime_(lifetime)
-    { }
-
-    thread_function_impl(thread_lifetime const& lifetime,
-                         BOOST_RV_REF(Function) f)
-        : function_(boost::move(f)), lifetime_(lifetime)
-    { }
-
-    template <typename Sig>
-    struct result;
-
-    template <typename This>
-    struct result<This()>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function&>::type()
-        >
-    { };
-
-    template <typename This>
-    struct result<This const()>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function const&>::type()
-        >
-    { };
-
-    template <typename This, typename Args>
-    struct result<This(Args)>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function&>::type(Args)
-        >
-    { };
-
-    template <typename This, typename Args>
-    struct result<This const(Args)>
-        : boost::result_of<
-            typename fsn::result_of::make_fused<Function const&>::type(Args)
-        >
-    { };
-
-    template <typename Args>
-    typename result<thread_function_impl(BOOST_FWD_REF(Args))>::type
-    operator()(BOOST_FWD_REF(Args) args) {
-        lifetime_.just_started();
-        return fsn::make_fused(function_)(boost::forward<Args>(args));
-    }
-
-    template <typename Args>
-    typename result<thread_function_impl const(BOOST_FWD_REF(Args))>::type
-    operator()(BOOST_FWD_REF(Args) args) const {
-        lifetime_.just_started();
-        return fsn::make_fused(function_)(boost::forward<Args>(args));
-    }
-
-    typename result<thread_function_impl()>::type operator()() {
-        lifetime_.just_started();
-        return fsn::make_fused(function_)();
-    }
-
-    typename result<thread_function_impl const()>::type operator()() const {
-        lifetime_.just_started();
-        return fsn::make_fused(function_)();
-    }
-};
-} // end namespace thread_function_detail
-
-template <typename Function>
-class thread_function
-    : public boost::fusion::unfused<
-        thread_function_detail::thread_function_impl<Function>,
-        true /* allow nullary */
-    >
-{
-    typedef thread_function_detail::thread_function_impl<Function> Impl;
-    typedef boost::fusion::unfused<Impl, true /* allow nullary */> Base;
+    BOOST_COPYABLE_AND_MOVABLE(thread_function)
 
 public:
     explicit thread_function(thread_lifetime const& lifetime)
-        : Base(Impl(lifetime))
+        : lifetime_(lifetime)
+    { }
+
+    thread_function(thread_lifetime const& lifetime, BOOST_RV_REF(Function) f)
+        : function_(boost::move(f)), lifetime_(lifetime)
+    { }
+
+    thread_function(thread_lifetime const& lifetime, Function const& f)
+        : function_(boost::move(f)), lifetime_(lifetime)
     { }
 
     template <typename F>
     thread_function(thread_lifetime const& lifetime, BOOST_FWD_REF(F) f)
-        : Base(Impl(lifetime, boost::forward<F>(f)))
+        : function_(boost::forward<F>(f)), lifetime_(lifetime)
     { }
+
+    thread_function(thread_function const& other)
+        : function_(other.function_), lifetime_(other.lifetime_)
+    { }
+
+    thread_function(BOOST_RV_REF(thread_function) other)
+        : function_(boost::move(other.function_)),
+          lifetime_(boost::move(other.lifetime_))
+    { }
+
+    thread_function& operator=(BOOST_COPY_ASSIGN_REF(thread_function) other) {
+        function_ = other.function_;
+        lifetime_ = other.lifetime_;
+        return *this;
+    }
+
+    thread_function& operator=(BOOST_RV_REF(thread_function) other) {
+        function_ = boost::move(other.function_);
+        lifetime_ = boost::move(other.lifetime_);
+        return *this;
+    }
+
+    template <typename Sig> struct result;
+
+    template <typename This>
+    struct result<This()> : boost::result_of<Function()> { };
+    template <typename This>
+    struct result<This const()> : boost::result_of<Function const()> { };
+    typename result<thread_function()>::type operator()() {
+        lifetime_.just_started();
+        return function_();
+    }
+    typename result<thread_function const()>::type operator()() const {
+        lifetime_.just_started();
+        return function_();
+    }
+
+
+    template <typename This, typename A0>
+    struct result<This(A0)> : my_result_of<Function, boost::fusion::vector<A0> > { };
+    template <typename This, typename A0>
+    struct result<This const(A0)> : my_result_of<Function const, boost::fusion::vector<A0> > { };
+    template <typename A0>
+    typename result<thread_function(BOOST_FWD_REF(A0))>::type
+    operator()(BOOST_FWD_REF(A0) a0) {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0));
+    }
+    template <typename A0>
+    typename result<thread_function const(BOOST_FWD_REF(A0))>::type
+    operator()(BOOST_FWD_REF(A0) a0) const {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0));
+    }
+
+
+    template <typename This, typename A0, typename A1>
+    struct result<This(A0, A1)> : my_result_of<Function, boost::fusion::vector<A0, A1> > { };
+    template <typename This, typename A0, typename A1>
+    struct result<This const(A0, A1)> : my_result_of<Function const, boost::fusion::vector<A0, A1> > { };
+    template <typename A0, typename A1>
+    typename result<thread_function(BOOST_FWD_REF(A0), BOOST_FWD_REF(A1))>::type
+    operator()(BOOST_FWD_REF(A0) a0, BOOST_FWD_REF(A1) a1) {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0), boost::forward<A1>(a1));
+    }
+    template <typename A0, typename A1>
+    typename result<thread_function const(BOOST_FWD_REF(A0), BOOST_FWD_REF(A1))>::type
+    operator()(BOOST_FWD_REF(A0) a0, BOOST_FWD_REF(A1) a1) const {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0), boost::forward<A1>(a1));
+    }
+
+
+    template <typename This, typename A0, typename A1, typename A2>
+    struct result<This(A0, A1, A2)> : my_result_of<Function, boost::fusion::vector<A0, A1, A2> > { };
+    template <typename This, typename A0, typename A1, typename A2>
+    struct result<This const(A0, A1, A2)> : my_result_of<Function const, boost::fusion::vector<A0, A1, A2> > { };
+    template <typename A0, typename A1, typename A2>
+    typename result<thread_function(BOOST_FWD_REF(A0), BOOST_FWD_REF(A1), BOOST_FWD_REF(A2))>::type
+    operator()(BOOST_FWD_REF(A0) a0, BOOST_FWD_REF(A1) a1, BOOST_FWD_REF(A2) a2) {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0), boost::forward<A1>(a1), boost::forward<A2>(a2));
+    }
+    template <typename A0, typename A1, typename A2>
+    typename result<thread_function const(BOOST_FWD_REF(A0), BOOST_FWD_REF(A1), BOOST_FWD_REF(A2))>::type
+    operator()(BOOST_FWD_REF(A0) a0, BOOST_FWD_REF(A1) a1, BOOST_FWD_REF(A2) a2) const {
+        lifetime_.just_started();
+        return function_(boost::forward<A0>(a0), boost::forward<A1>(a1), boost::forward<A2>(a2));
+    }
 };
 
 #else // BOOST_NO_CXX11_VARIADIC_TEMPLATES
