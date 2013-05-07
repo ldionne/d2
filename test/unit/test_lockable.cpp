@@ -54,7 +54,7 @@ BOOST_STATIC_ASSERT((
 
 
 class lockable : public d2::lockable_mixin<lockable> {
-    friend class d2::lockable_mixin<lockable>;
+    friend class d2::access;
     void lock_impl() { }
     void unlock_impl() { }
     bool try_lock_impl() { return false; }
@@ -71,7 +71,7 @@ BOOST_STATIC_ASSERT((
 class recursive_lockable
     : public d2::recursive_lockable_mixin<recursive_lockable>
 {
-    friend class d2::recursive_lockable_mixin<recursive_lockable>;
+    friend class d2::access;
     void lock_impl() { }
     void unlock_impl() { }
     bool try_lock_impl() { return false; }

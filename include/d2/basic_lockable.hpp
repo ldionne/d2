@@ -6,6 +6,7 @@
 #ifndef D2_BASIC_LOCKABLE_HPP
 #define D2_BASIC_LOCKABLE_HPP
 
+#include <d2/access.hpp>
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/detail/ut_access.hpp>
 #include <d2/trackable_sync_object.hpp>
@@ -93,12 +94,12 @@ public:
 #define D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)                             \
     friend class ::d2::detail::ut_access;                                   \
     void lock() {                                                           \
-        static_cast<Derived*>(this)->lock_impl();                           \
+        ::d2::access::lock_impl(static_cast<Derived&>(*this));              \
         this->notify_lock();                                                \
     }                                                                       \
                                                                             \
     void unlock() BOOST_NOEXCEPT {                                          \
-        static_cast<Derived*>(this)->unlock_impl();                         \
+        ::d2::access::unlock_impl(static_cast<Derived&>(*this));            \
         this->notify_unlock();                                              \
     }                                                                       \
 /**/
@@ -116,7 +117,7 @@ public:
  *  class my_basic_lockable
  *      : public d2::basic_lockable_mixin<my_basic_lockable>
  *  {
- *      friend class d2::basic_lockable_mixin<my_basic_lockable>;
+ *      friend class d2::access;
  *
  *      void lock_impl() {
  *          // ...
@@ -134,8 +135,8 @@ public:
  *         Whether the tracking should assume a recursive locking policy. It
  *         defaults to `d2::non_recursive`.
  *
- * @note The `lock_impl()` and `unlock_impl()` methods must both be visible
- *       to the base class. Granting friendship to the mixin may be required.
+ * @note Befriend `d2::access` to grant access to `lock_impl()` and
+ *       `unlock_impl()` when they are private.
  *
  * @note The `boost::is_recursive_mutex_sur_parolle` trait will _not_ be
  *       specialized automatically when using this mixin. This differs from

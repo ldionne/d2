@@ -43,7 +43,7 @@ BOOST_STATIC_ASSERT((
 
 
 class timed_lockable : public d2::timed_lockable_mixin<timed_lockable> {
-    friend class d2::timed_lockable_mixin<timed_lockable>;
+    friend class d2::access;
     void lock_impl() { }
     void unlock_impl() { }
     bool try_lock_impl() { return false; }
@@ -62,7 +62,7 @@ BOOST_STATIC_ASSERT((
 class recursive_timed_lockable
     : public d2::recursive_timed_lockable_mixin<recursive_timed_lockable>
 {
-    friend class d2::recursive_timed_lockable_mixin<recursive_timed_lockable>;
+    friend class d2::access;
     void lock_impl() { }
     void unlock_impl() { }
     bool try_lock_impl() { return false; }

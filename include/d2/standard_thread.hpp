@@ -6,6 +6,7 @@
 #ifndef D2_STANDARD_THREAD_HPP
 #define D2_STANDARD_THREAD_HPP
 
+#include <d2/access.hpp>
 #include <d2/core/thread_id.hpp>
 #include <d2/thread_function.hpp>
 #include <d2/thread_lifetime.hpp>
@@ -166,7 +167,7 @@ public:
  * @code
  *
  *  class my_thread : public d2::standard_thread_mixin<my_thread> {
- *      friend class d2::standard_thread_mixin<my_thread>;
+ *      friend class d2::access;
  *
  *      void join_impl() {
  *          // ...
@@ -213,12 +214,12 @@ protected:
 
 public:
     void join() {
-        static_cast<Derived*>(this)->join_impl();
+        access::join_impl(static_cast<Derived&>(*this));
         lifetime_.just_joined();
     }
 
     void detach() {
-        static_cast<Derived*>(this)->detach_impl();
+        access::detach_impl(static_cast<Derived&>(*this));
         lifetime_.just_detached();
     }
 };

@@ -6,6 +6,7 @@
 #ifndef D2_TIMED_LOCKABLE_HPP
 #define D2_TIMED_LOCKABLE_HPP
 
+#include <d2/access.hpp>
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/lockable.hpp>
 #include <d2/trackable_sync_object.hpp>
@@ -78,8 +79,9 @@ public:
     D2_I_LOCKABLE_MIXIN_CODE(Derived)                                       \
     template <typename Duration>                                            \
     bool try_lock_for(BOOST_FWD_REF(Duration) rel_time) BOOST_NOEXCEPT {    \
-        if (static_cast<Derived*>(this)->                                   \
-                try_lock_for_impl(::boost::forward<Duration>(rel_time))) {  \
+        if (::d2::access::try_lock_for_impl(                                \
+                static_cast<Derived&>(*this),                               \
+                ::boost::forward<Duration>(rel_time))) {                    \
             this->notify_lock();                                            \
             return true;                                                    \
         }                                                                   \
@@ -88,8 +90,9 @@ public:
                                                                             \
     template <typename TimePoint>                                           \
     bool try_lock_until(BOOST_FWD_REF(TimePoint) abs_time) BOOST_NOEXCEPT { \
-        if (static_cast<Derived*>(this)->                                   \
-              try_lock_until_impl(::boost::forward<TimePoint>(abs_time))) { \
+        if (::d2::access::try_lock_until_impl(                              \
+                static_cast<Derived&>(*this),                               \
+                ::boost::forward<TimePoint>(abs_time))) {                   \
             this->notify_lock();                                            \
             return true;                                                    \
         }                                                                   \
@@ -105,9 +108,8 @@ public:
  * `d2` is notified iff the `try_lock_for_impl()` or the
  * `try_lock_until_impl()` method succeeds when called.
  *
- * @note The `try_lock_for_impl()` and `try_lock_until_impl()` methods must
- *       both be visible to the base class. Granting friendship to the mixin
- *       may be required.
+ * @note Befriend `d2::access` to grant access to `try_lock_for_impl()` and
+ *       `try_lock_until_impl()` when they are private.
  *
  * @note The issue regarding the specialization of
  *       `boost::is_recursive_mutex_sur_parolle` applies here like it

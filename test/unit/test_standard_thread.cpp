@@ -70,7 +70,7 @@ struct thread_mixin : thread_base, d2::standard_thread_mixin<thread_mixin> {
     friend void swap(thread_mixin&, thread_mixin&) BOOST_NOEXCEPT { }
 
 private:
-    friend class d2::standard_thread_mixin<thread_mixin>;
+    friend class d2::access;
     void join_impl() { }
     void detach_impl() { }
 

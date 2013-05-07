@@ -6,6 +6,7 @@
 #ifndef D2_LOCKABLE_HPP
 #define D2_LOCKABLE_HPP
 
+#include <d2/access.hpp>
 #include <d2/basic_lockable.hpp>
 #include <d2/detail/inherit_constructors.hpp>
 #include <d2/trackable_sync_object.hpp>
@@ -58,7 +59,7 @@ public:
 #define D2_I_LOCKABLE_MIXIN_CODE(Derived)                                   \
     D2_I_BASIC_LOCKABLE_MIXIN_CODE(Derived)                                 \
     bool try_lock() BOOST_NOEXCEPT {                                        \
-        if (static_cast<Derived*>(this)->try_lock_impl()) {                 \
+        if (::d2::access::try_lock_impl(static_cast<Derived&>(*this))) {    \
             this->notify_lock();                                            \
             return true;                                                    \
         }                                                                   \
@@ -72,8 +73,8 @@ public:
  *
  * `d2` is notified iff the `try_lock()`ing succeeds.
  *
- * @note The `try_lock_impl()` method must be visible to the base class.
- *       Granting friendship to the mixin may be required.
+ * @note Befriend `d2::access` to grant access to `try_lock_impl()` if it
+ *       is private.
  *
  * @note The issue regarding the specialization of
  *       `boost::is_recursive_mutex_sur_parolle` applies here like it

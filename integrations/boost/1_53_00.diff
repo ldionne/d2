@@ -60,7 +60,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
        BOOST_THREAD_MOVABLE_ONLY(thread)
      private:
 -
-+        friend class d2::standard_thread_mixin<thread>;
++        friend class d2::access;
          struct dummy;
 
          void release_handle();
@@ -220,7 +220,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0 2/bo
      {
      private:
          pthread_mutex_t m;
-+        friend class d2::lockable_mixin<mutex>;
++        friend class d2::access;
      public:
          BOOST_THREAD_NO_COPYABLE(mutex)
 
@@ -268,7 +268,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/mutex.hpp boost_1_53_0 2/bo
 +    class timed_mutex : public d2::timed_lockable_mixin<timed_mutex>
      {
      private:
-+        friend class d2::timed_lockable_mixin<timed_mutex>;
++        friend class d2::access;
          pthread_mutex_t m;
  #ifndef BOOST_PTHREAD_HAS_TIMEDLOCK
          pthread_cond_t cond;
@@ -423,7 +423,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 +    class recursive_mutex : public d2::recursive_lockable_mixin<recursive_mutex>
      {
      private:
-+        friend class d2::recursive_lockable_mixin<recursive_mutex>;
++        friend class d2::access;
          pthread_mutex_t m;
  #ifndef BOOST_HAS_PTHREAD_MUTEXATTR_SETTYPE
          pthread_cond_t cond;
@@ -499,7 +499,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/pthread/recursive_mutex.hpp boost_1
 +    class recursive_timed_mutex : public d2::recursive_timed_lockable_mixin<recursive_timed_mutex>
      {
      private:
-+        friend class d2::recursive_timed_lockable_mixin<recursive_timed_mutex>;
++        friend class d2::access;
          pthread_mutex_t m;
  #ifndef BOOST_USE_PTHREAD_RECURSIVE_TIMEDLOCK
          pthread_cond_t cond;
