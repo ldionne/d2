@@ -15,12 +15,12 @@
 #include <boost/thread/thread.hpp>
 #include <boost/utility/swap.hpp>
 #include <cstddef>
-#include <d2/trackable_thread.hpp>
+#include <d2/standard_thread.hpp>
 #include <dyno/uniquely_identifiable.hpp>
 
 
 namespace d2mock {
-typedef d2::trackable_thread<boost::thread> thread_impl_base;
+typedef d2::standard_thread<boost::thread> thread_impl_base;
 struct member_d2_tid {
     boost::shared_ptr<boost::atomic<std::size_t> > d2_tid;
 };

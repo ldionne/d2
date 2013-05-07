@@ -43,7 +43,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
 
  #include <boost/thread/detail/config.hpp>
 
-+#include <d2/trackable_thread.hpp>
++#include <d2/standard_thread.hpp>
  #include <boost/thread/exceptions.hpp>
  #ifndef BOOST_NO_IOSTREAM
  #include <ostream>
@@ -52,7 +52,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
      }
 
 -    class BOOST_THREAD_DECL thread
-+    class BOOST_THREAD_DECL thread : public d2::trackable_thread_mixin<thread>
++    class BOOST_THREAD_DECL thread : public d2::standard_thread_mixin<thread>
      {
      public:
        typedef thread_attributes attributes;
@@ -60,7 +60,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
        BOOST_THREAD_MOVABLE_ONLY(thread)
      private:
 -
-+        friend class d2::trackable_thread_mixin<thread>;
++        friend class d2::standard_thread_mixin<thread>;
          struct dummy;
 
          void release_handle();
@@ -148,7 +148,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
          thread(BOOST_THREAD_RV_REF(thread) x)
 +            // moving with Boost.Thread's emulation is not supported by the
 +            // mixin, but it is not necessary anyway
-+            : trackable_thread_mixin_(BOOST_THREAD_RV(x))
++            : standard_thread_mixin_(BOOST_THREAD_RV(x))
          {
              thread_info=BOOST_THREAD_RV(x).thread_info;
              BOOST_THREAD_RV(x).thread_info.reset();
@@ -159,7 +159,7 @@ diff -ruN pristine_boost_1_53_0/boost/thread/detail/thread.hpp boost_1_53_0 2/bo
 -
 +            // moving with Boost.Thread's emulation is not supported by the
 +            // mixin, but it is not necessary anyway
-+            trackable_thread_mixin_::operator=(BOOST_THREAD_RV(other));
++            standard_thread_mixin_::operator=(BOOST_THREAD_RV(other));
  #if defined BOOST_THREAD_PROVIDES_THREAD_MOVE_ASSIGN_CALLS_TERMINATE_IF_JOINABLE
              if (joinable()) std::terminate();
  #endif

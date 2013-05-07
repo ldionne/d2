@@ -1,9 +1,9 @@
 /*!
  * @file
- * This file contains unit tests for the `d2::trackable_thread` class.
+ * This file contains unit tests for the `d2::standard_thread` class.
  */
 
-#include <d2/trackable_thread.hpp>
+#include <d2/standard_thread.hpp>
 
 #include <boost/move/move.hpp>
 #include <boost/utility/swap.hpp>
@@ -43,12 +43,12 @@ private:
 };
 } // end anonymous namespace
 
-template class d2::trackable_thread<wrapped_thread>;
+template class d2::standard_thread<wrapped_thread>;
 
 namespace {
-typedef d2::trackable_thread<wrapped_thread> wrapped_trackable_thread;
+typedef d2::standard_thread<wrapped_thread> wrapped_trackable_thread;
 
-struct thread_mixin : thread_base, d2::trackable_thread_mixin<thread_mixin> {
+struct thread_mixin : thread_base, d2::standard_thread_mixin<thread_mixin> {
     thread_mixin() BOOST_NOEXCEPT { }
     template <typename F> explicit thread_mixin(BOOST_FWD_REF(F) f, ...) {
         this->get_thread_function(boost::forward<F>(f));
@@ -56,13 +56,13 @@ struct thread_mixin : thread_base, d2::trackable_thread_mixin<thread_mixin> {
     ~thread_mixin() { }
 
     thread_mixin(BOOST_RV_REF(thread_mixin) other) BOOST_NOEXCEPT
-        : trackable_thread_mixin_(
-                    boost::move(static_cast<trackable_thread_mixin_&>(other)))
+        : standard_thread_mixin_(
+                    boost::move(static_cast<standard_thread_mixin_&>(other)))
     { }
 
     thread_mixin& operator=(BOOST_RV_REF(thread_mixin) other) BOOST_NOEXCEPT {
-        trackable_thread_mixin_::operator=(
-                   boost::move(static_cast<trackable_thread_mixin_&>(other)));
+        standard_thread_mixin_::operator=(
+                   boost::move(static_cast<standard_thread_mixin_&>(other)));
         return *this;
     }
 
@@ -70,7 +70,7 @@ struct thread_mixin : thread_base, d2::trackable_thread_mixin<thread_mixin> {
     friend void swap(thread_mixin&, thread_mixin&) BOOST_NOEXCEPT { }
 
 private:
-    friend class d2::trackable_thread_mixin<thread_mixin>;
+    friend class d2::standard_thread_mixin<thread_mixin>;
     void join_impl() { }
     void detach_impl() { }
 
