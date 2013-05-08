@@ -17,14 +17,16 @@
 
 namespace d2 {
 namespace synchronization_skeleton_detail {
-D2_DECL void synchronization_skeleton::feed_lock_graph(Stream& stream) {
+D2_DECL void synchronization_skeleton::feed_lock_graph(Stream& stream,
+                               InitialGatelocksMap const& initial_gatelocks) {
     typedef dyno::istream_iterator<
                 Stream, core::events::thread_specific
             > Iterator;
 
     Iterator first(stream), last;
     static bool const ignore_unrelated_events = true;
-    core::build_lock_graph<ignore_unrelated_events>(first, last, lg_);
+    core::build_lock_graph<ignore_unrelated_events>(first, last, lg_,
+                                                    initial_gatelocks);
 }
 
 namespace {

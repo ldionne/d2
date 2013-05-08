@@ -8,7 +8,9 @@
 #include <d2/core/diagnostic.hpp>
 #include <d2/core/filesystem.hpp>
 #include <d2/core/lock_graph.hpp>
+#include <d2/core/lock_id.hpp>
 #include <d2/core/segmentation_graph.hpp>
+#include <d2/core/thread_id.hpp>
 #include <d2/detail/decl.hpp>
 
 #include <boost/archive/text_iarchive.hpp>
@@ -21,6 +23,7 @@
 #include <dyno/serializing_stream.hpp>
 #include <fstream>
 #include <ios>
+#include <map>
 #include <vector>
 
 
@@ -41,9 +44,11 @@ class synchronization_skeleton : boost::noncopyable {
 
     typedef core::filesystem<Stream> Filesystem;
 
+    typedef std::map<core::ThreadId, core::LockId> InitialGatelocksMap;
     D2_DECL void build_segmentation_graph(Stream&);
-    D2_DECL void feed_lock_graph(Stream&);
+    D2_DECL void feed_lock_graph(Stream&, InitialGatelocksMap const&);
     D2_DECL void deadlocks_impl(DeadlockVisitor const&) const;
+    D2_DECL void fill_initial_gatelocks(InitialGatelocksMap&);
 
     Filesystem fs_;
     core::SegmentationGraph sg_;
@@ -63,13 +68,16 @@ public:
     explicit synchronization_skeleton(BOOST_FWD_REF(Path) root)
         : fs_(boost::forward<Path>(root), std::ios::in)
     {
+        InitialGatelocksMap initial_gatelocks;
         // The start_join file could be absent if we were analyzing a single
         // thread. See `d2::core::filesystem::start_join_file()` for info.
-        if (fs_.start_join_file())
+        if (fs_.start_join_file()) {
             build_segmentation_graph(*fs_.start_join_file());
+            fill_initial_gatelocks(*fs_.start_join_file(), initial_gatelocks);
+        }
 
         BOOST_FOREACH(Filesystem::file_entry thread, fs_.thread_files())
-            feed_lock_graph(thread.stream());
+            feed_lock_graph(thread.stream(), initial_gatelocks);
     }
 
     /**

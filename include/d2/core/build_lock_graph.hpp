@@ -131,7 +131,7 @@ struct CurrentlyHeldLock
 };
 
 template <typename Graph, typename CustomVertexInfo, typename CustomEdgeInfo,
-          bool SilentlyIgnoreOtherEvents>
+          bool SilentlyIgnoreOtherEvents, typename InitialGatelocks>
 struct EventVisitor : boost::static_visitor<void> {
     Graph& graph;
     ThreadId this_thread;
@@ -146,6 +146,8 @@ struct EventVisitor : boost::static_visitor<void> {
     boost::unordered_map<LockId, std::size_t> recursive_lock_count;
     CustomVertexInfo custom_vertex_info;
     CustomEdgeInfo custom_edge_info;
+
+    InitialGatelocks const& initial_gatelocks;
 
     typedef typename boost::edge_property_type<Graph>::type EdgeLabel;
     typedef boost::graph_traits<Graph> Traits;
@@ -163,10 +165,12 @@ struct EventVisitor : boost::static_visitor<void> {
     //          SegmentHopEvent.
     EventVisitor(Graph& lg, ThreadId const& this_thread,
                  CustomVertexInfo const& vertex_info,
-                 CustomEdgeInfo const& edge_info)
+                 CustomEdgeInfo const& edge_info,
+                 InitialGatelocks const& initial_gatelocks)
         : graph(lg), this_thread(this_thread), held_locks(),
           current_segment(), recursive_lock_count(),
-          custom_vertex_info(vertex_info), custom_edge_info(edge_info)
+          custom_vertex_info(vertex_info), custom_edge_info(edge_info),
+          initial_gatelocks(initial_gatelocks)
     { }
 
     template <typename Event>
@@ -208,6 +212,8 @@ struct EventVisitor : boost::static_visitor<void> {
         // Compute the gatelock set, i.e. the set of locks currently
         // held by this thread.
         core::Gatelocks::underlying_set_type g_tmp;
+        BOOST_FOREACH(LockId const& l, initial_gatelocks)
+            g_tmp.get<1>().push_back(l);
         BOOST_FOREACH(HeldLock const& l, held_locks)
             g_tmp.get<1>().push_back(l.lock);
         core::Gatelocks g(boost::move(g_tmp));
@@ -375,8 +381,10 @@ struct CustomVertexInfo {
  *
  * In all cases, the algorithm provides the basic exception guarantee.
  */
-template <bool SilentlyIgnoreOtherEvents, typename Iterator, typename Graph>
-void build_lock_graph(Iterator first, Iterator last, Graph& graph) {
+template <bool SilentlyIgnoreOtherEvents, typename Iterator, typename Graph,
+          typename InitialGatelocksMap>
+void build_lock_graph(Iterator first, Iterator last, Graph& graph,
+                      InitialGatelocksMap const& initial_gatelocks) {
     // We must be able to add new vertices/edges and to set their
     // respective properties to build the lock graph.
     // Note: See the note in build_segmentation_graph.hpp to know why
@@ -407,22 +415,28 @@ void build_lock_graph(Iterator first, Iterator last, Graph& graph) {
                 Graph,
                 CustomVertexInfo,
                 CustomEdgeInfo<EdgeBundleMap>,
-                SilentlyIgnoreOtherEvents
+                SilentlyIgnoreOtherEvents,
+                typename InitialGatelocksMap::mapped_type
             > Visitor;
 
     CustomVertexInfo vertex_info;
     EdgeBundleMap edge_bundle = get(boost::edge_bundle, graph);
     CustomEdgeInfo<EdgeBundleMap> edge_info(edge_bundle);
 
-    Visitor visitor(graph, this_thread, vertex_info, edge_info);
+    BOOST_ASSERT_MSG(initial_gatelocks.count(this_thread) == 1,
+        "processing a thread for which no initial gatelocks are specified");
+    Visitor visitor(graph, this_thread, vertex_info, edge_info,
+                    initial_gatelocks[this_thread]);
     for (; first != last; ++first)
         boost::apply_visitor(visitor, *first);
 }
 
-template <bool SilentlyIgnoreOtherEvents, typename Range, typename Graph>
-void build_lock_graph(Range const& range, Graph& graph) {
+template <bool SilentlyIgnoreOtherEvents, typename Range, typename Graph,
+          typename InitialGatelocksMap>
+void build_lock_graph(Range const& range, Graph& graph,
+                      InitialGatelocksMap const& initial_gatelocks) {
     build_lock_graph<SilentlyIgnoreOtherEvents>(
-        boost::begin(range), boost::end(range), graph);
+        boost::begin(range), boost::end(range), graph, initial_gatelocks);
 }
 } // end namespace build_lock_graph_detail
 

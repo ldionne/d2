@@ -12,14 +12,14 @@
 int main(int argc, char const* argv[]) {
     d2mock::mutex G, L1, L2;
 
-    d2mock::thread t3([&] {
-        L1.lock();
-            L2.lock();
-            L2.unlock();
-        L1.unlock();
-    });
-
     d2mock::thread t1([&] {
+        d2mock::thread t3([&] {
+            L1.lock();
+                L2.lock();
+                L2.unlock();
+            L1.unlock();
+        });
+
         // Here, G prevents t3 from running in parallel with the body of t2,
         // so the deadlock is avoided.
         G.lock();
