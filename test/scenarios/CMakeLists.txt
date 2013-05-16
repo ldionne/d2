@@ -38,6 +38,9 @@ set_property(TARGET d2mock
 set_property(TARGET d2mock
     APPEND PROPERTY COMPILE_FLAGS ${D2MOCK_REQUIRED_COMPILE_FLAGS}
 )
+set_property(TARGET d2mock
+    APPEND PROPERTY COMPILE_DEFINITIONS D2_ENABLED=1
+)
 
 
 #=============================================================================
@@ -58,6 +61,10 @@ function(d2_add_scenario name sources)
     set_property(TARGET ${name}
         APPEND PROPERTY COMPILE_FLAGS ${D2MOCK_REQUIRED_COMPILE_FLAGS}
     )
+    set_property(TARGET ${name}
+        APPEND PROPERTY COMPILE_DEFINITIONS D2_ENABLED=1
+    )
+
     target_link_libraries(${name} d2mock ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
     set_property(TEST ${name} PROPERTY TIMEOUT 3)

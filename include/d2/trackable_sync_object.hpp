@@ -101,12 +101,14 @@ public:
      * current thread.
      */
     void notify_lock() const BOOST_NOEXCEPT {
+#ifdef D2_ENABLED
         using dyno::unique_id;
         std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
             notify_recursive_acquire(tid, unique_id(lock_id_));
         else
             notify_acquire(tid, unique_id(lock_id_));
+#endif
     }
 
     /*!
@@ -114,12 +116,14 @@ public:
      * current thread.
      */
     void notify_unlock() const BOOST_NOEXCEPT {
+#ifdef D2_ENABLED
         using dyno::unique_id;
         std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
             notify_recursive_release(tid, unique_id(lock_id_));
         else
             notify_release(tid, unique_id(lock_id_));
+#endif
     }
 };
 } // end namespace d2

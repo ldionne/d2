@@ -6,14 +6,16 @@
 #ifndef D2_DETAIL_THREAD_LIFETIME_HPP
 #define D2_DETAIL_THREAD_LIFETIME_HPP
 
-#include <d2/api.hpp>
+#ifdef D2_ENABLED
+#   include <d2/api.hpp>
 
-#include <boost/assert.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <cstddef>
-#include <dyno/thread_id.hpp>
-#include <dyno/uniquely_identifiable.hpp>
+#   include <boost/assert.hpp>
+#   include <boost/smart_ptr/make_shared.hpp>
+#   include <boost/smart_ptr/shared_ptr.hpp>
+#   include <cstddef>
+#   include <dyno/thread_id.hpp>
+#   include <dyno/uniquely_identifiable.hpp>
+#endif
 
 
 namespace d2 {
@@ -82,13 +84,16 @@ namespace detail {
  */
 struct thread_lifetime {
     void about_to_start() {
+#ifdef D2_ENABLED
         BOOST_ASSERT_MSG(!data_, "called with a non-NULL data_ pointer");
         data_ = boost::make_shared<Data>();
         using dyno::unique_id;
         data_->parent = unique_id(dyno::this_thread::get_id());
+#endif
     }
 
     void just_started() {
+#ifdef D2_ENABLED
         BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
 
         using dyno::unique_id;
@@ -98,9 +103,11 @@ struct thread_lifetime {
 
         notify_start(data_->parent, child);
         data_->child = child;
+#endif
     }
 
     void just_joined() {
+#ifdef D2_ENABLED
         BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
 
         using dyno::unique_id;
@@ -110,6 +117,7 @@ struct thread_lifetime {
 
         notify_join(parent, data_->child);
         data_.reset();
+#endif
     }
 
     /*!
@@ -119,16 +127,20 @@ struct thread_lifetime {
      *           support this.
      */
     void just_detached() {
+#ifdef D2_ENABLED
         BOOST_ASSERT_MSG(data_, "called with a NULL data_ pointer");
         data_.reset();
+#endif
     }
 
 private:
+#ifdef D2_ENABLED
     union Data {
         std::size_t parent;
         std::size_t child;
     };
     boost::shared_ptr<Data> data_;
+#endif
 };
 } // end namespace detail
 } // end namespace d2

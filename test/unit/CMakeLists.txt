@@ -21,6 +21,9 @@ function(d2_add_unit_test name sources)
     set_property(TARGET ${name}
         APPEND PROPERTY INCLUDE_DIRECTORIES ${d2_SOURCE_DIR}/ext/dyno/include
     )
+    set_property(TARGET ${name}
+        APPEND PROPERTY COMPILE_DEFINITIONS D2_ENABLED=1
+    )
 
     target_link_libraries(${name} d2 ${GTEST_BOTH_LIBRARIES} ${ARGN})
     add_test(NAME ${name} COMMAND ${name})
