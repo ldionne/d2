@@ -8,8 +8,7 @@
 
 #include <d2/access.hpp>
 #include <d2/core/thread_id.hpp>
-#include <d2/thread_function.hpp>
-#include <d2/thread_lifetime.hpp>
+#include <d2/trackable_thread.hpp>
 
 #include <boost/config.hpp>
 #include <boost/move/move.hpp>
@@ -17,53 +16,17 @@
 
 
 namespace d2 {
-namespace standard_thread_detail {
-    struct lifetime_as_member {
-        lifetime_as_member() BOOST_NOEXCEPT { }
-
-        lifetime_as_member(BOOST_RV_REF(lifetime_as_member) other)
-            : lifetime_(boost::move(other.lifetime_))
-        { }
-
-        lifetime_as_member& operator=(BOOST_RV_REF(lifetime_as_member) other) {
-            lifetime_ = boost::move(other.lifetime_);
-            return *this;
-        }
-
-        friend void swap(lifetime_as_member& self, lifetime_as_member & other){
-            boost::swap(self.lifetime_, other.lifetime_);
-        }
-
-        thread_lifetime lifetime_;
-
-    private:
-        BOOST_MOVABLE_BUT_NOT_COPYABLE(lifetime_as_member)
-    };
-} // end namespace standard_thread_detail
-
 /*!
  * Wrapper over a standard conformant thread class to add tracking of the
  * thread's lifetime.
  *
  * @warning If the wrapped thread is not standard conformant, the behavior is
  *          undefined.
- *
- * @internal Private inheritance is for the base-from-member idiom.
  */
 template <typename Thread>
-class standard_thread
-    : private standard_thread_detail::lifetime_as_member,
-      public Thread
-{
-    typedef standard_thread_detail::lifetime_as_member lifetime_as_member;
+class standard_thread : private trackable_thread, public Thread {
     BOOST_MOVABLE_BUT_NOT_COPYABLE(standard_thread)
-
-    template <typename Function>
-    thread_function<Function> forward_to_thread(BOOST_FWD_REF(Function) f) {
-        this->lifetime_.about_to_start();
-        return make_thread_function(this->lifetime_,
-                                    boost::forward<Function>(f));
-    }
+    using trackable_thread::get_thread_function;
 
 public:
     standard_thread() BOOST_NOEXCEPT { }
@@ -72,37 +35,37 @@ public:
     template <typename F, typename ...Args>
     explicit standard_thread(BOOST_FWD_REF(F) f,
                              BOOST_FWD_REF(Args) ...args)
-        : Thread(forward_to_thread(boost::forward<F>(f)),
-                                   boost::forward<Args>(args)...)
+        : Thread(get_thread_function(boost::forward<F>(f)),
+                                     boost::forward<Args>(args)...)
     { }
 #else
     template <typename F>
     explicit standard_thread(BOOST_FWD_REF(F) f)
-        : Thread(forward_to_thread(boost::forward<F>(f)))
+        : Thread(get_thread_function(boost::forward<F>(f)))
     { }
 
     template <typename F, typename A0>
     standard_thread(BOOST_FWD_REF(F) f, BOOST_FWD_REF(A0) a0)
-        : Thread(forward_to_thread(boost::forward<F>(f)),
-                                   boost::forward<A0>(a0))
+        : Thread(get_thread_function(boost::forward<F>(f)),
+                                     boost::forward<A0>(a0))
     { }
 
     template <typename F, typename A0, typename A1>
     standard_thread(BOOST_FWD_REF(F) f, BOOST_FWD_REF(A0) a0,
                                         BOOST_FWD_REF(A1) a1)
-        : Thread(forward_to_thread(boost::forward<F>(f)),
-                                   boost::forward<A0>(a0),
-                                   boost::forward<A1>(a1))
+        : Thread(get_thread_function(boost::forward<F>(f)),
+                                     boost::forward<A0>(a0),
+                                     boost::forward<A1>(a1))
     { }
 
     template <typename F, typename A0, typename A1, typename A2>
     standard_thread(BOOST_FWD_REF(F) f, BOOST_FWD_REF(A0) a0,
                                         BOOST_FWD_REF(A1) a1,
                                         BOOST_FWD_REF(A2) a2)
-        : Thread(forward_to_thread(boost::forward<F>(f)),
-                                   boost::forward<A0>(a0),
-                                   boost::forward<A1>(a1),
-                                   boost::forward<A2>(a2))
+        : Thread(get_thread_function(boost::forward<F>(f)),
+                                     boost::forward<A0>(a0),
+                                     boost::forward<A1>(a1),
+                                     boost::forward<A2>(a2))
     { }
 
     template <typename F, typename A0, typename A1, typename A2, typename A3>
@@ -110,46 +73,46 @@ public:
                                         BOOST_FWD_REF(A1) a1,
                                         BOOST_FWD_REF(A2) a2,
                                         BOOST_FWD_REF(A3) a3)
-        : Thread(forward_to_thread(boost::forward<F>(f)),
-                                   boost::forward<A0>(a0),
-                                   boost::forward<A1>(a1),
-                                   boost::forward<A2>(a2),
-                                   boost::forward<A3>(a3))
+        : Thread(get_thread_function(boost::forward<F>(f)),
+                                     boost::forward<A0>(a0),
+                                     boost::forward<A1>(a1),
+                                     boost::forward<A2>(a2),
+                                     boost::forward<A3>(a3))
     { }
 #endif // !BOOST_NO_CXX11_VARIADIC_TEMPLATES
 
     standard_thread(BOOST_RV_REF(standard_thread) other) BOOST_NOEXCEPT
-        : lifetime_as_member(
-            boost::move(static_cast<lifetime_as_member&>(other))),
+        : trackable_thread(
+            boost::move(static_cast<trackable_thread&>(other))),
           Thread(boost::move(static_cast<Thread&>(other)))
     { }
 
     standard_thread&
     operator=(BOOST_RV_REF(standard_thread) other) BOOST_NOEXCEPT {
-        lifetime_as_member::operator=(
-            boost::move(static_cast<lifetime_as_member&>(other)));
+        trackable_thread::operator=(
+            boost::move(static_cast<trackable_thread&>(other)));
         Thread::operator=(boost::move(static_cast<Thread&>(other)));
         return *this;
     }
 
     void swap(standard_thread& other) BOOST_NOEXCEPT {
-        boost::swap(static_cast<lifetime_as_member&>(*this),
-                    static_cast<lifetime_as_member&>(other));
+        boost::swap(static_cast<trackable_thread&>(*this),
+                    static_cast<trackable_thread&>(other));
         boost::swap(static_cast<Thread&>(*this), static_cast<Thread&>(other));
     }
 
-    friend void swap(standard_thread& x, standard_thread& y) BOOST_NOEXCEPT{
+    friend void swap(standard_thread& x, standard_thread& y) BOOST_NOEXCEPT {
         x.swap(y);
     }
 
     void join() {
         Thread::join();
-        this->lifetime_.just_joined();
+        this->notify_join();
     }
 
     void detach() {
         Thread::detach();
-        this->lifetime_.just_detached();
+        this->notify_detach();
     }
 };
 
@@ -200,27 +163,47 @@ public:
  * @endcode
  */
 template <typename Derived>
-class standard_thread_mixin {
-    thread_lifetime lifetime_;
+class standard_thread_mixin : private trackable_thread {
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(standard_thread_mixin)
 
 protected:
-    template <typename Function>
-    thread_function<Function> get_thread_function(BOOST_FWD_REF(Function) f) {
-        lifetime_.about_to_start();
-        return make_thread_function(lifetime_, boost::forward<Function>(f));
-    }
-
+    using trackable_thread::get_thread_function;
     typedef standard_thread_mixin standard_thread_mixin_;
 
 public:
+    standard_thread_mixin() BOOST_NOEXCEPT { }
+
+    standard_thread_mixin(BOOST_RV_REF(standard_thread_mixin) other)
+                                                                BOOST_NOEXCEPT
+        : trackable_thread(
+            boost::move(static_cast<trackable_thread&>(other)))
+    { }
+
+    standard_thread_mixin&
+    operator=(BOOST_RV_REF(standard_thread_mixin) other) BOOST_NOEXCEPT {
+        trackable_thread::operator=(
+            boost::move(static_cast<trackable_thread&>(other)));
+        return *this;
+    }
+
+    void swap(standard_thread_mixin& other) BOOST_NOEXCEPT {
+        boost::swap(static_cast<trackable_thread&>(*this),
+                    static_cast<trackable_thread&>(other));
+    }
+
+    friend void
+    swap(standard_thread_mixin& x, standard_thread_mixin& y) BOOST_NOEXCEPT {
+        x.swap(y);
+    }
+
     void join() {
         access::join_impl(static_cast<Derived&>(*this));
-        lifetime_.just_joined();
+        this->notify_join();
     }
 
     void detach() {
         access::detach_impl(static_cast<Derived&>(*this));
-        lifetime_.just_detached();
+        this->notify_detach();
     }
 };
 } // end namespace d2
