@@ -1,10 +1,10 @@
 /*!
  * @file
- * This file defines the `d2::thread_lifetime` class.
+ * This file defines the `d2::detail::thread_lifetime` class.
  */
 
-#ifndef D2_THREAD_LIFETIME_HPP
-#define D2_THREAD_LIFETIME_HPP
+#ifndef D2_DETAIL_THREAD_LIFETIME_HPP
+#define D2_DETAIL_THREAD_LIFETIME_HPP
 
 #include <d2/api.hpp>
 
@@ -17,6 +17,7 @@
 
 
 namespace d2 {
+namespace detail {
 /*!
  * Class defining a protocol allowing the library to track the lifetime of
  * threads.
@@ -26,7 +27,7 @@ namespace d2 {
  * protocol at all will be completely unknown to the library, and they
  * will not be tracked.
  *
- * First, an instance of `d2::thread_lifetime` must be created. Creating
+ * First, an instance of `thread_lifetime` must be created. Creating
  * the instance has noexcept guarantees and does not do much.
  *
  * Second, before the child thread is started, the `about_to_start()` method
@@ -58,14 +59,14 @@ namespace d2 {
  * method must be called (from anywhere) immediately after the thread is
  * detached.
  *
- * @note Because `d2::thread_lifetime` is mainly a wrapper on top of a shared
+ * @note Because `thread_lifetime` is mainly a wrapper on top of a shared
  *       memory region, it has reference semantics even when copied, much like
  *       a `shared_ptr`.
  *
  * @note The amount of time between the call to e.g. `about_to_start()` and
  *       the actual starting of the thread has an impact on the precision
- *       of the tracking by the library (and so on for all the steps of the
- *       protocol). For example, as long as the call to `about_to_start()`
+ *       of the tracking by the library (and similarly for all the steps of
+ *       the protocol). For example, as long as the call to `about_to_start()`
  *       happens in the parent thread and _before_ the thread is actually
  *       started, no deadlocks can be missed. However, if there is a large
  *       delay between the call to `about_to_start()` and the actual starting
@@ -129,6 +130,7 @@ private:
     };
     boost::shared_ptr<Data> data_;
 };
+} // end namespace detail
 } // end namespace d2
 
-#endif // !D2_THREAD_LIFETIME_HPP
+#endif // !D2_DETAIL_THREAD_LIFETIME_HPP

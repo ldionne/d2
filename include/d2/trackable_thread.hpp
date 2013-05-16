@@ -6,8 +6,8 @@
 #ifndef D2_TRACKABLE_THREAD_HPP
 #define D2_TRACKABLE_THREAD_HPP
 
+#include <d2/detail/thread_lifetime.hpp>
 #include <d2/thread_function.hpp>
-#include <d2/thread_lifetime.hpp>
 
 #include <boost/config.hpp>
 #include <boost/move/move.hpp>
@@ -20,7 +20,7 @@ namespace d2 {
  */
 class trackable_thread {
     BOOST_MOVABLE_BUT_NOT_COPYABLE(trackable_thread)
-    thread_lifetime lifetime_;
+    detail::thread_lifetime lifetime_;
 
 public:
     trackable_thread() BOOST_NOEXCEPT { }

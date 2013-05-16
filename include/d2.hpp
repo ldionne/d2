@@ -11,7 +11,6 @@
 #include <d2/lockable.hpp>
 #include <d2/standard_thread.hpp>
 #include <d2/thread_function.hpp>
-#include <d2/thread_lifetime.hpp>
 #include <d2/timed_lockable.hpp>
 #include <d2/trackable_sync_object.hpp>
 #include <d2/trackable_thread.hpp>

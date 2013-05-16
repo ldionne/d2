@@ -6,7 +6,7 @@
 #ifndef D2_THREAD_FUNCTION_HPP
 #define D2_THREAD_FUNCTION_HPP
 
-#include <d2/thread_lifetime.hpp>
+#include <d2/detail/thread_lifetime.hpp>
 
 #include <boost/config.hpp>
 #include <boost/fusion/functional/generation/make_fused.hpp>
@@ -34,25 +34,25 @@ class thread_function {
     { };
 
     Function function_;
-    thread_lifetime mutable lifetime_;
+    detail::thread_lifetime mutable lifetime_;
 
     BOOST_COPYABLE_AND_MOVABLE(thread_function)
 
 public:
-    explicit thread_function(thread_lifetime const& lifetime)
+    explicit thread_function(detail::thread_lifetime const& lifetime)
         : lifetime_(lifetime)
     { }
 
-    thread_function(thread_lifetime const& lifetime, BOOST_RV_REF(Function) f)
+    thread_function(detail::thread_lifetime const& lifetime, BOOST_RV_REF(Function) f)
         : function_(boost::move(f)), lifetime_(lifetime)
     { }
 
-    thread_function(thread_lifetime const& lifetime, Function const& f)
+    thread_function(detail::thread_lifetime const& lifetime, Function const& f)
         : function_(boost::move(f)), lifetime_(lifetime)
     { }
 
     template <typename F>
-    thread_function(thread_lifetime const& lifetime, BOOST_FWD_REF(F) f)
+    thread_function(detail::thread_lifetime const& lifetime, BOOST_FWD_REF(F) f)
         : function_(boost::forward<F>(f)), lifetime_(lifetime)
     { }
 
@@ -152,16 +152,16 @@ public:
 /*!
  * Wrapper over a function meant to be executed in a different thread.
  *
- * When the wrapper is created, it is given a `d2::thread_lifetime` in
+ * When the wrapper is created, it is given a `d2::detail::thread_lifetime` in
  * addition to the function that should be executed in a different thread.
  * When it is called, the wrapper calls the `just_started()` method on the
- * `d2::thread_lifetime` instance and then forwards everything to the wrapped
- * function.
+ * `d2::detail::thread_lifetime` instance and then forwards everything to the
+ * wrapped function.
  *
- * If used within the `d2::thread_lifetime` protocol, this will ensure that
- * the library can track thread lifetimes properly.
+ * If used within the `d2::detail::thread_lifetime` protocol, this will ensure
+ * that the library can track thread lifetimes properly.
  *
- * @see `d2::thread_lifetime`
+ * @see `d2::detail::thread_lifetime`
  *
  * @tparam Function
  *         The type of the wrapped function. Before being used, `Function` is
@@ -173,18 +173,18 @@ public:
  */
 template <typename Function>
 class thread_function {
-    thread_lifetime mutable lifetime_;
+    detail::thread_lifetime mutable lifetime_;
 
     typedef typename boost::decay<Function>::type Function_;
     Function_ f_;
 
 public:
-    explicit thread_function(thread_lifetime const& lifetime)
+    explicit thread_function(detail::thread_lifetime const& lifetime)
         : lifetime_(lifetime)
     { }
 
     template <typename F>
-    thread_function(thread_lifetime const& lifetime, BOOST_FWD_REF(F) f)
+    thread_function(detail::thread_lifetime const& lifetime, BOOST_FWD_REF(F) f)
         : lifetime_(lifetime), f_(boost::forward<F>(f))
     { }
 
@@ -221,7 +221,7 @@ public:
 //! Helper to create a `d2::thread_function` with a deduced `Function` type.
 template <typename Function>
 thread_function<Function>
-make_thread_function(thread_lifetime const& lifetime,
+make_thread_function(detail::thread_lifetime const& lifetime,
                      BOOST_FWD_REF(Function) f) {
     return thread_function<Function>(lifetime, boost::forward<Function>(f));
 }
