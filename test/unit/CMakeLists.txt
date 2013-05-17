@@ -36,10 +36,6 @@ set(bsys ${Boost_SYSTEM_LIBRARY})
 set(bgraph ${Boost_GRAPH_LIBRARY})
 
 d2_add_unit_test(test_basic_lockable             test_basic_lockable.cpp ${bsys})
-# the -std=c++0x flag will be enabled and it clashes with C.
-if (NOT D2_ENABLE_CXX0X)
-    d2_add_unit_test(test_c_api                  test_c_api.c)
-endif()
 d2_add_unit_test(test_cyclic_permutation         detail/test_cyclic_permutation.cpp)
 d2_add_unit_test(test_filesystem                 core/test_filesystem.cpp ${bfs} ${bsys})
 d2_add_unit_test(test_lockable                   test_lockable.cpp ${bsys})

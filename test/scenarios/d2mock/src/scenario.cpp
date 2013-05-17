@@ -16,9 +16,9 @@
 #include <boost/range/algorithm/transform.hpp>
 #include <cstddef>
 #include <cstdlib>
-#include <d2/api.hpp>
 #include <d2/core/diagnostic.hpp>
 #include <d2/core/lock_id.hpp>
+#include <d2/core/raw_api.hpp>
 #include <d2/core/synchronization_skeleton.hpp>
 #include <d2/core/thread_id.hpp>
 #include <d2/detail/ut_access.hpp>
@@ -133,15 +133,15 @@ check_scenario(boost::function<void()> const& scenario,
         return EXIT_FAILURE;
     }
 
-    if (d2::set_log_repository(directory.string())) {
+    if (d2::core::set_log_repository(directory.string())) {
         std::cerr << "unable to set the repository at " << directory << '\n';
         return EXIT_FAILURE;
     }
 
-    d2::enable_event_logging();
+    d2::core::enable_event_logging();
     scenario();
-    d2::disable_event_logging();
-    d2::unset_log_repository();
+    d2::core::disable_event_logging();
+    d2::core::unset_log_repository();
 
     d2::core::synchronization_skeleton skeleton(directory);
     std::vector<d2::core::potential_deadlock> actual, expected;

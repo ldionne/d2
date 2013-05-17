@@ -6,7 +6,7 @@
 #ifndef D2_TRACKABLE_SYNC_OBJECT_HPP
 #define D2_TRACKABLE_SYNC_OBJECT_HPP
 
-#include <d2/api.hpp>
+#include <d2/core/raw_api.hpp>
 #include <d2/detail/decl.hpp>
 #include <d2/detail/ut_access.hpp>
 
@@ -105,9 +105,9 @@ public:
         using dyno::unique_id;
         std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
-            notify_recursive_acquire(tid, unique_id(lock_id_));
+            core::notify_recursive_acquire(tid, unique_id(lock_id_));
         else
-            notify_acquire(tid, unique_id(lock_id_));
+            core::notify_acquire(tid, unique_id(lock_id_));
 #endif
     }
 
@@ -120,9 +120,9 @@ public:
         using dyno::unique_id;
         std::size_t const tid = unique_id(dyno::this_thread::get_id());
         if (::d2::trackable_sync_object<Recursive>::is_recursive::value)
-            notify_recursive_release(tid, unique_id(lock_id_));
+            core::notify_recursive_release(tid, unique_id(lock_id_));
         else
-            notify_release(tid, unique_id(lock_id_));
+            core::notify_release(tid, unique_id(lock_id_));
 #endif
     }
 };

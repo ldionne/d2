@@ -7,7 +7,7 @@
 #define D2_DETAIL_THREAD_LIFETIME_HPP
 
 #ifdef D2_ENABLED
-#   include <d2/api.hpp>
+#   include <d2/core/raw_api.hpp>
 
 #   include <boost/assert.hpp>
 #   include <boost/smart_ptr/make_shared.hpp>
@@ -101,7 +101,7 @@ struct thread_lifetime {
         BOOST_ASSERT_MSG(data_->parent != child,
             "called in the parent thread (or it appears so)");
 
-        notify_start(data_->parent, child);
+        core::notify_start(data_->parent, child);
         data_->child = child;
 #endif
     }
@@ -115,7 +115,7 @@ struct thread_lifetime {
         BOOST_ASSERT_MSG(parent != data_->child,
             "called in the child thread (or it appears so)");
 
-        notify_join(parent, data_->child);
+        core::notify_join(parent, data_->child);
         data_.reset();
 #endif
     }
