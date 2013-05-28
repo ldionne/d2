@@ -15,18 +15,30 @@
 
 
 static std::size_t const NOISE_THREADS = 10;
-static std::size_t const MUTEXES_PER_NOISE_THREAD = 100;
+static std::size_t const MUTEXES_PER_NOISE_THREAD = 15;
 typedef boost::shared_ptr<d2mock::thread> ThreadPtr;
 
 int main(int argc, char const* argv[]) {
-    auto noise = [&] {
-        std::vector<d2mock::mutex> mutexes(MUTEXES_PER_NOISE_THREAD);
-        boost::for_each(mutexes, [](d2mock::mutex& m) { m.lock(); });
-        boost::for_each(mutexes | boost::adaptors::reversed,
-                                    [](d2mock::mutex& m) { m.unlock(); });
+    d2mock::mutex A, B;
+
+    auto A_or_B = [&] () -> d2mock::mutex& {
+        d2mock::mutex* dataset[2] = {&A, &B};
+        boost::random_shuffle(dataset);
+        return *dataset[0];
     };
 
-    d2mock::mutex A, B;
+    auto noise = [&] {
+        std::vector<d2mock::mutex> local_mutexes(MUTEXES_PER_NOISE_THREAD);
+        std::vector<d2mock::mutex*> mutexes;
+        for (auto& m: local_mutexes)
+            mutexes.push_back(&m);
+        mutexes.push_back(&A_or_B());
+        boost::random_shuffle(mutexes);
+
+        boost::for_each(mutexes, [](d2mock::mutex* m) { m->lock(); });
+        boost::for_each(mutexes | boost::adaptors::reversed,
+                                    [](d2mock::mutex* m) { m->unlock(); });
+    };
 
     ThreadPtr t0(new d2mock::thread([&] {
         A.lock();
