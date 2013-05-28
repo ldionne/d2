@@ -66,7 +66,7 @@ public:
     template <typename Path>
     explicit FilesystemDispatcher(BOOST_FWD_REF(Path) root)
         : repository_(boost::make_shared<Filesystem>(
-                                        root, std::ios::out | std::ios::ate))
+                                        root, dyno::filesystem_overwrite))
     { }
 
     /**
