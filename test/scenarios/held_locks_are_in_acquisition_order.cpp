@@ -17,10 +17,12 @@ int main(int argc, char const* argv[]) {
         // locks we expect does not match the natural ordering of the
         // identifiers of the locks. Basically, we have less chances of
         // passing the test by accident if we lock from ad to aa.
-        A.lock(); ad.lock(); ac.lock(); ab.lock(); aa.lock();
-            B.lock();
-            B.unlock();
-        aa.lock(); ab.lock(); ac.lock(); ad.lock(); A.unlock();
+        A.lock();
+            ad.lock(); ac.lock(); ab.lock(); aa.lock();
+                B.lock();
+                B.unlock();
+            aa.unlock(); ab.unlock(); ac.unlock(); ad.unlock();
+        A.unlock();
     });
 
     d2mock::thread t1([&] {
