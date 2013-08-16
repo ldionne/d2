@@ -7,11 +7,11 @@
 #define D2_CORE_ANALYSIS_HPP
 
 #include <d2/core/build_segmentation_graph.hpp> // for happens_before
-#include <d2/detail/tiernan_all_cycles.hpp>
 #include <d2/detail/vertex_to_edge_path.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/graph/graph_traits.hpp>
+#include <boost/graph/hawick_circuits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/move/utility.hpp>
 #include <boost/range/begin.hpp>
@@ -171,7 +171,7 @@ void analyze(LockGraph const& lg, SegmentationGraph const& sg, F const& f) {
     EdgeCycleVisitor edge_visitor(sg, f);
     VertexCycleVisitor vertex_visitor(edge_visitor);
 
-    boost::tiernan_all_cycles(lg, vertex_visitor);
+    boost::hawick_unique_circuits(lg, vertex_visitor);
 }
 } // end namespace analysis_detail
 
